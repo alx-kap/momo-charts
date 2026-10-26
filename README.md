@@ -14,9 +14,9 @@ charts drawn with [TradingView Lightweight Charts™](https://www.tradingview.co
 - **Your data, on your machine.** No subscription and no account with us. momo keeps its own
   database of daily bars and talks only to Schwab (prices) and free public sources: Nasdaq
   (symbols, earnings dates), SEC EDGAR (fundamentals) and the CFTC (futures positioning).
-- **Feels like TradingView and TC2000.** Start typing a ticker to open it, type `5` or `1W` to
-  change the timeframe, `⌥T` for a trend line, `Ctrl+K` for every command. Press `?` for the
-  full list.
+- **Keyboard-first.** Start typing a ticker to open it, type `5` or `1W` to change the
+  timeframe, `⌥T` for a trend line, `Ctrl+K` for every command. Press `?` for the full list.
+  If you chart in TradingView or TC2000, it will feel familiar.
 - **Built for momentum swing trading.** ADR %, dollar volume, relative volume, distance from
   highs, days to earnings and quarterly EPS and sales growth sit next to every chart and in
   every list.
@@ -39,7 +39,7 @@ charts drawn with [TradingView Lightweight Charts™](https://www.tradingview.co
 - Bar Replay: step a chart forward from any past day.
 - Live prices update the forming daily bar, a pre- and post-market price tag and a ghost
   candle.
-- Chart settings in the style of TradingView: colours, scales (log, inverted), the status
+- Chart settings: colours, scales (log, inverted), the status
   line, and a picture of the chart copied to the clipboard.
 
 ![Split view: Broadcom on daily and weekly charts side by side, each with its own moving averages and volume](docs/screenshots/split-view.png)
@@ -55,7 +55,7 @@ charts drawn with [TradingView Lightweight Charts™](https://www.tradingview.co
 
 ### Screener
 
-Filter every US-listed stock on your own rules, like a TC2000 scan: returns and return ranks
+Filter every US-listed stock on your own rules: returns and return ranks
 over 1 day to 6 months, ADR, dollar volume, relative volume, moving-average positions and
 stacking, distance from highs and lows, new highs, earnings timing, and EPS and sales growth.
 Start from built-in starters (breakouts on volume, pullbacks to the 20-day, top 1/3/6-month
@@ -143,9 +143,9 @@ yourself.
 
 ## FAQ
 
-**Is this a TradingView alternative?** For charting, watchlists and screening US stocks on
-daily and intraday bars, yes: it borrows TradingView's keys, look and tools. It doesn't have
-TradingView's social features, Pine Script, or markets beyond US stocks and ETFs.
+**Is this a TradingView alternative?** It can be, if you chart US stocks: charting,
+watchlists, screening and alerts on daily and intraday bars, self-hosted and on your own data.
+It has no scripting language or social features, and covers US stocks and ETFs only.
 
 **Does it trade?** No. momo only reads market data. The Schwab app it uses is created with an
 order limit of 0.

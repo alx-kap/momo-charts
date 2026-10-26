@@ -1,8 +1,8 @@
 # momo charts
 
-> momo charts is a free, open-source (Apache 2.0), self-hosted stock charting app in the style
-> of TradingView and TC2000, for swing and momentum traders. It runs on your own computer
-> (Python, FastAPI, plain JavaScript, TradingView Lightweight Charts) and gets live prices and
+> momo charts is a free, open-source (Apache 2.0), self-hosted alternative to TradingView-style
+> stock charting, for swing and momentum traders. It runs on your own computer (Python,
+> FastAPI, plain JavaScript, TradingView Lightweight Charts) and gets live prices and
 > about 20 years of daily history per stock from the user's own Charles Schwab account
 > through the Schwab Trader API. It never places orders.
 
@@ -10,7 +10,7 @@ What it does:
 
 - Daily, weekly, monthly and intraday (1m to 1h, pre- and post-market) stock charts with
   moving averages, VWAP, Bollinger Bands, Keltner Channels, RSI, MACD, ATR, ADR % and a
-  relative strength line; drawing tools; split view; Bar Replay; TradingView-style hotkeys.
+  relative strength line; drawing tools; split view; Bar Replay; keyboard shortcuts.
 - Watchlists with live prices, days to earnings and quarterly EPS and sales growth.
 - A screener over every US-listed stock (returns and return ranks, ADR, dollar and relative
   volume, moving averages, highs and lows, earnings, growth), with starter scans and a live
