@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://alx-kap.github.io/momo-charts/sitemap.xml

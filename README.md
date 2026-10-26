@@ -4,6 +4,7 @@
 indicators, a screener for every US stock and price alerts, all running on your own computer.
 Live prices and 20 years of daily history come from your Charles Schwab account.
 
+**[alx-kap.github.io/momo-charts](https://alx-kap.github.io/momo-charts/)** ·
 Open source (Apache 2.0) · Python and FastAPI · plain JavaScript, no build step ·
 charts drawn with [TradingView Lightweight Charts™](https://www.tradingview.com/lightweight-charts/)
 

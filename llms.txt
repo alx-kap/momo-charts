@@ -24,6 +24,7 @@ Other data providers can be added as Python modules.
 
 ## Docs
 
+- [Website](https://alx-kap.github.io/momo-charts/): overview, live chart demo, install
 - [README](https://github.com/alx-kap/momo-charts/blob/main/README.md): features, screenshots,
   setup, how the data works, FAQ
 - [Daily bar store](https://github.com/alx-kap/momo-charts/blob/main/src/momo_scan/bars.py):
