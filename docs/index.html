@@ -114,14 +114,6 @@
   .up { color: var(--up); } .down { color: var(--down); }
 
   /* ---------- top ---------- */
-  .tape {
-    border-bottom: 1px solid var(--line); background: #08090a; overflow: hidden;
-    font: 400 12.5px/34px var(--mono); color: var(--ink-3); white-space: nowrap;
-  }
-  .tape-track { display: inline-flex; animation: tape 60s linear infinite; }
-  .tape span { padding: 0 22px; }
-  .tape b { color: var(--ink-2); font-weight: 500; margin-right: 8px; }
-  @keyframes tape { to { transform: translateX(-50%); } }
 
   nav.top {
     position: sticky; top: 0; z-index: 20; background: rgba(12, 13, 15, .86);
@@ -432,17 +424,13 @@
     .oneliner { font-size: 12.5px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .tape-track, .pop-input i { animation: none; }
+    .pop-input i { animation: none; }
     .reveal { opacity: 1; transform: none; transition: none; }
     html { scroll-behavior: auto; }
   }
 </style>
 </head>
 <body>
-
-<div class="tape" aria-hidden="true">
-  <div class="tape-track" id="tape"></div>
-</div>
 
 <nav class="top" aria-label="Main">
   <div class="wrap">
@@ -898,17 +886,6 @@
 <script src="assets/lightweight-charts.js"></script>
 <script>
 (() => {
-  // Ticker tape: the watchlist from the screenshots.
-  const tape = [
-    ["NVDA", 210.96, -0.59], ["AVGO", 321.68, -0.48], ["PLTR", 196.75, 0.29], ["TSLA", 372.22, -0.63],
-    ["META", 642.62, -0.96], ["AMD", 516.79, 1.74], ["MU", 877.55, 2.46], ["ANET", 172.37, 0.76],
-    ["APP", 260.25, -1.52], ["CRWD", 257.57, 8.25], ["NFLX", 65.85, -1.79], ["SHOP", 168.68, -0.08],
-    ["HOOD", 95.07, -1.56],
-  ];
-  const row = tape.map(([s, p, c]) =>
-    `<span><b>${s}</b>${p.toFixed(2)} <em class="${c >= 0 ? "up" : "down"}" style="font-style:normal">${c >= 0 ? "+" : ""}${c.toFixed(2)}%</em></span>`).join("");
-  document.getElementById("tape").innerHTML = row + row;
-
   // Reveal on scroll.
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
