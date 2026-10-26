@@ -108,6 +108,11 @@ export async function openThemes(chosen) {
     else report = await api("/api/themes");
     render();
   } catch (error) {
+    // No theme list (the public edition ships none): Industries instead, without the tab.
+    if (tab === "themes" && /theme list/.test(error.message)) {
+      document.querySelector('#mk-tabs [data-tab="themes"]').hidden = true;
+      return openThemes("industries");
+    }
     $("th-body").innerHTML = `<div class="rc-loading muted">Couldn't load themes: ${escapeHtml(error.message)}</div>`;
   }
 }

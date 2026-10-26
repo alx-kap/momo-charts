@@ -580,9 +580,12 @@ function renderProfile(me) {
         chartOptions, currentSymbol, redraw, renderModes, renderSymbolBar, saveCharts, setMode, showHome, step,
       });
       Object.assign(ALT_KEYS, extra.altKeys);
-    } else if (state.mode !== "chart") {
-      state.mode = "chart";
-      renderModes("chart");
+    } else {
+      $("modes").style.display = "none"; // Chart is the only mode
+      if (state.mode !== "chart") {
+        state.mode = "chart";
+        renderModes("chart");
+      }
     }
     renderProfile(state.me);
     startLive(state.me);

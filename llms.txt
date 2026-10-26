@@ -1,0 +1,35 @@
+# momo charts
+
+> momo charts is a free, open-source (Apache 2.0), self-hosted stock charting app in the style
+> of TradingView and TC2000, for swing and momentum traders. It runs on your own computer
+> (Python, FastAPI, plain JavaScript, TradingView Lightweight Charts) and gets live prices and
+> about 20 years of daily history per stock from the user's own Charles Schwab account
+> through the Schwab Trader API. It never places orders.
+
+What it does:
+
+- Daily, weekly, monthly and intraday (1m to 1h, pre- and post-market) stock charts with
+  moving averages, VWAP, Bollinger Bands, Keltner Channels, RSI, MACD, ATR, ADR % and a
+  relative strength line; drawing tools; split view; Bar Replay; TradingView-style hotkeys.
+- Watchlists with live prices, days to earnings and quarterly EPS and sales growth.
+- A screener over every US-listed stock (returns and return ranks, ADR, dollar and relative
+  volume, moving averages, highs and lows, earnings, growth), with starter scans and a live
+  intraday mode.
+- Industry strength, CFTC Commitments of Traders positioning, and server-side price alerts.
+- Its own daily-bar database: symbols from Nasdaq's directory, history from Schwab, updated
+  after each close with split detection. Fundamentals from SEC EDGAR.
+
+Requirements: Python 3.12, uv, a Schwab brokerage account and a (free) Schwab developer app.
+Other data providers can be added as Python modules.
+
+## Docs
+
+- [README](https://github.com/alx-kap/momo-charts/blob/main/README.md): features, screenshots,
+  setup, how the data works, FAQ
+- [Daily bar store](https://github.com/alx-kap/momo-charts/blob/main/src/momo_scan/bars.py):
+  how daily history is filled and kept current
+- [Schwab provider](https://github.com/alx-kap/momo-charts/blob/main/src/momo_scan/live/schwab.py):
+  OAuth sign-in, streaming quotes, price history
+- [Live provider interface](https://github.com/alx-kap/momo-charts/blob/main/src/momo_scan/live/base.py):
+  what another data vendor needs to implement
+- [License](https://github.com/alx-kap/momo-charts/blob/main/LICENSE): Apache 2.0
