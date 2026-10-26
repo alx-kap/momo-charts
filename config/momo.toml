@@ -1,0 +1,11 @@
+# momo fills its own daily bars from Schwab (src/momo_scan/bars.py).
+[provider]
+database = "data/bars.db"
+fill = "schwab"
+minimum_latest_coverage = 0.0
+
+[storage]
+database = "data/momo.db"
+
+[fundamentals]
+user_agent = "momo-charts admin@example.com"   # SEC asks for a real contact

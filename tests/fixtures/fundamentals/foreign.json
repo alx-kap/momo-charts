@@ -1,0 +1,21 @@
+{
+  "cik": 456,
+  "facts": {
+    "us-gaap": {
+      "EarningsPerShareDiluted": {
+        "units": {
+          "USD/shares": [
+            {
+              "start": "2023-01-01",
+              "end": "2023-12-31",
+              "val": 5,
+              "filed": "2024-04-01",
+              "form": "20-F",
+              "accn": "foreign"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

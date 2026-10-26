@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- "private" comments wrap Daily review, Practice and Playbook markup; the public edition strips them. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Momo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/app.css?v=205">
+</head>
+<body>
+<header id="topbar">
+  <span class="brand settings-wrap">
+    <button id="settings-button" class="avatar" title="Settings and help"></button>
+    <i id="live-dot" class="live-dot" hidden></i>
+    <div id="settings" hidden>
+      <div class="profile-head"><span class="avatar" data-part="avatar"></span><div><b data-part="name"></b><span data-part="role"></span></div></div>
+      <div id="live-row" hidden><div class="sep"></div><div class="live-line"><span>Live prices</span><button id="live-status" class="live-badge"></button></div></div>
+      <div class="sep"></div>
+      <button id="settings-chart" class="item"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-7 5 5"/></svg>Settings…</button>
+      <div class="sep"></div>
+      <button id="settings-help" class="item"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h1M11 10h2M16 10h1M8 14h8"/></svg>Keyboard shortcuts<kbd>?</kbd></button>
+    </div>
+  </span>
+  <button id="symbol-button" class="sym-field" title="Symbol search: just start typing a ticker"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><path d="m10.5 10.5 3.5 3.5"/></svg><span id="symbol-label">—</span></button>
+  <span class="tb-sep"></span>
+  <span id="intervals" class="iv-wrap">
+    <span class="iv-quick"><button data-interval="1M">M</button><button data-interval="1W">W</button><button data-interval="1D">D</button><button data-interval="1h" class="intraday">1h</button><button data-interval="5m" class="intraday">5m</button></span>
+    <button id="iv-button" class="tb-btn iv-more" title="More timeframes · or just type one (5, 60, 1D, 1W…) and press Enter"><span id="iv-label"></span><span class="caret">▾</span></button>
+    <div id="iv-menu" hidden>
+      <div class="iv-group"><div class="lm-h">Days and up</div><div class="iv-row"><button data-interval="1M">M</button><button data-interval="1W">W</button><button data-interval="1D">D</button></div></div>
+      <div class="iv-group intraday"><div class="lm-h">Minutes and hours</div><div class="iv-row"><button data-interval="1h" class="intraday">1h</button><button data-interval="30m" class="intraday">30m</button><button data-interval="15m" class="intraday">15m</button><button data-interval="5m" class="intraday">5m</button><button data-interval="1m" class="intraday">1m</button></div></div>
+      <label class="lm-row ext-row intraday"><span><b>Extended hours</b><em>Pre- and post-market, shaded</em></span><input type="checkbox" class="switch" id="ext-toggle"></label>
+      <div class="iv-hint">Type a timeframe anywhere, then Enter</div>
+    </div>
+  </span>
+  <span class="tb-sep"></span>
+  <button id="indicators-button" class="icon" title="Indicators (/)" aria-label="Indicators"><i class="fx">ƒx</i></button>
+  <button id="drawbar-button" class="icon" title="Drawing toolbar" aria-label="Drawing toolbar" aria-controls="draw-bar" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 8.5-8.5a2.1 2.1 0 0 1 3 3L6 14l-4 1zM10 4l3 3M3 11l3 3"/></svg></button>
+  <button id="replay-button" class="icon" title="Bar Replay (⇧↓)" aria-label="Bar Replay"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.5v11M6.5 4.5l7.5 4.5-7.5 4.5z"/></svg></button>
+  <span class="layout-wrap">
+    <button id="split-button" class="icon" title="Layout: one chart or two side by side (⌥2 switches)"><svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="3" width="14" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 3v12" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    <div id="layout-menu" hidden>
+      <div class="lm-h">Layout</div>
+      <div class="lm-tiles">
+        <button data-layout="single" class="lm-tile"><span class="lm-pic"><i></i></span><span>Single</span><kbd>⌥2</kbd></button>
+        <button data-layout="split" class="lm-tile"><span class="lm-pic two"><i></i><i></i></span><span>Side by side</span><kbd>⌥2</kbd></button>
+      </div>
+      <div class="lm-h">Sync between charts</div>
+      <label class="lm-row"><span><b>Symbol</b><em>Change one chart, the other follows</em></span><input type="checkbox" class="switch" data-sync="symbol"></label>
+      <label class="lm-row"><span><b>Crosshair</b><em>Hover one chart, the other follows</em></span><input type="checkbox" class="switch" data-sync="crosshair"></label>
+    </div>
+  </span>
+  <button id="snapshot-button" class="icon" title="Copy a picture of the chart (⌥S) · ⇧⌥S saves a PNG"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M2.5 6.2c0-.9.7-1.6 1.6-1.6h1.8l1.2-1.8h3.8l1.2 1.8h1.8c.9 0 1.6.7 1.6 1.6v7c0 .9-.7 1.6-1.6 1.6H4.1c-.9 0-1.6-.7-1.6-1.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="9" cy="9.6" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+  <span class="spacer"></span>
+  <button id="search-button" class="search" title="Commands and search (Ctrl+K)">
+    <span>Commands</span><kbd>Ctrl K</kbd>
+  </button>
+  <nav id="modes">
+    <button data-mode="chart" title="Your charts and watchlists">Chart</button>
+  </nav>
+</header>
+
+<main>
+  <div id="charts">
+  <section id="chart-area" class="chart-pane active-pane" data-part="chart-area" data-side="left">
+    <div id="chart" data-part="chart"></div>
+    <div id="callouts" data-part="callouts"></div>
+    <div id="legend" data-part="legend">
+      <div id="legend-title" data-part="legend-title"></div>
+      <div id="legend-ma" data-part="legend-ma"></div>
+    </div>
+    <div id="info-table" data-part="info-table"></div>
+    <div id="pane-legends" data-part="pane-legends"></div>
+    <div id="margin-handles" data-part="margin-handles"></div>
+    <div id="chart-message" data-part="chart-message" hidden></div>
+    <div id="themes" hidden>
+      <div class="rc-card th-card">
+        <div class="rc-head"><button id="th-close" class="icon cs-close" title="Close (Esc)">×</button></div>
+        <div class="mk-split">
+          <aside id="mk-tabs" class="mk-side">
+            <div class="mk-navh">Stocks</div>
+            <button data-tab="themes"><svg viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></svg>Themes<em data-count="themes"></em></button>
+            <button data-tab="industries"><svg viewBox="0 0 24 24"><path d="M3 20V9l6 4V9l6 4V5h3v15zM3 20h18"/></svg>Industries<em data-count="industries"></em></button>
+            <div class="mk-navh">Futures</div>
+            <button data-tab="positioning"><svg viewBox="0 0 24 24"><path d="M12 4v16M5 20h14M6 8h12M6 8l-3 6a3 3 0 0 0 6 0zM18 8l-3 6a3 3 0 0 0 6 0z"/></svg>Positioning</button>
+          </aside>
+          <div class="mk-main">
+            <div class="mk-title"><h2 id="mk-title"></h2><span id="th-sub" class="muted"></span></div>
+            <div id="th-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="screener" hidden tabindex="-1">
+      <div class="sc-head" id="sc-drag">
+        <b>Screener</b>
+        <span id="sc-count" class="muted"></span>
+        <span class="spacer"></span>
+        <button id="sc-filters-toggle" class="mini" title="Show or hide the filters"></button>
+        <button id="sc-presets-button" class="mini" title="Load a starter or saved scan"><svg class="sc-ico" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M4 2h8v12l-4-3-4 3z"/></svg><span class="sc-lbl">Presets</span></button>
+        <button id="sc-cols-button" class="mini" title="Choose columns"><svg class="sc-ico" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2.5 3h11v10h-11zM6.2 3v10M9.8 3v10"/></svg><span class="sc-lbl">Columns</span></button>
+        <button id="sc-dock" class="mini" title="Dock in the right panel, or float as a window"></button>
+        <button id="sc-close" class="icon" title="Close (Esc)">×</button>
+      </div>
+      <div id="sc-colmenu" hidden></div>
+      <div id="sc-presets" hidden></div>
+      <div id="sc-filters">
+        <div id="sc-rules" class="sc-rules"></div>
+        <button id="sc-add" class="sc-add" title="Add a filter">+ Add filter</button>
+        <div class="sc-bar">
+          <button id="sc-clear" class="mini" title="Remove every filter"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5"/></svg>Clear</button>
+          <button id="sc-save" class="mini" title="Save these filters; asks to update the scan you loaded (⇧-click to save under a new name)"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M4 2h8v12l-4-3-4 3z"/></svg>Save…</button>
+          <span class="spacer"></span>
+          <label id="sc-live-label" class="toggle" hidden title="Filter on today's prices: sweeps every liquid stock's quote about every 15 seconds while this is on"><input id="sc-live" type="checkbox"><span>Live</span></label>
+          <label class="toggle" title="Screen ETFs along with stocks"><input id="sc-etfs" type="checkbox"><span>ETFs</span></label>
+        </div>
+      </div>
+      <div id="sc-scroll">
+        <div id="sc-cols" class="sc-row sc-colhead"></div>
+        <div id="sc-body"></div>
+      </div>
+      <div id="sc-foot" class="muted"></div>
+    </div>
+
+    <svg id="drawings" data-part="drawings" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="draw-toolbar" hidden></div>
+  </section>
+  <div id="split-resizer" hidden title="Drag to resize the charts · double-click to split evenly"></div>
+  <section id="chart-right" class="chart-pane" data-side="right" hidden>
+    <div data-part="chart"></div>
+    <div data-part="callouts"></div>
+    <div data-part="legend">
+      <div data-part="legend-title"></div>
+      <div data-part="legend-ma"></div>
+    </div>
+    <div data-part="info-table" hidden></div>
+    <div data-part="pane-legends"></div>
+    <div data-part="margin-handles"></div>
+    <div data-part="chart-message" hidden></div>
+    <svg data-part="drawings" xmlns="http://www.w3.org/2000/svg"></svg>
+  </section>
+  </div>
+
+  <div id="side-resizer" title="Drag to resize · double-click to reset"></div>
+  <aside id="side-home">
+    <div class="hw-head">
+      <button type="button" id="wl-select" class="pick" title="Switch watchlist"></button>
+      <button id="wl-plus" title="Add symbols">+</button>
+    </div>
+    <div id="wl-tray" hidden></div>
+    <div class="hw-row hw-cols" id="wl-cols"></div>
+    <div id="wl-rows"></div>
+    <div id="details"></div>
+    <div id="alerts-panel">
+      <div class="hw-head"><div class="pick al-title">Alerts<em id="alerts-count"></em></div><button id="alerts-new" title="New alert on this chart (⌥A)">+</button></div>
+      <div class="hw-row hw-cols al-row"><span>Symbol</span><span>Condition</span><span>Price</span><span>Status</span><span></span></div>
+      <div id="alerts-list"></div>
+    </div>
+  </aside>
+
+  <nav id="rail-right" class="rail">
+    <button data-rail="watchlist" title="Watchlist and details"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg></button>
+    <button data-rail="screener" title="Screener: filter every stock (Ctrl+K)"><svg viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 8v5.5l-4 2V13z"/></svg></button>
+    <button data-rail="market" title="Market: themes, industries and positioning"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 16v-4M10 16V8M14 16v-6M18 16V5"/></svg></button>
+    <button data-rail="alerts" title="Price alerts (⌥A sets one)" hidden><svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2H4.5zM10 20.5a2.2 2.2 0 0 0 4 0"/></svg></button>
+  </nav>
+</main>
+
+<nav id="mobile-nav">
+  <button id="prev-button">‹ Prev</button>
+  <span id="mobile-position" class="muted"></span>
+  <button id="next-button">Next ›</button>
+</nav>
+
+<div id="symsearch" hidden>
+  <div class="ss-card">
+    <input id="ss-input" autocomplete="off" spellcheck="false" placeholder="Symbol or company">
+    <div id="ss-list"></div>
+  </div>
+</div>
+<div id="sign-in-box" hidden>
+  <div class="ib-label">Sign in to Schwab for live prices</div>
+  <ol>
+    <li><a id="si-link" href="#" target="_blank" rel="noopener">Open Schwab</a>, sign in and approve.</li>
+    <li>You land on a page that doesn't load. Copy its address.</li>
+    <li>Paste it here within 30 seconds:</li>
+  </ol>
+  <input id="si-input" autocomplete="off" spellcheck="false" placeholder="https://127.0.0.1:8182/?code=…">
+  <div class="ib-hint">Enter connects · Esc cancels · lasts 7 days</div>
+</div>
+<div id="interval-box" hidden>
+  <div class="ib-label">Timeframe</div>
+  <input id="ib-input" autocomplete="off" spellcheck="false">
+  <div class="ib-hint">1D · 1W · 1M, then Enter</div>
+</div>
+
+<div id="palette" hidden>
+  <div class="palette-card">
+    <input id="palette-input" autocomplete="off" spellcheck="false">
+    <div id="palette-list"></div>
+  </div>
+</div>
+
+<div id="help" hidden>
+  <div class="help-card" role="dialog" aria-label="Keyboard shortcuts">
+    <header class="help-head">
+      <h2>Keyboard shortcuts</h2>
+      <label class="help-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="help-search" type="search" placeholder="Search" autocomplete="off" spellcheck="false"></label>
+      <button id="help-close" class="icon" title="Close (Esc)">×</button>
+    </header>
+    <div id="help-body">
+    <section>
+      <h3>Chart</h3>
+      <div class="hk"><span>Open a symbol</span><span class="hk-keys"><em>ticker</em> <kbd>↵</kbd></span></div>
+      <div class="hk"><span>Change interval</span><span class="hk-keys"><em>1D, 1W, 1M…</em> <kbd>↵</kbd></span></div>
+      <div class="hk"><span>Indicators</span><span class="hk-keys"><kbd>/</kbd></span></div>
+      <div class="hk"><span>Commands, scans and decks</span><span class="hk-keys"><kbd>⌘</kbd><kbd>K</kbd></span></div>
+      <div class="hk"><span>Reset chart view</span><span class="hk-keys"><kbd>⌥</kbd><kbd>R</kbd></span></div>
+      <div class="hk"><span>Log scale / invert scale</span><span class="hk-keys"><kbd>⌥</kbd><kbd>L</kbd> <i>/</i> <kbd>⌥</kbd><kbd>I</kbd></span></div>
+      <div class="hk"><span>Split view</span><span class="hk-keys"><kbd>⌥</kbd><kbd>2</kbd></span></div>
+      <div class="hk"><span>Extended hours (intraday)</span><span class="hk-keys"><kbd>⇧</kbd><kbd>⌥</kbd><kbd>E</kbd></span></div>
+      <div class="hk"><span>Copy chart picture</span><span class="hk-keys"><kbd>⌥</kbd><kbd>S</kbd></span></div>
+      <div class="hk"><span>Save chart picture (PNG)</span><span class="hk-keys"><kbd>⇧</kbd><kbd>⌥</kbd><kbd>S</kbd></span></div>
+    </section>
+    <section>
+      <h3>Drawing</h3>
+      <div class="hk"><span>Trend line (⇧ keeps it level)</span><span class="hk-keys"><kbd>⌥</kbd><kbd>T</kbd></span></div>
+      <div class="hk"><span>Horizontal line / ray</span><span class="hk-keys"><kbd>⌥</kbd><kbd>H</kbd> <i>/</i> <kbd>⌥</kbd><kbd>J</kbd></span></div>
+      <div class="hk"><span>Measure a move</span><span class="hk-keys"><kbd>⇧</kbd> <em>click</em></span></div>
+      <div class="hk"><span>Remove selected drawing</span><span class="hk-keys"><kbd>⌫</kbd></span></div>
+      <div class="hk"><span>Undo / redo</span><span class="hk-keys"><kbd>⌘</kbd><kbd>Z</kbd> <i>/</i> <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd></span></div>
+      <div class="hk"><span>Cancel / close</span><span class="hk-keys"><kbd>Esc</kbd></span></div>
+    </section>
+    <section>
+      <h3>Bar Replay</h3>
+      <div class="hk"><span>Pick a bar, then play / pause</span><span class="hk-keys"><kbd>⇧</kbd><kbd>↓</kbd></span></div>
+      <div class="hk"><span>Forward one bar</span><span class="hk-keys"><kbd>⇧</kbd><kbd>→</kbd></span></div>
+      <div class="hk"><span>Exit replay</span><span class="hk-keys"><kbd>Esc</kbd></span></div>
+    </section>
+    <section>
+      <h3>Lists and alerts</h3>
+      <div class="hk"><span>Next / previous symbol</span><span class="hk-keys"><kbd>↓</kbd> <i>/</i> <kbd>↑</kbd></span></div>
+      <div class="hk"><span>Next symbol</span><span class="hk-keys"><kbd>Space</kbd></span></div>
+      <div class="hk"><span>Add to watchlist</span><span class="hk-keys"><kbd>⌥</kbd><kbd>W</kbd></span></div>
+      <div class="hk"><span>Flag or unflag</span><span class="hk-keys"><kbd>⇧</kbd><kbd>F</kbd></span></div>
+      <div class="hk"><span>Price alert</span><span class="hk-keys"><kbd>⌥</kbd><kbd>A</kbd></span></div>
+    </section>
+    <section>
+      <h3>Mouse</h3>
+      <div class="hk"><span>Edit text or a label</span><span class="hk-keys"><em>double-click</em></span></div>
+      <div class="hk"><span>Pane margins</span><span class="hk-keys"><em>drag ▼ ▲ on the price axis</em></span></div>
+      <div class="hk"><span>Space to the right</span><span class="hk-keys"><em>drag ▲ under the last bar</em></span></div>
+    </section>
+    </div>
+    <p id="help-none" hidden>No shortcuts match.</p>
+    <p class="help-credit">Charts by <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>, © TradingView, Inc.</p>
+  </div>
+</div>
+
+<div id="cs" hidden>
+  <div class="cs-card">
+    <aside class="cs-side">
+      <label class="cs-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="cs-search" type="search" placeholder="Search settings" autocomplete="off" spellcheck="false"></label>
+      <div class="cs-navh">Chart</div>
+      <nav id="cs-tabs"></nav>
+      <div class="cs-navh" id="cs-navh-general" hidden>General</div>
+      <nav id="cs-tabs-general"></nav>
+      <span class="spacer"></span>
+      <div class="cs-reset"><button id="cs-reset">Reset to default</button><span id="cs-confirm" hidden>Reset every chart setting and indicator?<span><button id="cs-reset-yes" class="danger">Reset</button><button id="cs-reset-no">Cancel</button></span></span></div>
+    </aside>
+    <section class="cs-main">
+      <div class="cs-grab"></div>
+      <button id="cs-done" class="icon cs-close" title="Close (Esc)">×</button>
+      <div id="cs-body"></div>
+    </section>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+<script src="/static/lightweight-charts.js"></script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

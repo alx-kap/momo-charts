@@ -1,0 +1,19 @@
+{
+  "status": {
+    "rCode": 200
+  },
+  "data": {
+    "rows": [
+      {
+        "symbol": "NVDA",
+        "time": "time-after-hours",
+        "epsForecast": "$0.75"
+      },
+      {
+        "symbol": "TSM",
+        "time": "time-pre-market",
+        "epsForecast": "N/A"
+      }
+    ]
+  }
+}
