@@ -102,7 +102,7 @@
     font: 400 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased;
   }
   a { color: inherit; }
-  img { max-width: 100%; display: block; }
+  img { max-width: 100%; height: auto; display: block; }
   ::selection { background: var(--amber); color: var(--bg); }
   .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 28px; }
   .mono { font-family: var(--mono); }
@@ -167,7 +167,7 @@
   .fine { margin-top: 16px; font-size: 13.5px; color: var(--ink-3); }
 
   .shot-frame {
-    margin-top: 72px; position: relative; border-radius: 12px 12px 0 0; overflow: hidden;
+    margin: 72px 0 0; position: relative; border-radius: 12px 12px 0 0; overflow: hidden;
     border: 1px solid var(--line-2); border-bottom: 0;
     box-shadow: 0 -30px 120px -40px rgba(232, 176, 75, .18);
   }
@@ -184,9 +184,9 @@
     content: ""; position: absolute; width: 9px; height: 9px; border-radius: 50%;
     background: var(--amber); box-shadow: 0 0 0 5px rgba(232, 176, 75, .22);
   }
-  .callout.c1 { left: 21%; top: 13%; } .callout.c1::before { left: -26px; top: 10px; }
-  .callout.c2 { right: 23%; top: 46%; } .callout.c2::before { right: -26px; top: 10px; }
-  .callout.c3 { right: 5%; top: 8%; } .callout.c3::before { left: 12px; top: -22px; }
+  .callout.c1 { left: 25%; top: 15.5%; } .callout.c1::before { left: 14px; top: -22px; }
+  .callout.c2 { right: 24%; top: 63%; } .callout.c2::before { right: -26px; top: 10px; }
+  .callout.c3 { right: 25%; top: 24%; } .callout.c3::before { right: -26px; top: 10px; }
 
   /* ---------- facts ---------- */
   .facts { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-2); }
@@ -423,12 +423,12 @@
       </div>
     </div>
 
-    <figure class="shot-frame reveal" style="margin-bottom:0">
+    <figure class="shot-frame reveal">
       <img src="screenshots/hero.png" width="1600" height="960"
         alt="momo charts showing an NVDA daily candlestick chart with 5, 10, 20, 50, 100 and 200-day moving averages, earnings markers and dollar volume, beside a Leaders watchlist with live prices and days to earnings, and NVIDIA's quarterly EPS and sales growth">
       <div class="callout c1">Market cap, ADR % and $ volume, on every chart</div>
       <div class="callout c2">Eight quarters of EPS and sales growth, a glance away</div>
-      <div class="callout c3">Days to earnings in every list</div>
+      <div class="callout c3">Live prices and days to earnings in every list</div>
     </figure>
   </div>
 </header>
