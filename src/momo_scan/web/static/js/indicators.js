@@ -93,7 +93,7 @@ function vwap(bars) {
 }
 
 // High-volume closes. Each day's dollar volume is a multiple of two baselines up to the day
-// before: the 20-day EMA (the average line Alex's brother reads in his volume pane) and the
+// before: the 20-day EMA (the average line on the volume pane) and the
 // 100-day average, which still stands out when volume ramps through a run and drags the short
 // average up with it (MU, April 2026). Each multiple is ranked against the stock's own over the
 // prior `window` bars, since a mega cap's steady volume rarely reaches the 2× a stock like W
