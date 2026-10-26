@@ -90,7 +90,6 @@ button.icon.active { color: var(--text); }
 @keyframes tick { 0%, 45% { font-weight: 700; color: var(--text); } }
 @keyframes tick-up { 0%, 30% { font-weight: 700; color: var(--like); background: rgba(38, 196, 69, .16); } }
 @keyframes tick-down { 0%, 30% { font-weight: 700; color: var(--pass); background: rgba(232, 38, 45, .16); } }
-#scan-status { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .toggle { display: flex; gap: 4px; align-items: center; color: var(--muted); cursor: pointer; }
 
 #progress { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
