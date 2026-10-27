@@ -24,6 +24,7 @@ export const state = {
   blind: store.get("blind", true),
   deckFilters: store.get("deckFilters", {}), // { min_adr, max_adr, min_dvol, max_dvol } on the review deck
   noBiotech: store.get("noBiotech", false), // leave biotechs out of the review deck
+  byIndustry: store.get("byIndustry", false), // review deck ordered by industry, then $ volume
   advance: store.get("advance", false),
   showLevels: store.get("levels", true),
   lines: { ...DEFAULT_LINES, ...store.get("lines", {}) },
