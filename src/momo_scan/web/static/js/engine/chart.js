@@ -11,6 +11,10 @@ export const ColorType = { Solid: "solid", VerticalGradient: "gradient" };
 
 const SEPARATOR = 1; // px between panes
 const MIN_PANE = 30; // px a pane keeps when you drag the line between two
+// Zoom per pixel of wheel travel: a mouse notch (100 px) is about 10%; a trackpad pinch (wheel
+// with Ctrl) moves in small steps, so it gets more.
+const WHEEL_ZOOM = 0.0011;
+const PINCH_ZOOM = 0.01;
 const FAMILY = "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif";
 
 const defaults = () => ({
@@ -721,7 +725,7 @@ export class Chart {
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? this.height : 1;
     const dx = e.deltaX * unit, dy = e.deltaY * unit;
     if (Math.abs(dx) > Math.abs(dy)) this.time.scroll(dx / this.time.spacing);
-    else this.time.zoom(this.time.spacing * Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.002)));
+    else this.time.zoom(this.time.spacing * Math.exp(-dy * (e.ctrlKey ? PINCH_ZOOM : WHEEL_ZOOM)));
     this._changed();
     if (zone.kind === "plot") this.pointerCross(this.point(e), zone, e); // a new bar is under the pointer
   }
