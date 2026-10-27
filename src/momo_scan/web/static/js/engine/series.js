@@ -35,6 +35,9 @@ const DEFAULTS = {
 };
 
 const ohlc = (type) => type === "Candlestick" || type === "Bar";
+// "transparent", #rrggbb00 or rgba(..., 0).
+const seeThrough = (color) => !color || color === "transparent" || /^#[0-9a-f]{6}00$/i.test(color) ||
+  /^rgba\(.*,\s*0(\.0*)?\s*\)$/.test(color);
 
 export class Series {
   constructor(chart, type, options, pane) {
@@ -119,10 +122,15 @@ export class Series {
     return null;
   }
 
+  // The last-price tag and line: the bar's colour. A hollow candle's body is see-through, so it
+  // takes the border's (Lightweight Charts makes it black).
   lastColor(point) {
     const o = this.options;
-    if (ohlc(this.type)) return point.color || (point.close >= point.open ? o.upColor : o.downColor);
-    return point.color || o.color;
+    if (!ohlc(this.type)) return point.color || o.color;
+    const up = point.close >= point.open;
+    const body = point.color || (up ? o.upColor : o.downColor);
+    if (this.type !== "Candlestick" || !seeThrough(body)) return body;
+    return point.borderColor || (o.borderVisible ? (up ? o.borderUpColor : o.borderDownColor) : (up ? o.wickUpColor : o.wickDownColor));
   }
 
   // ---------- painting ----------
