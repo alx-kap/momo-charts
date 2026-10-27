@@ -1188,25 +1188,40 @@ body:not(.mode-chart) .lg-row.chart-only { display: none; }
 /* ---------- Scan review hub ---------- */
 .hub-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; flex: none; }
 .hub-title { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; letter-spacing: -.1px; }
-.hub-pickers { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hub-pickers { display: flex; align-items: center; justify-content: space-between; gap: 8px; white-space: nowrap; }
+.hub-pickers .chip { min-width: 0; }
+.hub-pickers #section-label { overflow: hidden; text-overflow: ellipsis; }
 .hub-pickers .scan-date { padding: 0; }
 .hub-pickers #position { font-size: 12px; }
 .hub-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-/* Blind and No biotech: pills like the buttons beside them, with a light that shows on. */
-.hub-tools .toggle, .sc-bar .toggle {
+.sc-bar .toggle {
   gap: 6px; padding: 3px 9px; font-size: 12px; border-radius: 7px; user-select: none;
   background: var(--tile); border: 1px solid var(--tile-line); color: var(--text2);
   transition: background var(--fast), border-color var(--fast), color var(--fast);
 }
-.hub-tools .toggle:hover, .sc-bar .toggle:hover { color: var(--text); }
-.hub-tools .toggle input, .sc-bar .toggle input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
-.hub-tools .toggle::before, .sc-bar .toggle::before {
+.sc-bar .toggle:hover { color: var(--text); }
+.sc-bar .toggle input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
+.sc-bar .toggle::before {
   content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none;
   background: var(--line-strong); transition: background var(--fast), box-shadow var(--fast);
 }
-.hub-tools .toggle:has(input:checked), .sc-bar .toggle:has(input:checked) { border-color: rgba(61, 116, 255, .55); color: #fff; background: var(--accent-soft); }
-.hub-tools .toggle:has(input:checked)::before, .sc-bar .toggle:has(input:checked)::before { background: var(--accent); box-shadow: 0 0 6px rgba(61, 116, 255, .8); }
-.hub-tools .toggle:has(input:focus-visible), .sc-bar .toggle:has(input:focus-visible) { outline: 1px solid var(--accent); outline-offset: 1px; }
+.sc-bar .toggle:has(input:checked) { border-color: rgba(61, 116, 255, .55); color: #fff; background: var(--accent-soft); }
+.sc-bar .toggle:has(input:checked)::before { background: var(--accent); box-shadow: 0 0 6px rgba(61, 116, 255, .8); }
+.sc-bar .toggle:has(input:focus-visible) { outline: 1px solid var(--accent); outline-offset: 1px; }
+/* Icon tools: lit while on; names come from the tooltip. */
+.hub-tools .tool {
+  position: relative; width: 30px; height: 28px; padding: 0; box-sizing: border-box; flex: none;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 7px;
+  background: var(--tile); border: 1px solid var(--tile-line); color: var(--text2); cursor: pointer; user-select: none;
+  transition: background var(--fast), border-color var(--fast), color var(--fast);
+}
+.hub-tools .tool svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hub-tools .tool:hover { color: var(--text); }
+.hub-tools .tool input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
+.hub-tools .tool:has(input:checked), .hub-tools .tool.active { border-color: rgba(61, 116, 255, .55); color: #fff; background: var(--accent-soft); }
+.hub-tools .tool:has(input:focus-visible), .hub-tools .tool:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.hub-tools .tool-sep { width: 1px; height: 16px; background: var(--line); margin: 0 2px; }
+.hub-tools .tool.next { width: 34px; }
 #panel .wl-cols { flex: none; }
 #sl-body { flex: 0 1 36%; min-height: 90px; border-bottom: 1px solid var(--line); }
 .hub-call { flex: 1; overflow-y: auto; min-height: 0; }
@@ -1861,6 +1876,11 @@ body.mode-chart.side-screener #side-home { display: none; }
   background: var(--raised); color: var(--text); border: 1px solid #2a2d35; border-radius: 5px;
   font-size: 12px; line-height: 1.35; box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
 }
+#tooltip .tip-head { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+#tooltip .tip-sub { margin-top: 2px; color: var(--text2); }
+#tooltip .tip-state { font-size: 10.5px; font-weight: 600; padding: 0 5px; border-radius: 4px; background: var(--tile); color: var(--muted); }
+#tooltip .tip-state.on { background: var(--accent-soft); color: #9db8ff; }
+#tooltip kbd { margin-left: auto; padding: 0 5px; border: 1px solid var(--tile-line); border-radius: 4px; background: var(--tile); color: var(--text2); font: inherit; font-size: 11px; }
 #tooltip[hidden] { display: none; }
 .example-replay { position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%); z-index: 25; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 24px); padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text2); font-size: 12px; white-space: nowrap; }
 .example-replay[hidden] { display: none; }

@@ -24,11 +24,29 @@ function hide() {
   if (tip) tip.hidden = true;
 }
 
+const part = (cls, text, tag = "div") => Object.assign(document.createElement(tag), { className: cls, textContent: text });
+
+// A plain word, or a name with an On/Off state, a keycap and a line of explanation.
+function fill(el, text) {
+  const { tipSub, tipKey } = el.dataset;
+  if (!tipSub && !tipKey && !("tipState" in el.dataset)) {
+    tip.textContent = text;
+    return;
+  }
+  const head = part("tip-head", text);
+  if ("tipState" in el.dataset) {
+    const on = el.querySelector("input")?.checked ?? el.classList.contains("active");
+    head.append(part(`tip-state${on ? " on" : ""}`, on ? "On" : "Off", "span"));
+  }
+  if (tipKey) head.append(part("", tipKey, "kbd"));
+  tip.replaceChildren(head, ...(tipSub ? [part("tip-sub", tipSub)] : []));
+}
+
 function show(el) {
   const text = el.dataset.tip;
   if (!text) return;
   tip ||= Object.assign(document.body.appendChild(document.createElement("div")), { id: "tooltip" });
-  tip.textContent = text;
+  fill(el, text);
   tip.hidden = false;
   const r = el.getBoundingClientRect();
   const w = tip.offsetWidth, h = tip.offsetHeight;
