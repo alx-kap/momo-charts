@@ -100,6 +100,9 @@ export class Chart {
     this.height = 0;
     this.cross = null; // { x, pane, y } from the pointer, or { index, pane, price, series } set by code
     this.drag = null;
+    this.touches = new Map(); // pointerId -> point, for pinch zoom
+    this.pinch = null;
+    this.glide = 0; // the momentum scroll's animation frame
     this.hoverSeparator = -1;
     this.subs = { crosshair: [], click: [], range: [], size: [] };
     this.lastRange = null;
@@ -542,9 +545,9 @@ export class Chart {
   }
 
   // ---------- input ----------
-  // Drag the chart to pan, the price axis to stretch prices, the time axis to zoom, the line
-  // between panes to resize them. The wheel zooms (or pans, sideways); double-click an axis
-  // to reset it.
+  // Drag the chart to pan (let go mid-swipe and it coasts), the price axis to stretch prices,
+  // the time axis to zoom, the line between panes to resize them. Pinch with two fingers to
+  // zoom. The wheel zooms (or pans, sideways); double-click an axis to reset it.
 
   bindInput() {
     const el = this.el;
@@ -577,13 +580,18 @@ export class Chart {
 
   onDown(e) {
     if (e.button !== 0 || e.defaultPrevented) return;
+    this.stopGlide();
     const p = this.point(e);
+    if (e.pointerType === "touch") {
+      this.touches.set(e.pointerId, p);
+      if (this.touches.size === 2) return this.startPinch(e);
+    }
     const zone = this.zone(p);
     if (zone.kind === "none" || zone.kind === "corner") return;
     this.el.setPointerCapture(e.pointerId);
     const pane = zone.pane != null ? this.panes_[zone.pane] : null;
     this.drag = {
-      zone, x0: p.x, y0: p.y, moved: false, offset: this.time.rightOffset, spacing: this.time.spacing,
+      zone, x0: p.x, y0: p.y, moved: false, offset: this.time.rightOffset, spacing: this.time.spacing, trail: [],
       range: pane && pane.right.range ? { ...pane.right.range } : null,
       heights: this.panes_.map((item) => item.height),
     };
@@ -592,6 +600,8 @@ export class Chart {
 
   onMove(e) {
     const p = this.point(e);
+    if (this.touches.has(e.pointerId)) this.touches.set(e.pointerId, p);
+    if (this.pinch) return this.movePinch();
     const d = this.drag;
     if (!d) {
       const zone = this.zone(p);
@@ -605,6 +615,8 @@ export class Chart {
     if (Math.abs(p.x - d.x0) + Math.abs(p.y - d.y0) > 2) d.moved = true;
     const pane = d.zone.pane != null ? this.panes_[d.zone.pane] : null;
     if (d.zone.kind === "plot") {
+      d.trail.push({ t: e.timeStamp, x: p.x });
+      while (d.trail.length > 2 && e.timeStamp - d.trail[0].t > 100) d.trail.shift();
       this.time.rightOffset = d.offset - (p.x - d.x0) / this.time.spacing;
       this.time.clamp();
       const scale = pane.right;
@@ -635,10 +647,16 @@ export class Chart {
   }
 
   onUp(e) {
+    this.touches.delete(e.pointerId);
+    if (this.pinch) {
+      if (this.touches.size < 2) this.pinch = null;
+      return;
+    }
     const d = this.drag;
     if (!d) return;
     this.drag = null;
     if (this.el.hasPointerCapture(e.pointerId)) this.el.releasePointerCapture(e.pointerId);
+    if (d.zone.kind === "plot" && d.moved && e.type === "pointerup") this.startGlide(d.trail, e.timeStamp);
     this.el.style.cursor = d.zone.kind === "plot" ? "crosshair" : this.el.style.cursor;
     if (!d.moved && d.zone.kind === "plot" && this.subs.click.length) {
       const param = this.crossParam(this.point(e), d.zone, e);
@@ -646,10 +664,60 @@ export class Chart {
     }
   }
 
+  // Momentum: the swipe's speed over its last 100 ms, fading like a phone's list.
+  startGlide(trail, now) {
+    const first = trail[0], last = trail[trail.length - 1];
+    if (!first || last === first || now - last.t > 60) return;
+    let v = (last.x - first.x) / Math.max(1, last.t - first.t); // px per ms
+    if (Math.abs(v) < 0.25) return;
+    v = Math.max(-6, Math.min(6, v));
+    let then = performance.now();
+    const step = (t) => {
+      const dt = Math.min(50, t - then);
+      then = t;
+      v *= Math.exp(-dt / 325);
+      const before = this.time.rightOffset;
+      this.time.scroll(-(v * dt) / this.time.spacing);
+      this._changed();
+      this.glide = Math.abs(v) > 0.02 && this.time.rightOffset !== before ? requestAnimationFrame(step) : 0;
+    };
+    this.glide = requestAnimationFrame(step);
+  }
+
+  stopGlide() {
+    cancelAnimationFrame(this.glide);
+    this.glide = 0;
+  }
+
+  // Two fingers: the bar between them stays under them while the spacing follows their spread.
+  startPinch(e) {
+    this.drag = null;
+    this.setCross(null);
+    this.el.setPointerCapture(e.pointerId);
+    const [a, b] = [...this.touches.values()];
+    const mid = (a.x + b.x) / 2;
+    this.pinch = {
+      spread: Math.max(10, Math.abs(a.x - b.x)), spacing: this.time.spacing,
+      logical: this.time.last + this.time.rightOffset + 0.5 - (this.time.width - mid) / this.time.spacing,
+    };
+  }
+
+  movePinch() {
+    const [a, b] = [...this.touches.values()];
+    if (!b) return;
+    const pinch = this.pinch;
+    const mid = (a.x + b.x) / 2;
+    this.time.zoom(pinch.spacing * Math.max(10, Math.abs(a.x - b.x)) / pinch.spread);
+    this.time.rightOffset = pinch.logical - this.time.last - 0.5 + (this.time.width - mid) / this.time.spacing;
+    this.time.clamp();
+    this._changed();
+  }
+
   onWheel(e) {
     const zone = this.zone(this.point(e));
     if (zone.kind === "none" || zone.kind === "separator" || !this.time.keys.length) return;
     e.preventDefault();
+    this.stopGlide();
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? this.height : 1;
     const dx = e.deltaX * unit, dy = e.deltaY * unit;
     if (Math.abs(dx) > Math.abs(dy)) this.time.scroll(dx / this.time.spacing);
@@ -707,7 +775,7 @@ export class Chart {
     });
     const timeApi = {
       getVisibleLogicalRange() { chart._ensure(); const r = chart.time.range(); return r && { ...r }; },
-      setVisibleLogicalRange(range) { chart._ensure(); chart.time.setRange(range); chart._changed(); },
+      setVisibleLogicalRange(range) { chart.stopGlide(); chart._ensure(); chart.time.setRange(range); chart._changed(); },
       subscribeVisibleLogicalRangeChange: (fn) => chart.subs.range.push(fn),
       unsubscribeVisibleLogicalRangeChange: (fn) => { chart.subs.range = chart.subs.range.filter((f) => f !== fn); },
       subscribeSizeChange: (fn) => chart.subs.size.push(fn),

@@ -162,6 +162,7 @@ export class Series {
     const o = this.options;
     const items = this.visible(v);
     const { wick, body } = this.widths(dpr, v.time.spacing);
+    if (v.time.spacing * dpr < 2) return this.paintColumns(v, items, (p) => (p.close >= p.open ? o.wickUpColor : o.wickDownColor));
     const y = (price) => Math.round(scale.coordinate(price) * dpr);
     const groups = new Map(); // colour -> rects
     const add = (color, x, top, w, h) => {
@@ -203,6 +204,7 @@ export class Series {
     const { ctx, dpr, scale } = v;
     const o = this.options;
     const items = this.visible(v);
+    if (v.time.spacing * dpr < 2) return this.paintColumns(v, items, (p) => p.color || (p.close >= p.open ? o.upColor : o.downColor));
     const line = o.thinBars ? Math.max(1, Math.floor(dpr)) : Math.max(1, Math.floor(v.time.spacing * dpr / 6));
     const arm = Math.max(line, Math.floor(v.time.spacing * dpr * 0.4));
     const y = (price) => Math.round(scale.coordinate(price) * dpr);
@@ -231,6 +233,7 @@ export class Series {
       if (this.has(this.points[n])) { items.unshift([this.points[n], v.time.x(this.idx[n])]); break; }
     }
     if (!items.length) return;
+    const path = v.time.spacing * dpr < 1 ? thin(items, dpr) : items;
     ctx.save();
     ctx.strokeStyle = o.color;
     ctx.lineWidth = o.lineWidth * dpr;
@@ -238,7 +241,7 @@ export class Series {
     ctx.lineCap = "butt";
     ctx.setLineDash(dash(o.lineStyle, o.lineWidth * dpr));
     ctx.beginPath();
-    items.forEach(([p, x], n) => {
+    path.forEach(([p, x], n) => {
       const px = x * dpr, py = scale.coordinate(p.value) * dpr;
       if (n) ctx.lineTo(px, py); else ctx.moveTo(px, py);
     });
@@ -257,11 +260,22 @@ export class Series {
     const solid = o.columnWidth >= 1;
     let width = Math.max(1, Math.floor(spacing * o.columnWidth));
     if (!solid && width >= spacing && spacing > 2) width = Math.floor(spacing) - 1;
+    const dense = spacing < 2;
+    const open = new Map(); // colour -> the column being merged: [x, top, bottom]
     for (const [p, xc] of items) {
       const color = p.color || o.color;
       let list = groups.get(color);
       if (!list) groups.set(color, (list = []));
       const yv = Math.round(scale.coordinate(p.value) * dpr);
+      if (dense) {
+        // Bars sharing a pixel column become one column, as tall as the tallest.
+        const cx = Math.round(xc * dpr), top = Math.min(yv, base), bottom = Math.max(yv, base) || top + 1;
+        const col = open.get(color);
+        if (col && col[0] === cx) { col[1] = Math.min(col[1], top); col[2] = Math.max(col[2], bottom); continue; }
+        if (col) list.push(col[0], col[1], 1, Math.max(1, col[2] - col[1]));
+        open.set(color, [cx, top, bottom]);
+        continue;
+      }
       const top = Math.min(yv, base), h = Math.max(1, Math.abs(base - yv));
       if (solid) {
         // Edges at the slot boundaries, so neighbours meet without seams or overlaps.
@@ -271,15 +285,59 @@ export class Series {
         list.push(Math.round(xc * dpr) - Math.floor(width / 2), top, width, h);
       }
     }
+    for (const [color, col] of open) groups.get(color).push(col[0], col[1], 1, Math.max(1, col[2] - col[1]));
+    fillGroups(ctx, groups);
+  }
+
+  // Zoomed far out (under 2 device px a bar): one high-to-low column per pixel and colour.
+  paintColumns(v, items, colorOf) {
+    const { ctx, dpr, scale } = v;
+    const w = Math.max(1, Math.floor(dpr));
+    const groups = new Map();
+    const open = new Map();
+    for (const [p, xc] of items) {
+      const color = colorOf(p);
+      const cx = Math.round(xc * dpr);
+      const hi = Math.round(scale.coordinate(p.high) * dpr), lo = Math.round(scale.coordinate(p.low) * dpr);
+      const col = open.get(color);
+      if (col && col[0] === cx) { col[1] = Math.min(col[1], hi); col[2] = Math.max(col[2], lo); continue; }
+      if (col) groups.get(color).push(col[0], col[1], w, Math.max(1, col[2] - col[1]));
+      if (!groups.has(color)) groups.set(color, []);
+      open.set(color, [cx, hi, lo]);
+    }
+    for (const [color, col] of open) groups.get(color).push(col[0], col[1], w, Math.max(1, col[2] - col[1]));
     fillGroups(ctx, groups);
   }
 }
 
+// A line's points thinned to the first, lowest, highest and last in each device pixel.
+function thin(items, dpr) {
+  const out = [];
+  let column = null, bucket = [];
+  const flush = () => {
+    if (!bucket.length) return;
+    let lo = bucket[0], hi = bucket[0];
+    for (const item of bucket) {
+      if (item[0].value < lo[0].value) lo = item;
+      if (item[0].value > hi[0].value) hi = item;
+    }
+    const keep = new Set([bucket[0], lo, hi, bucket[bucket.length - 1]]);
+    for (const item of bucket) if (keep.has(item)) out.push(item);
+  };
+  for (const item of items) {
+    const cx = Math.round(item[1] * dpr);
+    if (cx !== column) { flush(); bucket = []; column = cx; }
+    bucket.push(item);
+  }
+  flush();
+  return out;
+}
+
+// One fill colour at a time. fillRect per rect: the rasteriser handles big, many-rect areas
+// (volume columns) far faster that way than as one path.
 function fillGroups(ctx, groups) {
   for (const [color, rects] of groups) {
     ctx.fillStyle = color;
-    ctx.beginPath();
-    for (let n = 0; n < rects.length; n += 4) if (rects[n + 2] > 0 && rects[n + 3] > 0) ctx.rect(rects[n], rects[n + 1], rects[n + 2], rects[n + 3]);
-    ctx.fill();
+    for (let n = 0; n < rects.length; n += 4) if (rects[n + 2] > 0 && rects[n + 3] > 0) ctx.fillRect(rects[n], rects[n + 1], rects[n + 2], rects[n + 3]);
   }
 }
