@@ -40,7 +40,11 @@ export async function renderPositioning(body, sub) {
     }
   }
   if (code) return renderDetail(body, sub);
-  sub.textContent = `Commitments of Traders · futures, as of ${overview.as_of} (published Fridays)`;
+  // A report covers a Tuesday and comes out that Friday (a day later after a Monday holiday).
+  const friday = new Date(`${overview.as_of}T12:00:00`);
+  friday.setDate(friday.getDate() + 3);
+  const out = friday.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  sub.textContent = `Commitments of Traders · futures, as of ${overview.as_of}, released ${out}`;
   const families = [...new Set(overview.markets.map((m) => m.family))];
   body.innerHTML =
     `<p class="cot-hint">Dot: net position against its own last 3 years. A glow marks the extreme 10%. Click a market for its history.</p>` +
