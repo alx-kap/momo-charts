@@ -41,21 +41,22 @@ function merge(target, source) {
   return target;
 }
 
-// Dark text on light label backgrounds, white on dark ones.
+// Axis tags as Lightweight Charts paints them: the colour made opaque (a see-through line still
+// gets a solid tag), with black or white text by its brightness.
 const probe = document.createElement("canvas").getContext("2d");
-const contrasts = new Map();
-function contrast(color) {
-  let text = contrasts.get(color);
-  if (text) return text;
+const tagColors = new Map();
+function tagColor(color) {
+  let colors = tagColors.get(color);
+  if (colors) return colors;
   probe.fillStyle = "#000";
   probe.fillStyle = color;
   const value = probe.fillStyle;
   const [r, g, b] = value[0] === "#"
     ? [1, 3, 5].map((n) => parseInt(value.slice(n, n + 2), 16))
     : value.match(/[\d.]+/g).map(Number);
-  text = (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? "#131722" : "#ffffff";
-  contrasts.set(color, text);
-  return text;
+  colors = { bg: `rgb(${r}, ${g}, ${b})`, fg: 0.199 * r + 0.687 * g + 0.114 * b > 160 ? "black" : "white" };
+  tagColors.set(color, colors);
+  return colors;
 }
 
 class Pane {
@@ -435,17 +436,19 @@ export class Chart {
     const h = Math.round((fs + 7) * dpr);
     const top = Math.round(y * dpr - h / 2);
     const left = Math.round(this.plotW * dpr);
-    ctx.fillStyle = bg;
+    const colors = tagColor(bg);
+    fg ||= colors.fg;
+    ctx.fillStyle = colors.bg;
     ctx.fillRect(left, top, this.canvas.width - left, h);
-    ctx.fillStyle = fg || contrast(bg);
+    ctx.fillStyle = fg;
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
     ctx.fillText(text, left + Math.round(fs * 0.6 * dpr), top + h / 2);
     if (title) {
       const w = Math.ceil(ctx.measureText(title).width + fs * dpr);
-      ctx.fillStyle = bg;
+      ctx.fillStyle = colors.bg;
       ctx.fillRect(left - w, top, w, h);
-      ctx.fillStyle = fg || contrast(bg);
+      ctx.fillStyle = fg;
       ctx.fillText(title, left - w + Math.round(fs * 0.5 * dpr), top + h / 2);
     }
   }
@@ -524,10 +527,10 @@ export class Chart {
       const w = ctx.measureText(text).width / dpr + 2 * pad;
       const left = Math.max(0, Math.min(this.plotW - w, x - w / 2));
       const top = this.height - this.timeH;
-      const bg = c.vertLine.labelBackgroundColor;
-      ctx.fillStyle = bg;
+      const colors = tagColor(c.vertLine.labelBackgroundColor);
+      ctx.fillStyle = colors.bg;
       ctx.fillRect(Math.round(left * dpr), Math.round(top * dpr), Math.round(w * dpr), Math.round(this.timeH * dpr));
-      ctx.fillStyle = contrast(bg);
+      ctx.fillStyle = colors.fg;
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
       ctx.fillText(text, Math.round((left + w / 2) * dpr), Math.round((top + this.timeH / 2) * dpr));
