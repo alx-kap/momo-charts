@@ -92,14 +92,13 @@ button.icon.active { color: var(--text); }
 @keyframes tick-down { 0%, 30% { font-weight: 700; color: var(--pass); background: rgba(232, 38, 45, .16); } }
 .toggle { display: flex; gap: 4px; align-items: center; color: var(--muted); cursor: pointer; }
 
-#progress { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
-#progress circle { fill: none; stroke-width: 3; }
-#progress .ring-track { stroke: var(--line-strong); }
-#progress-ring { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 300ms ease, stroke var(--fast); }
-#progress.complete #progress-ring { stroke: var(--like); }
+#progress { color: var(--muted); font-size: 13px; font-weight: 400; }
 #progress.complete { color: var(--like); }
-#progress.pop svg { animation: pop 600ms cubic-bezier(.3, 1.6, .5, 1); }
-@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+#progress.pop #progress-text { display: inline-block; animation: pop 600ms cubic-bezier(.3, 1.6, .5, 1); }
+#progress-bar { height: 3px; border-radius: 2px; background: var(--line-strong); overflow: hidden; flex: none; }
+#progress-fill { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width 300ms ease, background var(--fast); }
+#progress-bar.complete #progress-fill { background: var(--like); }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
 /* ---------- chart ---------- */
 main { flex: 1; display: flex; min-height: 0; }
