@@ -1,4 +1,5 @@
 import { api, escapeHtml, fmtBig, fmtPct, store, ticker } from "./util.js";
+import { LC } from "./chartlib.js";
 
 const DAY = 86400000;
 const at = (day) => new Date(`${day}T12:00:00Z`);
@@ -167,7 +168,7 @@ function tooltip(event, data) {
 }
 
 export function createEarnings(root, chart, context) {
-  const calendar = chart.addSeries(window.LightweightCharts.LineSeries, {
+  const calendar = chart.addSeries(LC.LineSeries, {
     priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, autoscaleInfoProvider: () => null,
   });
   const layer = Object.assign(root.appendChild(document.createElement("div")), { className: "earnings-axis" });

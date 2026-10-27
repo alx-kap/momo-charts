@@ -6,8 +6,7 @@ import { formatColor, parseColor } from "./colorpicker.js";
 import { CHART_BARS, DECK_BARS, fetchBars, inRegular, isIntraday, prefetchNeighbors, series, showLive } from "./feed.js";
 import { extendedQuote, marketSession, onLiveQuotes, onSessionChange, watchBuzz } from "./live.js";
 import { createEarnings, dayOf, previousSession, sessionsBetween, todayET } from "./earnings.js";
-
-const LC = window.LightweightCharts;
+import { LC } from "./chartlib.js";
 
 // Styling and indicators come from the chart settings (⚙ → Chart settings, or ƒx).
 const BENCHMARK = "AMEX:SPY"; // for the relative strength line
@@ -78,6 +77,7 @@ function createPane(root, { side, owner, settings, info = true }) {
   // histogram on its own hidden scale, added first so it stays behind everything.
   const sessions = chart.addSeries(LC.HistogramSeries, {
     priceScaleId: "sessions", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+    columnWidth: 1, // momo's engine: a solid band, no gaps between bars
   }, 0);
   sessions.priceScale().applyOptions({ visible: false, scaleMargins: { top: 0, bottom: 0 } });
   const shade = (bar) => ({ time: bar.time, value: 1, color: inRegular(bar.time) ? "rgba(0, 0, 0, 0)" : SESSION_SHADE });
