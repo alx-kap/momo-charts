@@ -6,7 +6,7 @@ Live prices and 20 years of daily history come from your Charles Schwab account.
 
 **[alx-kap.github.io/momo-charts](https://alx-kap.github.io/momo-charts/)** ·
 Open source (Apache 2.0) · Python and FastAPI · plain JavaScript, no build step ·
-charts drawn with [TradingView Lightweight Charts™](https://www.tradingview.com/lightweight-charts/)
+its own chart engine, with no dependencies
 
 ![momo charts: an NVDA daily chart with moving averages and earnings markers, a watchlist with prices and days to earnings, and NVIDIA's quarterly fundamentals](docs/screenshots/hero.png)
 
@@ -15,6 +15,10 @@ charts drawn with [TradingView Lightweight Charts™](https://www.tradingview.co
 - **Your data, on your machine.** No subscription and no account with us. momo keeps its own
   database of daily bars and talks only to Schwab (prices) and free public sources: Nasdaq
   (symbols, earnings dates), SEC EDGAR (fundamentals) and the CFTC (futures positioning).
+- **Its own chart engine.** Charts are drawn by momo's engine, written for momo in plain
+  JavaScript on canvas: no charting library, no third-party code in the browser, no build
+  step, under 70 KB. Candles stay pixel-sharp at any zoom, and panning, momentum scrolling and
+  pinch zoom stay smooth over decades of bars.
 - **Keyboard-first.** Start typing a ticker to open it, type `5` or `1W` to change the
   timeframe, `⌥T` for a trend line, `Ctrl+K` for every command. Press `?` for the full list.
   If you chart in TradingView or TC2000, it will feel familiar.
@@ -158,8 +162,12 @@ can be added (see above).
 browser on a Mac. The server listens on your own computer only (127.0.0.1) unless you choose
 otherwise.
 
-**Is it affiliated with TradingView or Charles Schwab?** No. TradingView Lightweight Charts™ is
-used under its Apache 2.0 licence; Schwab data is used through your own developer app.
+**What draws the charts?** momo's own engine (`src/momo_scan/web/static/js/engine/`): a few
+plain ES modules that paint candles, bars, lines and histograms on canvas, with panes, axes,
+the crosshair, panning and zooming. It has no dependencies.
+
+**Is it affiliated with TradingView or Charles Schwab?** No. Schwab data is used through your
+own developer app.
 
 ## Development
 
@@ -174,6 +182,5 @@ develops.
 
 ## License
 
-Apache License 2.0: see [LICENSE](LICENSE) and [NOTICE](NOTICE). Charts are drawn with
-[TradingView Lightweight Charts™](https://www.tradingview.com/lightweight-charts/), also
-Apache 2.0.
+Apache License 2.0: see [LICENSE](LICENSE) and [NOTICE](NOTICE). Everything here, the chart
+engine included, is momo's own code.

@@ -1,5 +1,5 @@
-// momo's chart engine: the subset of the Lightweight Charts API momo uses, drawn by our own code.
-// chart.js and earnings.js take it in place of window.LightweightCharts (see ../chartlib.js).
+// momo's chart engine: candles, bars, lines and histograms in panes, drawn by our own code with
+// no dependencies. Its API keeps the shape of the Lightweight Charts one momo was first built on.
 
 export { createChart, createTextWatermark, CrosshairMode, ColorType } from "./chart.js";
 export { Mode as PriceScaleMode } from "./pricescale.js";

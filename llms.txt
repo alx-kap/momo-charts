@@ -2,7 +2,7 @@
 
 > momo charts is a free, open-source (Apache 2.0), self-hosted alternative to TradingView-style
 > stock charting, for swing and momentum traders. It runs on your own computer (Python,
-> FastAPI, plain JavaScript, TradingView Lightweight Charts) and gets live prices and
+> FastAPI, plain JavaScript and its own dependency-free chart engine) and gets live prices and
 > about 20 years of daily history per stock from the user's own Charles Schwab account
 > through the Schwab Trader API. It never places orders.
 

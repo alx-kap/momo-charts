@@ -1,6 +1,6 @@
 // One chart: panes stacked over a shared time axis, a price axis on the right, painted on two
 // canvases (the chart, and the crosshair over it so moving the pointer repaints almost nothing).
-// The API follows the parts of Lightweight Charts momo uses, so chart.js can run on either.
+// The API keeps the shape of the Lightweight Charts calls momo was first written against.
 
 import { TimeScale } from "./timescale.js";
 import { PriceScale } from "./pricescale.js";
@@ -30,6 +30,9 @@ const defaults = () => ({
   },
   rightPriceScale: { borderVisible: false },
   timeScale: { visible: true, timeVisible: false, secondsVisible: false, rightOffset: 0, barSpacing: 6, minBarSpacing: 0.5, borderVisible: false },
+  // mouseWheel off leaves the wheel to the page (a chart embedded in a long page).
+  handleScroll: { mouseWheel: true },
+  handleScale: { mouseWheel: true, pinch: true },
 });
 
 const isObject = (v) => v && typeof v === "object" && !Array.isArray(v);
@@ -729,11 +732,15 @@ export class Chart {
   onWheel(e) {
     const zone = this.zone(this.point(e));
     if (zone.kind === "none" || zone.kind === "separator" || !this.time.keys.length) return;
-    e.preventDefault();
-    this.stopGlide();
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? this.height : 1;
     const dx = e.deltaX * unit, dy = e.deltaY * unit;
-    if (Math.abs(dx) > Math.abs(dy)) this.time.scroll(dx / this.time.spacing);
+    const sideways = Math.abs(dx) > Math.abs(dy);
+    // A trackpad pinch arrives as a wheel with Ctrl held.
+    const allowed = sideways ? this.o.handleScroll.mouseWheel : e.ctrlKey ? this.o.handleScale.pinch : this.o.handleScale.mouseWheel;
+    if (!allowed) return;
+    e.preventDefault();
+    this.stopGlide();
+    if (sideways) this.time.scroll(dx / this.time.spacing);
     else this.time.zoom(this.time.spacing * Math.exp(-dy * (e.ctrlKey ? PINCH_ZOOM : WHEEL_ZOOM)));
     this._changed();
     if (zone.kind === "plot") this.pointerCross(this.point(e), zone, e); // a new bar is under the pointer

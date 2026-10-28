@@ -8,7 +8,7 @@ license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Alex Kaplewicz" }]
 keywords = [
   "stock-charts", "trading", "swing-trading", "momentum", "stock-screener", "watchlist",
-  "tradingview-alternative", "lightweight-charts", "schwab-api", "self-hosted", "fastapi",
+  "tradingview-alternative", "canvas-charts", "schwab-api", "self-hosted", "fastapi",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",

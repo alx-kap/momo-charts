@@ -470,7 +470,7 @@
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M2 8l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
           <a class="btn btn-ghost" href="#demo">Try the keyboard</a>
         </div>
-        <p class="fine">Apache 2.0 · Python + plain JavaScript · no subscription, no account with us</p>
+        <p class="fine">Apache 2.0 · Python + plain JavaScript · its own chart engine, no dependencies · no subscription, no account with us</p>
       </div>
     </div>
 
@@ -501,7 +501,7 @@
         <div class="eyebrow">Keyboard-first</div>
         <h2 id="demo-h">Your hands never leave <em>the keys</em>.</h2>
       </div>
-      <p>These are momo's real shortcuts and its chart library, running on made-up stocks. Click
+      <p>These are momo's real shortcuts and its own chart engine, running on made-up stocks. Click
         the chart, then press <kbd>↓</kbd> to flip through the list, type a ticker, or type
         <kbd>1</kbd><kbd>W</kbd><kbd>↵</kbd> for weekly.</p>
     </div>
@@ -613,6 +613,45 @@
   </div>
 </section>
 
+<!-- ============ engine ============ -->
+<section class="block" id="engine" aria-labelledby="engine-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <div class="eyebrow">Built from scratch</div>
+        <h2 id="engine-h">Its own chart engine. <em>No dependencies.</em></h2>
+      </div>
+      <p>Every candle, axis and crosshair is drawn by momo's own engine: a few plain JavaScript
+        modules painting on canvas, written for momo. No charting library, no third-party code in
+        the browser, nothing to build. The chart on this page is that engine.</p>
+    </div>
+
+    <div class="speed-grid reveal">
+      <div>
+        <span class="big">0</span>
+        <h3>Dependencies</h3>
+        <p>Candles, OHLC bars, lines and histograms in stacked panes, price and time axes, the
+          crosshair, panning and zoom. All of it is momo's code, under the same Apache 2.0
+          licence as the rest.</p>
+      </div>
+      <div>
+        <span class="big">2.2×</span>
+        <h3>Faster first paint</h3>
+        <p>On 10,000 daily bars it paints a chart 2.2 times faster than the charting library it
+          replaced, and pans about 30% faster. Bars that share a pixel when you zoom far out are
+          merged, so decades of history stay smooth.</p>
+      </div>
+      <div>
+        <span class="big">Sharp</span>
+        <h3>Made for the way you read charts</h3>
+        <p>Candles snapped to device pixels at every zoom, axis labels that hold still while you
+          pan, momentum scrolling and two-finger pinch zoom. Drawings, alerts and Bar Replay are
+          built on the same engine.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ tour ============ -->
 <section class="block" id="tour" aria-labelledby="tour-h">
   <div class="wrap">
@@ -681,7 +720,7 @@
       <div class="cell"><span class="ix">Drawings</span><h3>Saved per symbol</h3><p>Trend lines, rays, horizontals, rectangles, arrows, text and a measure tool, back where you left them next time.</p></div>
       <div class="cell"><span class="ix">Live</span><h3>The forming bar moves</h3><p>Live prices update today's daily bar, a pre- and post-market price tag and a ghost candle.</p></div>
       <div class="cell"><span class="ix">Fundamentals</span><h3>Growth without a tab</h3><p>Eight quarters and three years of EPS and sales with year-over-year growth, from SEC EDGAR, under the chart.</p></div>
-      <div class="cell"><span class="ix">Hackable</span><h3>No build step</h3><p>FastAPI on the server, plain ES modules in the browser. Read it, change it, add another data provider as a Python module.</p></div>
+      <div class="cell"><span class="ix">Hackable</span><h3>No build step</h3><p>FastAPI on the server, plain ES modules in the browser, chart engine included. Read it, change it, add another data provider as a Python module.</p></div>
     </div>
   </div>
 </section>
@@ -855,8 +894,8 @@
           <code>[fundamentals]</code> in <code>config/momo.toml</code>. Futures positioning is
           <code>uv run momo cot-update</code>.</p></details>
       <details><summary>Is it affiliated with TradingView or Schwab?</summary>
-        <p>No. Charts are drawn with TradingView Lightweight Charts™, used under its Apache 2.0
-          licence. Schwab data is used through your own developer app.</p></details>
+        <p>No. Charts are drawn by momo's own engine, and Schwab data is used through your own
+          developer app.</p></details>
     </div>
   </div>
 </section>
@@ -877,14 +916,15 @@
 <footer>
   <div class="wrap">
     <p>momo charts is open source under the <a href="https://github.com/alx-kap/momo-charts/blob/main/LICENSE">Apache License 2.0</a>.
-      Charts are drawn with <a href="https://www.tradingview.com/lightweight-charts/">TradingView Lightweight Charts™</a>.
+      Charts are drawn by momo's own engine, with no dependencies.
       Not affiliated with TradingView or Charles Schwab. Not investment advice.</p>
     <p><a href="https://github.com/alx-kap/momo-charts">GitHub</a> · <a href="https://github.com/alx-kap/momo-charts#readme">README</a> · <a href="https://github.com/alx-kap/momo-charts/blob/main/llms.txt">llms.txt</a></p>
   </div>
 </footer>
 
-<script src="assets/lightweight-charts.js"></script>
-<script>
+<script type="module">
+import * as engine from "./assets/engine/index.js";
+
 (() => {
   // Reveal on scroll.
   const io = new IntersectionObserver((entries) => {
@@ -940,9 +980,8 @@
     copy(e.currentTarget, document.getElementById("oneliner").textContent));
 
   // ----- Demo: momo's own shortcuts on made-up stocks -----
-  const LWC = window.LightweightCharts;
   const el = document.getElementById("chart");
-  if (!LWC || !el) return;
+  if (!el) return;
   const $ = (id) => document.getElementById(id);
 
   // Option is Alt off a Mac; Cmd is Ctrl.
@@ -1019,24 +1058,24 @@
     return { last: b, pct: (b / a - 1) * 100 };
   };
 
-  const chart = LWC.createChart(el, {
+  const chart = engine.createChart(el, {
     autoSize: true,
-    layout: { background: { color: "#000" }, textColor: "#8a8983", fontFamily: "IBM Plex Mono, monospace", fontSize: 11, attributionLogo: false },
+    layout: { background: { color: "#000" }, textColor: "#8a8983", fontFamily: "IBM Plex Mono, monospace", fontSize: 11 },
     grid: { vertLines: { visible: false }, horzLines: { color: "rgba(255,255,255,.04)" } },
     rightPriceScale: { borderVisible: false },
     timeScale: { borderVisible: false, rightOffset: 6 },
-    crosshair: { mode: LWC.CrosshairMode.Normal },
+    crosshair: { mode: engine.CrosshairMode.Normal },
     handleScroll: { mouseWheel: false, pressedMouseMove: true },
     handleScale: { mouseWheel: false, pinch: true },
   });
-  const candles = chart.addSeries(LWC.CandlestickSeries, {
+  const candles = chart.addSeries(engine.CandlestickSeries, {
     upColor: "#2fbf71", downColor: "#ef4b4b", borderVisible: false, wickUpColor: "#2fbf71", wickDownColor: "#ef4b4b",
   });
   candles.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.26 } });
-  const volume = chart.addSeries(LWC.HistogramSeries, { priceScaleId: "v", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
+  const volume = chart.addSeries(engine.HistogramSeries, { priceScaleId: "v", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
   volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
   const mas = [[10, "#d77be6"], [20, "#f3e36b"], [50, "#ef6b5b"]].map(([n, color]) =>
-    [n, chart.addSeries(LWC.LineSeries, { color, lineWidth: 1, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false })]);
+    [n, chart.addSeries(engine.LineSeries, { color, lineWidth: 1, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false })]);
 
   let symbol = "ACME", interval = "1D", data = [], cursorPrice = null, log = false;
   const flagged = new Set(["DYNA"]);
@@ -1063,7 +1102,7 @@
     renderList();
   }
   const priceLine = ({ price, alert }) => candles.createPriceLine({
-    price, color: alert ? "#5b8def" : "#e8b04b", lineWidth: 1, lineStyle: alert ? LWC.LineStyle.Dashed : LWC.LineStyle.Solid,
+    price, color: alert ? "#5b8def" : "#e8b04b", lineWidth: 1, lineStyle: alert ? engine.LineStyle.Dashed : engine.LineStyle.Solid,
     axisLabelVisible: true, title: alert ? "alert" : "",
   });
   const fmt = (v) => v.toFixed(2);
@@ -1169,7 +1208,7 @@
     },
     log() {
       log = !log;
-      candles.priceScale().applyOptions({ mode: log ? LWC.PriceScaleMode.Logarithmic : LWC.PriceScaleMode.Normal });
+      candles.priceScale().applyOptions({ mode: log ? engine.PriceScaleMode.Logarithmic : engine.PriceScaleMode.Normal });
       toast(log ? "Log scale" : "Linear scale");
     },
     invert() { const s = candles.priceScale(); s.applyOptions({ invertScale: !s.options().invertScale }); },

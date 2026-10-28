@@ -1,5 +1,5 @@
 import { api, escapeHtml, fmtBig, fmtPct, store, ticker } from "./util.js";
-import { LC } from "./chartlib.js";
+import * as LC from "./engine/index.js";
 
 const DAY = 86400000;
 const at = (day) => new Date(`${day}T12:00:00Z`);
