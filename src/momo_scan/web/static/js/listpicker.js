@@ -19,10 +19,10 @@ export function pickWatchlist({ state, recent = [], rename, duplicate, remove })
     const back = document.createElement("div");
     back.className = "wlp-back";
     back.innerHTML = `<div class="wlp" role="dialog" aria-modal="true" aria-label="Watchlists">` +
-      `<label class="wlp-search">${SEARCH_ICON}<input type="text" placeholder="Search lists…" spellcheck="false" autocomplete="off"><kbd>esc</kbd></label>` +
+      `<label class="wlp-search">${SEARCH_ICON}<input type="text" placeholder="Search lists…" spellcheck="false" autocomplete="off"></label>` +
       `<div class="wlp-list"></div>` +
       `<div class="wlp-foot"><button type="button" data-action="new">New list…</button><button type="button" data-action="import">Import from TradingView…</button>` +
-      `<span class="wlp-keys"><kbd>↑</kbd><kbd>↓</kbd> move <kbd>↵</kbd> open</span></div></div>`;
+      `</div></div>`;
     const input = back.querySelector("input");
     const listEl = back.querySelector(".wlp-list");
     let query = "";
@@ -162,9 +162,8 @@ export function pickAddTo({ symbol, lists, toggle }) {
     back.className = "wlp-back";
     back.innerHTML = `<div class="wlp" role="dialog" aria-modal="true" aria-label="Add to watchlist">` +
       `<div class="wlp-title">Add <b>${escapeHtml(symbol)}</b> to watchlist</div>` +
-      `<label class="wlp-search">${SEARCH_ICON}<input type="text" placeholder="Search lists…" spellcheck="false" autocomplete="off"><kbd>esc</kbd></label>` +
-      `<div class="wlp-list"></div>` +
-      `<div class="wlp-foot"><span class="wlp-keys"><kbd>↑</kbd><kbd>↓</kbd> move <kbd>↵</kbd> add or remove</span></div></div>`;
+      `<label class="wlp-search">${SEARCH_ICON}<input type="text" placeholder="Search lists…" spellcheck="false" autocomplete="off"></label>` +
+      `<div class="wlp-list"></div></div>`;
     const input = back.querySelector("input");
     const listEl = back.querySelector(".wlp-list");
     let query = "";
