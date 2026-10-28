@@ -52,11 +52,28 @@ async function lookup() {
   render();
 }
 
+// A steady colour per ticker for its avatar.
+const avatarColor = (text) => {
+  let hash = 0;
+  for (const char of text) hash = (hash * 31 + char.charCodeAt(0)) % 360;
+  return `hsl(${hash} 48% 42%)`;
+};
+
+// The typed letters, accented where they fall in the ticker.
+function highlight(text, query) {
+  const at = query ? text.toUpperCase().indexOf(query) : -1;
+  if (at < 0) return escapeHtml(text);
+  return `${escapeHtml(text.slice(0, at))}<mark>${escapeHtml(text.slice(at, at + query.length))}</mark>${escapeHtml(text.slice(at + query.length))}`;
+}
+
 function render() {
   const query = $("ss-input").value.trim().toUpperCase();
+  $("ss-label").textContent = !results.length ? "" : query ? "Results" : "Recent";
   $("ss-list").innerHTML = results.length ? results.map((item, n) =>
     `<div class="ss-item${n === selected ? " selected" : ""}" data-n="${n}">` +
-    `<b>${escapeHtml(item.ticker)}</b><span class="ss-name">${escapeHtml(item.name)}</span>` +
+    `<span class="ss-av" style="background:${avatarColor(item.ticker)}">${escapeHtml(item.ticker.slice(0, 2))}</span>` +
+    `<span class="ss-id"><b>${highlight(item.ticker, query)}</b>` +
+    `<span class="ss-name">${item.name === "Recent" ? "" : escapeHtml(item.name)}</span></span>` +
     `<span class="ss-ex">${escapeHtml(item.exchange || "")}</span></div>`).join("")
     : `<div class="ss-empty">${query ? `No matches. Enter opens ${escapeHtml(query)} anyway.` : "Type a ticker or company name"}</div>`;
   const active = $("ss-list").querySelector(".selected");
