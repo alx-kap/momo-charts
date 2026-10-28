@@ -2116,3 +2116,7 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 .wlp-foot { border-top-color: rgba(255, 255, 255, .07); background: rgba(0, 0, 0, .2); padding: 8px 12px; }
 .wlp-foot:empty { display: none; }
 .wlp-back { background: rgba(0, 0, 0, .35); backdrop-filter: none; animation: fade 90ms ease-out; }
+/* Symbol search and the timeframe box arrive like the watchlist picker: a short rise and settle. */
+.ss-card { animation: card-in 180ms cubic-bezier(.2, .9, .3, 1.05); }
+#interval-box { animation: iv-in 180ms cubic-bezier(.2, .9, .3, 1.05); }
+@keyframes iv-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)) scale(.97); } }
