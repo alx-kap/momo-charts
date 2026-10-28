@@ -66,6 +66,20 @@ function slideModeHighlight() {
 }
 new ResizeObserver(slideModeHighlight).observe($("modes"));
 
+// Same for the quick timeframe buttons; it fades out when the timeframe lives under the ▾.
+function slideIntervalHighlight() {
+  const quick = document.querySelector(".iv-quick");
+  const glider = quick.querySelector(".iv-glider") || quick.appendChild(Object.assign(document.createElement("span"), { className: "iv-glider" }));
+  const active = quick.querySelector("button.active");
+  if (active?.offsetWidth) {
+    glider.style.transform = `translateX(${active.offsetLeft}px)`;
+    glider.style.width = `${active.offsetWidth}px`;
+  }
+  glider.style.opacity = active?.offsetWidth ? 1 : 0;
+  if (!glider.classList.contains("placed")) requestAnimationFrame(() => glider.classList.add("placed"));
+}
+new ResizeObserver(slideIntervalHighlight).observe(document.querySelector(".iv-quick"));
+
 function renderModes(mode) {
   if (mode !== "chart") {
     for (const side of ["left", "right"]) chartPane(side)?.clearEarnings();
@@ -94,6 +108,7 @@ function renderSymbolBar() {
   document.querySelectorAll("#intervals button[data-interval]").forEach((button) =>
     button.classList.toggle("active", button.dataset.interval === interval));
   document.body.classList.toggle("intraday", isIntraday(interval));
+  slideIntervalHighlight();
   $("ext-toggle").checked = state.extended;
   // The ▾ names the timeframe only when it isn't one of the quick buttons beside it.
   const quick = document.querySelector(`.iv-quick [data-interval="${interval}"]`);

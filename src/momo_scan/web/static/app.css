@@ -2096,3 +2096,11 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 .pick-item.cur::before { content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 3px; border-radius: 2px; background: var(--accent); }
 .iv-row button { border-radius: 8px; }
 .iv-hint { border-top-color: rgba(255, 255, 255, .07); }
+
+/* The quick timeframe highlight slides like the mode switch's. */
+.iv-quick { position: relative; isolation: isolate; }
+.iv-quick button { position: relative; transition: color 200ms ease, background var(--fast); }
+.iv-quick button.active { background: none; box-shadow: none; }
+.iv-glider { position: absolute; z-index: -1; left: 0; top: 2px; bottom: 2px; border-radius: 6px; background: rgba(61, 116, 255, .28); box-shadow: inset 0 0 0 1px rgba(61, 116, 255, .5); pointer-events: none; opacity: 0; }
+.iv-glider.placed { transition: transform 260ms cubic-bezier(.3, .8, .25, 1), width 260ms cubic-bezier(.3, .8, .25, 1), opacity 200ms ease; }
+@media (prefers-reduced-motion: reduce) { .iv-glider.placed { transition: none; } }
