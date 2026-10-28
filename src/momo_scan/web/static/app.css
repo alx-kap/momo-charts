@@ -2078,3 +2078,21 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 .rv-filters input { width: 52px; height: 24px; box-sizing: border-box; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-variant-numeric: tabular-nums; }
 .rv-filters input:focus { outline: 1px solid var(--accent); border-color: transparent; }
 .rv-filters i { font-style: normal; }
+
+/* ---------- frosted menus (same glass as symbol search) ---------- */
+.iv-quick { gap: 2px; padding: 2px; background: var(--raised); border: 1px solid var(--line); border-radius: 8px; }
+.iv-quick button { height: 24px; border-radius: 6px; }
+.iv-quick button.active { color: #fff; background: rgba(61, 116, 255, .28); box-shadow: inset 0 0 0 1px rgba(61, 116, 255, .5); }
+#iv-menu, .pick-menu {
+  background: rgba(18, 20, 26, .86); backdrop-filter: blur(22px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, .09); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+.pick-menu { padding: 8px; }
+.pick-search { border-color: transparent; border-radius: 8px; padding: 7px 10px; }
+.pick-group { padding: 10px 8px 4px; font-size: 10.5px; letter-spacing: .9px; font-weight: 600; }
+.pick-item { position: relative; border-radius: 8px; padding: 6px 10px; }
+.pick-item.cur { background: linear-gradient(90deg, rgba(61, 116, 255, .22), rgba(61, 116, 255, .08)); }
+.pick-item.cur::before { content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 3px; border-radius: 2px; background: var(--accent); }
+.iv-row button { border-radius: 8px; }
+.iv-hint { border-top-color: rgba(255, 255, 255, .07); }
