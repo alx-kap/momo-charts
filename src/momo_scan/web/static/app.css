@@ -1281,6 +1281,17 @@ body:not(.mode-chart) .lg-row.chart-only { display: none; }
 .ib-label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
 #ib-input { width: 120px; border: none; background: none; color: var(--text); font: 600 26px Inter, sans-serif; text-align: center; text-transform: uppercase; padding: 4px 0; }
 .ib-hint { font-size: 11px; color: var(--faint); }
+/* The timeframe box matches symbol search: frosted card, big type, an accent line under the input. */
+#interval-box {
+  width: 260px; padding: 16px 24px 14px; border-radius: 16px; animation: fade 90ms ease-out;
+  background: rgba(18, 20, 26, .82); backdrop-filter: blur(22px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, .09);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+#interval-box .ib-label { font-size: 10.5px; letter-spacing: .9px; color: var(--faint); font-weight: 600; }
+#interval-box #ib-input { display: block; width: 100%; margin-top: 6px; padding: 4px 0 10px; font-size: 34px; letter-spacing: 1px; border-bottom: 1px solid var(--line-strong); border-radius: 0; transition: border-color var(--fast), box-shadow var(--fast); }
+#interval-box #ib-input:focus { border-color: var(--accent); box-shadow: 0 1px 0 var(--accent); }
+#interval-box .ib-hint { margin-top: 10px; color: var(--faint); letter-spacing: .3px; }
 
 /* ---------- help ---------- */
 .help-head { display: flex; align-items: center; gap: 14px; padding: 14px 14px 12px 20px; border-bottom: 1px solid var(--line); }
