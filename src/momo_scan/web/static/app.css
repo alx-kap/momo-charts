@@ -2115,3 +2115,4 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 .wlp-count { padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line-strong); font-size: 11px; }
 .wlp-foot { border-top-color: rgba(255, 255, 255, .07); background: rgba(0, 0, 0, .2); padding: 8px 12px; }
 .wlp-foot:empty { display: none; }
+.wlp-back { background: rgba(0, 0, 0, .35); backdrop-filter: none; animation: fade 90ms ease-out; }
