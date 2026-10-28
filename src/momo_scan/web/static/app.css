@@ -1103,6 +1103,8 @@ button.mini.active { border-color: rgba(61, 116, 255, .55); color: #fff; backgro
 .hw-row.active { background: var(--accent-soft); border-left-color: var(--accent); }
 .hw-row .sym { font-weight: 500; display: flex; align-items: center; gap: 6px; }
 .hw-row.active .sym { color: #fff; font-weight: 600; }
+/* The chart's symbol, when it isn't the highlighted row (typed, or opened from another list). */
+.hw-row.found, .sc-line.found { box-shadow: inset 0 0 0 1px rgba(61, 116, 255, .7); }
 .hw-row .num { font-size: 12px; }
 .hw-row .up, #details .up, #rv-details .up { color: var(--like); }
 .hw-row .down, #details .down, #rv-details .down { color: var(--pass); }
@@ -1192,7 +1194,8 @@ body:not(.mode-chart) .lg-row.chart-only { display: none; }
 .hub-pickers #section-label { overflow: hidden; text-overflow: ellipsis; }
 .hub-pickers .scan-date { padding: 0; }
 .hub-pickers #position { font-size: 12px; }
-.hub-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* One line at any sidebar width: the icons give up a few pixels each before they'd wrap. */
+.hub-tools { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .sc-bar .toggle {
   gap: 6px; padding: 3px 9px; font-size: 12px; border-radius: 7px; user-select: none;
   background: var(--tile); border: 1px solid var(--tile-line); color: var(--text2);
@@ -1209,7 +1212,7 @@ body:not(.mode-chart) .lg-row.chart-only { display: none; }
 .sc-bar .toggle:has(input:focus-visible) { outline: 1px solid var(--accent); outline-offset: 1px; }
 /* Icon tools: lit while on; names come from the tooltip. */
 .hub-tools .tool {
-  position: relative; width: 30px; height: 28px; padding: 0; box-sizing: border-box; flex: none;
+  position: relative; width: 30px; min-width: 24px; height: 28px; padding: 0; box-sizing: border-box; flex: 0 1 auto;
   display: inline-flex; align-items: center; justify-content: center; border-radius: 7px;
   background: var(--tile); border: 1px solid var(--tile-line); color: var(--text2); cursor: pointer; user-select: none;
   transition: background var(--fast), border-color var(--fast), color var(--fast);
@@ -1219,7 +1222,7 @@ body:not(.mode-chart) .lg-row.chart-only { display: none; }
 .hub-tools .tool input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
 .hub-tools .tool:has(input:checked), .hub-tools .tool.active { border-color: rgba(61, 116, 255, .55); color: #fff; background: var(--accent-soft); }
 .hub-tools .tool:has(input:focus-visible), .hub-tools .tool:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
-.hub-tools .tool-sep { width: 1px; height: 16px; background: var(--line); margin: 0 2px; }
+.hub-tools .tool-sep { flex: none; width: 1px; height: 16px; background: var(--line); margin: 0 2px; }
 .hub-tools .tool.next { width: 34px; }
 #panel .wl-cols { flex: none; }
 #sl-body { flex: 0 1 36%; min-height: 90px; border-bottom: 1px solid var(--line); }

@@ -12,7 +12,7 @@ import { bindPalette, closePalette, openPalette, paletteOpen } from "./palette.j
 import {
   bindChartSettings, changeSettings, chartSettingsOpen, closeChartSettings, openChartSettings, syncChartSettings,
 } from "./chartsettings.js";
-import { bindScreener, closeScreener, refreshScreener, screenerNeighbors, stepScreener } from "./screener.js";
+import { bindScreener, closeScreener, markScreenerSymbol, refreshScreener, screenerNeighbors, stepScreener } from "./screener.js";
 import { bindThemes, closeThemes, openThemes, themesOpen } from "./themes.js";
 import { bindColorPicker } from "./colorpicker.js";
 import { bindHelp, closeHelp, helpOpen, openHelp } from "./help.js";
@@ -123,10 +123,16 @@ const chartOptions = () => ({
   count: state.mode === "chart" ? CHART_BARS[shownInterval().slice(-1)] : undefined,
 });
 
+// Each open list highlights the row it was last stepped to and outlines the chart's symbol.
+function markLists() {
+  markActiveSymbol();
+  markScreenerSymbol(state.home.symbol);
+}
+
 async function showHome({ follow = true } = {}) {
   chartMessage(null);
   applyLevels(null);
-  markActiveSymbol();
+  markLists();
   const options = chartOptions();
   const replay = replayDay();
   const details = renderDetails(state.home.symbol, { through: replay }); // shares the chart's request
@@ -167,7 +173,7 @@ onChartLoad(({ pane, symbol, anonymous }) => {
   if (pane === activePane()) {
     state.home.symbol = symbol;
     rememberSymbol(symbol);
-    markActiveSymbol();
+    markLists();
   }
   saveCharts();
 });
@@ -308,7 +314,7 @@ onChartActivate((pane) => {
   state.interval = charts[pane.side].interval;
   saveCharts();
   renderSymbolBar();
-  markActiveSymbol();
+  markLists();
   renderDetails(state.home.symbol, { through: replayDay() }).then(() => {
     if (pane === activePane()) setDetailsFundamentals(pane.fundamentals());
   });

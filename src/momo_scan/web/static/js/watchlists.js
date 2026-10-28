@@ -40,6 +40,9 @@ function normalise(value) {
 }
 
 const activeList = () => data.lists.find((list) => list.id === data.active);
+// The row last opened from the list keeps its highlight when the chart moves elsewhere (a typed
+// symbol, the screener); the chart's own symbol, if it's in the list, is outlined instead.
+let picked = null;
 
 // Sections are "###Name" entries, TradingView's own watchlist format.
 const SECTION = "###";
@@ -221,6 +224,7 @@ function switchList(id) {
   if (id === data.active) return;
   data.recent = [id, data.active, ...(data.recent || [])].filter((each, i, all) => all.indexOf(each) === i).slice(0, 8);
   data.active = id;
+  picked = null;
   save();
   renderWatchlists();
 }
@@ -279,11 +283,12 @@ function cycleSort(key) {
 export const flagCell = (symbol) =>
   `<button class="flag-cell${isFlagged(symbol) ? " on" : ""}" data-flag="${escapeHtml(symbol)}" title="${isFlagged(symbol) ? "Unflag" : "Flag"} ${escapeHtml(ticker(symbol))}">${FLAG_SVG}</button>`;
 
-function rowHtml(symbol, current) {
+function rowHtml(symbol, current, mine) {
   const quote = quotes.get(symbol);
   const cls = quote ? (quote.change >= 0 ? "up" : "down") : "";
   const scanned = latestDeck && latestDeck.has(ticker(symbol));
-  return `<div class="hw-row${ticker(symbol) === current ? " active" : ""}" data-symbol="${escapeHtml(symbol)}" draggable="true">` +
+  const mark = ticker(symbol) === mine ? " active" : ticker(symbol) === current ? " found" : "";
+  return `<div class="hw-row${mark}" data-symbol="${escapeHtml(symbol)}" draggable="true">` +
     flagCell(symbol) +
     `<span class="sym">${escapeHtml(ticker(symbol))}${scanned ? `<i class="in-scan" title="In the latest scan"></i>` : ""}</span>` +
     columns().map((key) => {
@@ -303,6 +308,8 @@ function renderRows() {
   const buzz = columns().includes("buzz") || columns().includes("extVol");
   watchBuzz("watchlist", buzz ? symbolsOf(list) : []);
   const current = ticker(state.home.symbol);
+  const listed = new Set(symbolsOf(list).map(ticker));
+  if (!picked || !listed.has(picked)) picked = listed.has(current) ? current : null;
   const collapsed = new Set(list.collapsed || []);
   renderHeader(list);
   $("wl-rows").innerHTML = list.symbols.length ? groups(list).map((group) =>
@@ -310,12 +317,10 @@ function renderRows() {
       `<div class="hw-sec${collapsed.has(group.name) ? " collapsed" : ""}" data-section="${escapeHtml(group.name)}" draggable="true" title="${collapsed.has(group.name) ? "Click to expand" : "Click to collapse"}">` +
       `<i class="caret"><svg viewBox="0 0 12 12"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></i><span>${escapeHtml(group.name)}</span><em>${group.symbols.length}${collapsed.has(group.name) && group.symbols.length ? " hidden" : ""}</em>` +
       `<button class="hw-x" data-remove-section="${escapeHtml(group.name)}" title="Remove section (keeps its symbols)">×</button></div>`) +
-    (collapsed.has(group.name) ? "" : group.symbols.map((symbol) => rowHtml(symbol, current)).join(""))).join("")
-    : list.id === FLAGGED
-    ? `<div class="hw-empty">No flags. Press <kbd>⇧</kbd><kbd>F</kbd> on a chart to flag it.</div>`
-    : `<div class="hw-empty">Empty list. Type a symbol above, or press <kbd>⌥</kbd><kbd>W</kbd> on a chart to add it.</div>`;
-  const active = $("wl-rows").querySelector(".active");
-  if (active) active.scrollIntoView({ block: "nearest" });
+    (collapsed.has(group.name) ? "" : group.symbols.map((symbol) => rowHtml(symbol, current, picked)).join(""))).join("")
+    : "";
+  const shown = $("wl-rows").querySelector(".found") || $("wl-rows").querySelector(".active");
+  if (shown) shown.scrollIntoView({ block: "nearest" });
 }
 
 // Live prices update the rows' numbers in place: no re-sort, no lost scroll or hover.
@@ -499,9 +504,12 @@ export function removeSymbol(symbol) {
 export function stepWatchlist(delta) {
   const symbols = shownSymbols(activeList());
   if (!symbols.length) return;
-  const at = symbols.findIndex((symbol) => ticker(symbol) === ticker(state.home.symbol));
+  // From the chart's symbol, or the highlighted row when the chart is on one not in the list.
+  let at = symbols.findIndex((symbol) => ticker(symbol) === ticker(state.home.symbol));
+  if (at < 0) at = symbols.findIndex((symbol) => ticker(symbol) === picked);
   const next = at < 0 ? 0 : at + delta;
   if (next < 0 || next >= symbols.length) return toast(next < 0 ? "Top of the list" : "End of the list");
+  picked = ticker(symbols[next]);
   actions.openSymbol(symbols[next]);
 }
 
@@ -961,7 +969,9 @@ export function bindWatchlists() {
     const remove = event.target.closest("[data-remove]");
     if (remove) return removeSymbol(remove.dataset.remove);
     const row = event.target.closest(".hw-row");
-    if (row) actions.openSymbol(row.dataset.symbol);
+    if (!row) return;
+    picked = ticker(row.dataset.symbol);
+    actions.openSymbol(row.dataset.symbol);
   });
   $("details").addEventListener("click", (event) => {
     const button = event.target.closest(".dt-scan");

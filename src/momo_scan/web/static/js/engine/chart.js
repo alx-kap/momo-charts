@@ -122,7 +122,13 @@ export class Chart {
     this.ctx = this.canvas.getContext("2d");
     this.topCtx = this.top.getContext("2d");
 
-    this.observer = new ResizeObserver(() => this._changed());
+    // Repaint inside the observer, before the browser paints: waiting a frame shows the old
+    // picture stretched to the new size (a stutter when a side panel opens or closes).
+    this.observer = new ResizeObserver(() => {
+      if (this.frame) cancelAnimationFrame(this.frame);
+      this.layoutDirty = true;
+      this.render();
+    });
     this.observer.observe(container);
     this.bindInput();
     this.api = this.makeApi();

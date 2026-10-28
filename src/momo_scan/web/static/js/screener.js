@@ -112,7 +112,8 @@ if (!layout.fundamentals) {
 let place = store.get("screenWindow", null); // { x, y, w, h }
 let docked = Boolean(store.get("screenDocked", false)); // in the right panel instead of a window
 let closeDocked = () => {};
-let activeSymbol = null;
+let activeSymbol = null; // the row last opened from the results: it keeps the highlight
+let chartSymbol = null; // outlined when it's another row of the results
 let timer = 0;
 let token = 0;
 
@@ -254,7 +255,8 @@ function renderHeader() {
 }
 
 function lineHtml(row) {
-  return `<div class="sc-row sc-line${row.symbol === activeSymbol ? " active" : ""}" data-symbol="${escapeHtml(row.symbol)}" title="${escapeHtml(row.name)}">` +
+  const mark = row.symbol === activeSymbol ? " active" : ticker(row.symbol) === chartSymbol ? " found" : "";
+  return `<div class="sc-row sc-line${mark}" data-symbol="${escapeHtml(row.symbol)}" title="${escapeHtml(row.name)}">` +
     flagCell(row.symbol) + `<span class="sym">${escapeHtml(ticker(row.symbol))}</span>` +
     shown().map((key) => `<span class="${COLUMNS[key].text ? "l" : ""}"${COLUMNS[key].live ? ` data-live="${key}"` : ""}>${COLUMNS[key].html(row, key)}</span>`).join("") + `</div>`;
 }
@@ -404,13 +406,26 @@ const blank = (key) => {
 
 function pick(symbol) {
   activeSymbol = symbol;
-  $("sc-body").querySelectorAll(".sc-line.active").forEach((line) => line.classList.remove("active"));
+  $("sc-body").querySelectorAll(".sc-line.active, .sc-line.found").forEach((line) => line.classList.remove("active", "found"));
   const line = [...$("sc-body").children].find((item) => item.dataset.symbol === symbol);
   if (line) {
     line.classList.add("active");
     line.scrollIntoView({ block: "nearest" });
   }
   actions.openSymbol(symbol);
+}
+
+// The chart moved to a symbol (typed, or opened from a watchlist): outline it in the results
+// and scroll it into view, leaving the highlighted row where it was.
+export function markScreenerSymbol(symbol) {
+  chartSymbol = symbol ? ticker(symbol) : null;
+  let found = null;
+  for (const line of $("sc-body").querySelectorAll(".sc-line")) {
+    const hit = !line.classList.contains("active") && ticker(line.dataset.symbol) === chartSymbol;
+    line.classList.toggle("found", hit);
+    if (hit) found = line;
+  }
+  if (found && screenerOpen()) found.scrollIntoView({ block: "nearest" });
 }
 
 // Walk the matches from the symbol on the chart (Space, ↑↓). False when the chart isn't on one
