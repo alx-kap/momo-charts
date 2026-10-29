@@ -3,9 +3,9 @@
 Stock charts, watchlists, a screener and price alerts that run on your own computer, with
 prices and about 20 years of daily history from your own Charles Schwab account.
 
-I trade momentum swings, and my fingers already know TradingView's and TC2000's hotkeys, so
-momo uses the same ones. It also puts the things I check on every chart right next to it: ADR,
-dollar volume, how far the stock is from its highs, and when it reports next.
+It's made for momentum swing traders. The hotkeys work like TradingView's and TC2000's, and
+the numbers worth checking on every chart sit right next to it: ADR, dollar volume, how far
+the stock is from its highs, and when it reports next.
 
 **Site and live demo: [alx-kap.github.io/momo-charts](https://alx-kap.github.io/momo-charts/)**
 
@@ -15,16 +15,16 @@ other third-party code in the browser.
 
 ![momo charts: an NVDA daily chart with moving averages and earnings markers, a watchlist with prices and days to earnings, and NVIDIA's quarterly fundamentals](docs/screenshots/hero.png)
 
-## Why I built it
+## Why momo charts
 
-- **I wanted my data on my own disk.** There's no subscription and no account with me. momo
+- **Your data stays on your disk.** There's no subscription and no account to sign up for. momo
   keeps its own database of daily bars and only talks to Schwab for prices and to free public
   sources for the rest: Nasdaq for symbols and earnings dates, SEC EDGAR for fundamentals,
   the CFTC for futures positioning.
-- **I wanted it fast from the keyboard.** Start typing a ticker and press Enter to open it.
+- **Fast from the keyboard.** Start typing a ticker and press Enter to open it.
   Type `5` or `1W` to change the timeframe, `⌥T` for a trend line, `Ctrl+K` for everything
   else. `?` lists every shortcut.
-- **I wanted the numbers next to the chart.** ADR %, dollar volume, relative volume, distance
+- **The numbers are next to the chart.** ADR %, dollar volume, relative volume, distance
   from highs, days to earnings, and EPS and sales growth by quarter show up beside every chart
   and as columns in every list.
 - **The data is already paid for.** If you have a Schwab brokerage account, the market data
@@ -173,7 +173,7 @@ order limit of 0.
 **Do I need Schwab?** For now, yes. Schwab is where the prices and history come from. Another
 provider can be added (see above).
 
-**Where does it run?** Anywhere Python 3.12 does. I develop it on Linux and use it from a
+**Where does it run?** Anywhere Python 3.12 does. It's developed on Linux and used from a
 browser on a Mac. The server only listens on your own computer (127.0.0.1) unless you tell it
 otherwise.
 
@@ -188,7 +188,7 @@ uv run --extra dev ruff check src tests tools
 ```
 
 The browser code is plain ES modules in `src/momo_scan/web/static/js/`, so there's nothing to
-build. momo charts is the charting half of a trading workbench I use, and I publish it as it
+build. momo charts is the charting half of a larger trading workbench and is published as it
 changes.
 
 ## License
