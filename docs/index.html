@@ -621,8 +621,8 @@
         <div class="eyebrow">The chart engine</div>
         <h2 id="engine-h">Its own chart engine, <em>no dependencies</em>.</h2>
       </div>
-      <p>momo used to draw its charts with TradingView's Lightweight Charts. Now it uses a small
-        engine written just for momo: a handful of plain JavaScript files that paint on a canvas.
+      <p>momo draws its charts with a small engine written just for it: a handful of plain
+        JavaScript files that paint on a canvas.
         There's no charting library and no other third-party code in the browser. The demo above
         is running on it.</p>
     </div>
@@ -633,14 +633,13 @@
         <h3>Dependencies</h3>
         <p>Candles, OHLC bars, lines, histograms, stacked panes, both axes, the crosshair, panning
           and zoom. It's all momo's own code, under the same Apache 2.0 licence as everything
-          else, and under 70 KB.</p>
+          else.</p>
       </div>
       <div>
-        <span class="big">2.2×</span>
-        <h3>Faster to draw</h3>
-        <p>On 10,000 daily bars it puts a chart on screen 2.2 times faster than the library it
-          replaced, and pans about 30% faster. Zoomed far out, bars that land on the same pixel
-          are drawn once, so 20 years of history still scrolls smoothly.</p>
+        <span class="big">&lt;70 KB</span>
+        <h3>Small and quick</h3>
+        <p>The whole engine is under 70 KB with nothing to build. Zoomed far out, bars that land
+          on the same pixel are drawn once, so 20 years of history still scrolls smoothly.</p>
       </div>
       <div>
         <span class="big">Crisp</span>

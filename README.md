@@ -38,11 +38,9 @@ ES modules, under 70 KB, painting on canvas: candles, OHLC bars, lines and histo
 stacked panes, the price and time axes, the crosshair, panning, zooming and pinch. Nothing to
 install and nothing to build.
 
-It started out on TradingView's Lightweight Charts, which is a good library, but drawings,
-Bar Replay and earnings markers were layers that had to be kept in step with someone else's
-chart, and I wanted control over how things look. On 10,000 daily bars the new engine gets a
-chart on screen about twice as fast and pans about 30% faster. Candles are snapped to device
-pixels so they stay crisp at any zoom, and the axis labels don't jump around while you pan.
+Drawings, Bar Replay and the earnings markers are built on the same engine. Candles are
+snapped to device pixels so they stay crisp at any zoom, the axis labels don't jump around
+while you pan, and zoomed far out, 20 years of daily bars still scroll smoothly.
 
 ## Features
 
