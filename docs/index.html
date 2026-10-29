@@ -457,39 +457,39 @@
 
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow">Open source · self-hosted · free</div>
+    <div class="eyebrow">Free and open source</div>
     <div class="hero-grid">
-      <h1>Charts that live on <em>your</em> machine.</h1>
+      <h1>Stock charts that run on <em>your</em> computer.</h1>
       <div>
-        <p class="lede">momo charts is a <strong>stock charting and screening app for swing traders</strong>
-          that runs on your own computer. Watchlists, drawings, indicators, a screener for every
-          US stock and price alerts, with live prices and 20 years of daily history from
+        <p class="lede">momo is the charting app I built for my own swing trading: charts,
+          watchlists, drawings, a screener over every US stock and price alerts. It runs on your
+          machine and gets live prices and about 20 years of daily history from
           <strong>your own Schwab account</strong>.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="#setup">Install in 3 commands
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M2 8l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-          <a class="btn btn-ghost" href="#demo">Try the keyboard</a>
+          <a class="btn btn-ghost" href="#demo">Try the demo</a>
         </div>
-        <p class="fine">Apache 2.0 · Python + plain JavaScript · its own chart engine, no dependencies · no subscription, no account with us</p>
+        <p class="fine">Apache 2.0 · Python and plain JavaScript · nothing to pay, no account to make</p>
       </div>
     </div>
 
     <figure class="shot-frame reveal">
       <img src="screenshots/hero.png" width="1600" height="960"
         alt="momo charts showing an NVDA daily candlestick chart with 5, 10, 20, 50, 100 and 200-day moving averages, earnings markers and dollar volume, beside a Leaders watchlist with live prices and days to earnings, and NVIDIA's quarterly EPS and sales growth">
-      <div class="callout c1">Market cap, ADR % and $ volume, on every chart</div>
-      <div class="callout c2">Eight quarters of EPS and sales growth, a glance away</div>
-      <div class="callout c3">Live prices and days to earnings in every list</div>
+      <div class="callout c1">Market cap, ADR % and $ volume on every chart</div>
+      <div class="callout c2">Two years of EPS and sales growth, by quarter</div>
+      <div class="callout c3">Live prices and days to earnings in your lists</div>
     </figure>
   </div>
 </header>
 
 <div class="facts">
   <div class="wrap">
-    <div class="fact"><b>$0</b><span>a month. Schwab's market data comes free with a brokerage account.</span></div>
-    <div class="fact"><b>~20 yrs</b><span>of split-adjusted daily history per stock, kept on your disk.</span></div>
-    <div class="fact"><b>5,800+</b><span>US-listed stocks, screened on your own rules, live during the session.</span></div>
-    <div class="fact"><b>0</b><span>orders it can place. momo only reads market data.</span></div>
+    <div class="fact"><b>$0</b><span>a month. Schwab's market data is free if you have a brokerage account.</span></div>
+    <div class="fact"><b>~20 yrs</b><span>of daily history per stock, split-adjusted and stored on your disk.</span></div>
+    <div class="fact"><b>5,800+</b><span>US stocks you can screen on your own rules, live during market hours.</span></div>
+    <div class="fact"><b>0</b><span>orders it can place. It only reads market data.</span></div>
   </div>
 </div>
 
@@ -498,12 +498,12 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">Keyboard-first</div>
-        <h2 id="demo-h">Your hands never leave <em>the keys</em>.</h2>
+        <div class="eyebrow">Try it</div>
+        <h2 id="demo-h">Made for <em>the keyboard</em>.</h2>
       </div>
-      <p>These are momo's real shortcuts and its own chart engine, running on made-up stocks. Click
-        the chart, then press <kbd>↓</kbd> to flip through the list, type a ticker, or type
-        <kbd>1</kbd><kbd>W</kbd><kbd>↵</kbd> for weekly.</p>
+      <p>This is the real chart and the real shortcuts, on made-up stocks. Click the chart, then
+        press <kbd>↓</kbd> to go down the list, type a ticker, or type <kbd>1</kbd><kbd>W</kbd><kbd>↵</kbd>
+        to switch to weekly.</p>
     </div>
 
     <div class="demo reveal" tabindex="0" id="demo-box" aria-label="Interactive demo of momo's chart and keyboard shortcuts">
@@ -561,8 +561,8 @@
       <button class="chip" data-k="reset"><kbd data-alt>⌥R</kbd> reset view</button>
       <button class="chip" data-k="help"><kbd>?</kbd> all shortcuts</button>
     </div>
-    <p class="demo-note">The app has more: trend lines, split view, Bar Replay, intraday charts, a
-      command palette. Press <kbd>?</kbd> in momo for the full list.</p>
+    <p class="demo-note">There's more in the app: trend lines, split view, Bar Replay, intraday
+      charts and a command palette. Press <kbd>?</kbd> in momo to see every shortcut.</p>
   </div>
 </section>
 
@@ -571,11 +571,11 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">Fast</div>
-        <h2 id="speed-h">No spinners. <em>The next chart is already there.</em></h2>
+        <div class="eyebrow">Speed</div>
+        <h2 id="speed-h">The next chart is <em>already loaded</em>.</h2>
       </div>
-      <p>Flipping through a list of charts should feel like turning pages. momo gets there by
-        loading charts before you ask for them, and by reading them from your own disk.</p>
+      <p>Going through a list of charts should feel like turning pages, not waiting on each one.
+        momo loads the next few before you ask and reads everything from your own disk.</p>
     </div>
 
     <div class="lane reveal" aria-label="What momo has loaded while you step through a list">
@@ -590,24 +590,24 @@
     <div class="speed-grid reveal">
       <div>
         <span class="big">3 ready</span>
-        <h3>Loaded before you ask</h3>
-        <p>Step through a watchlist or screener with <kbd>↓</kbd> or <kbd>Space</kbd> and momo has
-          already loaded the next two charts and the one before (in split view, for both
-          timeframes). Rest the mouse on a row for a moment and its chart and live quote start
-          loading, so the click shows both at once.</p>
+        <h3>Loaded ahead of you</h3>
+        <p>When you step through a watchlist or screen with <kbd>↓</kbd> or <kbd>Space</kbd>, the next
+          two charts and the one before are already loaded (for both timeframes in split view).
+          Hover over a row for a moment and its chart and quote start loading, so they're there
+          when you click.</p>
       </div>
       <div>
         <span class="big">~12 ms</span>
-        <h3>Read from your own disk</h3>
-        <p>Daily history sits in a SQLite database on your machine, not behind someone else's API.
-          Five years of daily bars for a stock come back in about 12 milliseconds on a desktop,
-          even when nothing is loaded ahead.</p>
+        <h3>Read from your disk</h3>
+        <p>Daily history lives in a SQLite file on your machine instead of behind someone's API.
+          Five years of bars for a stock comes back in about 12 milliseconds on a desktop, even
+          when nothing was loaded ahead.</p>
       </div>
       <div>
         <span class="big">Once</span>
-        <h3>Loaded once, shared everywhere</h3>
-        <p>Each chart's bars are loaded once and shared by the chart, split view and the details
-          panel. Live quotes update them in place, so nothing reloads while the market moves.</p>
+        <h3>Loaded once</h3>
+        <p>The chart, split view and the details panel all share the same bars. Live quotes update
+          them in place, so nothing reloads while the market moves.</p>
       </div>
     </div>
   </div>
@@ -618,35 +618,35 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">Built from scratch</div>
-        <h2 id="engine-h">Its own chart engine. <em>No dependencies.</em></h2>
+        <div class="eyebrow">The chart engine</div>
+        <h2 id="engine-h">Its own chart engine, <em>no dependencies</em>.</h2>
       </div>
-      <p>Every candle, axis and crosshair is drawn by momo's own engine: a few plain JavaScript
-        modules painting on canvas, written for momo. No charting library, no third-party code in
-        the browser, nothing to build. The chart on this page is that engine.</p>
+      <p>momo used to draw its charts with TradingView's Lightweight Charts. Now it uses a small
+        engine written just for momo: a handful of plain JavaScript files that paint on a canvas.
+        There's no charting library and no other third-party code in the browser. The demo above
+        is running on it.</p>
     </div>
 
     <div class="speed-grid reveal">
       <div>
         <span class="big">0</span>
         <h3>Dependencies</h3>
-        <p>Candles, OHLC bars, lines and histograms in stacked panes, price and time axes, the
-          crosshair, panning and zoom. All of it is momo's code, under the same Apache 2.0
-          licence as the rest.</p>
+        <p>Candles, OHLC bars, lines, histograms, stacked panes, both axes, the crosshair, panning
+          and zoom. It's all momo's own code, under the same Apache 2.0 licence as everything
+          else, and under 70 KB.</p>
       </div>
       <div>
         <span class="big">2.2×</span>
-        <h3>Faster first paint</h3>
-        <p>On 10,000 daily bars it paints a chart 2.2 times faster than the charting library it
-          replaced, and pans about 30% faster. Bars that share a pixel when you zoom far out are
-          merged, so decades of history stay smooth.</p>
+        <h3>Faster to draw</h3>
+        <p>On 10,000 daily bars it puts a chart on screen 2.2 times faster than the library it
+          replaced, and pans about 30% faster. Zoomed far out, bars that land on the same pixel
+          are drawn once, so 20 years of history still scrolls smoothly.</p>
       </div>
       <div>
-        <span class="big">Sharp</span>
-        <h3>Made for the way you read charts</h3>
-        <p>Candles snapped to device pixels at every zoom, axis labels that hold still while you
-          pan, momentum scrolling and two-finger pinch zoom. Drawings, alerts and Bar Replay are
-          built on the same engine.</p>
+        <span class="big">Crisp</span>
+        <h3>Easy on the eyes</h3>
+        <p>Candles line up with your screen's pixels at every zoom, so edges stay sharp. Axis labels
+          stay put while you pan. Swipes coast to a stop, and two fingers pinch to zoom.</p>
       </div>
     </div>
   </div>
@@ -657,54 +657,56 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">A tour</div>
-        <h2 id="tour-h">Everything a swing trader <em>looks at</em>, in one window.</h2>
+        <div class="eyebrow">What's in it</div>
+        <h2 id="tour-h">What I look at, <em>in one window</em>.</h2>
       </div>
-      <p>Built for momentum: ADR %, dollar volume, relative volume, distance from highs, days to
-        earnings and quarterly growth sit next to every chart and in every list.</p>
+      <p>I trade momentum, so ADR %, dollar volume, relative volume, distance from highs, days to
+        earnings and growth by quarter are next to every chart and available as columns in every
+        list.</p>
     </div>
 
     <div class="tour reveal">
       <div class="tabs" role="tablist" aria-label="Feature tour">
         <button class="tab" role="tab" id="t-charts" aria-controls="p-charts" aria-selected="true">
           <span class="n">01</span><span class="h">Charts</span>
-          <span class="d">Daily, weekly and monthly, plus 1-minute to 1-hour intraday with pre- and
-            post-market shaded. Moving averages, VWAP, Bollinger and Keltner, RSI, MACD, ATR, a
-            relative strength line and Bar Replay.</span>
+          <span class="d">Daily, weekly and monthly, and intraday from 1 minute to 1 hour with
+            the pre- and post-market shaded. Moving averages, VWAP, Bollinger and Keltner bands,
+            RSI, MACD, ATR, a relative strength line and Bar Replay.</span>
         </button>
         <button class="tab" role="tab" id="t-split" aria-controls="p-split" aria-selected="false" tabindex="-1">
           <span class="n">02</span><span class="h">Split view</span>
-          <span class="d">Two charts side by side, each with its own symbol and timeframe, with symbol and
-            crosshair synced or not. Daily and weekly at once.</span>
+          <span class="d">Two charts next to each other, each with its own symbol and timeframe.
+            Link the symbol and crosshair, or don't. Handy for daily and weekly at once.</span>
         </button>
         <button class="tab" role="tab" id="t-screener" aria-controls="p-screener" aria-selected="false" tabindex="-1">
           <span class="n">03</span><span class="h">Screener</span>
-          <span class="d">Every US stock, filtered on returns and return ranks, ADR, dollar and relative volume,
-            moving averages, highs and lows, earnings and growth. Starter scans included; a live
-            mode re-screens on today's prices.</span>
+          <span class="d">Screen every US stock on returns and return ranks, ADR, dollar and
+            relative volume, moving averages, highs and lows, earnings and growth. It comes with
+            starter screens, and a live mode re-runs yours on today's prices.</span>
         </button>
         <button class="tab" role="tab" id="t-market" aria-controls="p-market" aria-selected="false" tabindex="-1">
           <span class="n">04</span><span class="h">Market</span>
-          <span class="d">Which industries lead and lag today, this week, month and quarter, and where hedgers,
-            funds and small traders stand in each futures market (CFTC Commitments of Traders).</span>
+          <span class="d">Which industries are leading and lagging over a day, week, month and
+            quarter, and how hedgers, funds and small traders are positioned in each futures market
+            (from the CFTC's Commitments of Traders report).</span>
         </button>
       </div>
       <div>
         <figure class="panel" id="p-charts" role="tabpanel" aria-labelledby="t-charts" style="margin:0">
           <img src="screenshots/hero.png" width="1600" height="960" loading="lazy" alt="An NVDA daily chart with moving averages, earnings markers and a dollar volume pane, next to a watchlist and fundamentals">
-          <figcaption>NVDA daily: six moving averages, earnings on the time axis, dollar volume with its 20-day average.</figcaption>
+          <figcaption>NVDA daily with six moving averages, earnings dates along the bottom and dollar volume with its 20-day average.</figcaption>
         </figure>
         <figure class="panel" id="p-split" role="tabpanel" aria-labelledby="t-split" hidden style="margin:0">
           <img src="screenshots/split-view.png" width="1600" height="960" loading="lazy" alt="Split view: Broadcom on a daily and a weekly chart side by side, each with its own moving averages and volume">
-          <figcaption>Broadcom on daily and weekly side by side.</figcaption>
+          <figcaption>Broadcom, daily and weekly side by side.</figcaption>
         </figure>
         <figure class="panel" id="p-screener" role="tabpanel" aria-labelledby="t-screener" hidden style="margin:0">
           <img src="screenshots/screener.png" width="1600" height="960" loading="lazy" alt="The screener: top 1, 3 and 6-month gainers with at least 60 million dollars of daily volume, sorted by 1-month return">
-          <figcaption>Top 1/3/6-month gainers with at least $60M a day, sorted by 1-month return. Results step like a watchlist.</figcaption>
+          <figcaption>The top 1, 3 and 6-month gainers trading at least $60M a day, sorted by 1-month return. You step through results like a watchlist.</figcaption>
         </figure>
         <figure class="panel" id="p-market" role="tabpanel" aria-labelledby="t-market" hidden style="margin:0">
           <img src="screenshots/market.png" width="1600" height="960" loading="lazy" alt="The Market panel: industries ranked by today's median return, oil and gas leading, travel and life insurance lagging">
-          <figcaption>Industries ranked by median return: oil and gas leading, travel and life insurance lagging.</figcaption>
+          <figcaption>Industries ranked by median return, with oil and gas leading and travel and life insurance lagging.</figcaption>
         </figure>
       </div>
     </div>
@@ -713,14 +715,14 @@
 
 <section class="block" aria-labelledby="more-h">
   <div class="wrap">
-    <h2 id="more-h" class="reveal" style="margin:0 0 40px">And the <em>small things</em> that add up.</h2>
+    <h2 id="more-h" class="reveal" style="margin:0 0 40px">And a few <em>smaller things</em>.</h2>
     <div class="grid reveal">
-      <div class="cell"><span class="ix">Watchlists</span><h3>Lists that keep up</h3><p>Several lists with live prices, change, ADR, earnings countdowns and growth columns you can sort, resize and reorder. A built-in Flagged list.</p></div>
-      <div class="cell"><span class="ix">Alerts</span><h3>Alerts on the server</h3><p>Set one from the chart and drag its line to move it. Checked against live quotes, so they sound in every open tab, even when the symbol isn't on screen.</p></div>
-      <div class="cell"><span class="ix">Drawings</span><h3>Saved per symbol</h3><p>Trend lines, rays, horizontals, rectangles, arrows, text and a measure tool, back where you left them next time.</p></div>
-      <div class="cell"><span class="ix">Live</span><h3>The forming bar moves</h3><p>Live prices update today's daily bar, a pre- and post-market price tag and a ghost candle.</p></div>
-      <div class="cell"><span class="ix">Fundamentals</span><h3>Growth without a tab</h3><p>Eight quarters and three years of EPS and sales with year-over-year growth, from SEC EDGAR, under the chart.</p></div>
-      <div class="cell"><span class="ix">Hackable</span><h3>No build step</h3><p>FastAPI on the server, plain ES modules in the browser, chart engine included. Read it, change it, add another data provider as a Python module.</p></div>
+      <div class="cell"><span class="ix">Watchlists</span><h3>As many lists as you want</h3><p>Live prices, change, ADR, days to earnings and growth, in columns you can sort, resize and drag around. Plus a Flagged list for quick saves.</p></div>
+      <div class="cell"><span class="ix">Alerts</span><h3>Alerts that don't need the chart open</h3><p>Set one on the chart and drag the line to move it. The server checks them against live quotes, so you'll hear one in any open tab.</p></div>
+      <div class="cell"><span class="ix">Drawings</span><h3>Drawings stay put</h3><p>Trend lines, rays, horizontal lines, rectangles, arrows, text and a measure tool. They're saved per symbol and waiting for you next time.</p></div>
+      <div class="cell"><span class="ix">Live</span><h3>Today's bar moves</h3><p>With live prices on, today's candle updates as the price changes, and a tag shows the pre- and post-market price.</p></div>
+      <div class="cell"><span class="ix">Fundamentals</span><h3>Earnings growth, right there</h3><p>Eight quarters and three years of EPS and sales with year-over-year growth, pulled from SEC EDGAR, in the panel next to the chart.</p></div>
+      <div class="cell"><span class="ix">Hackable</span><h3>Easy to change</h3><p>FastAPI on the server and plain JavaScript modules in the browser, chart engine included, with no build step. Want another data provider? It's one Python module.</p></div>
     </div>
   </div>
 </section>
@@ -730,11 +732,11 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">How the data works</div>
-        <h2 id="data-h">Nothing passes <em>through us</em>.</h2>
+        <div class="eyebrow">Your data</div>
+        <h2 id="data-h">It all stays <em>on your computer</em>.</h2>
       </div>
-      <p>There is no momo server. The app on your computer talks to Schwab for prices and to free
-        public sources for everything else, and keeps it all in a folder you own.</p>
+      <p>There's no momo server in the middle. The app on your computer gets prices from Schwab and
+        everything else from free public sources, and keeps it all in a folder you own.</p>
     </div>
 
     <div class="flow reveal">
@@ -779,13 +781,13 @@
         </g>
       </svg>
       <div class="flow-notes">
-        <p><code>bars.db</code>: about 20 years a symbol, split-adjusted. The first full fill takes
-          about an hour; any chart you open fills at once. After each close momo adds the day's bar
-          and catches splits. Expect 1 to 3 GB.</p>
+        <p><code>bars.db</code>: about 20 years of split-adjusted history per symbol. Filling it all
+          takes around an hour, but any chart you open is filled right away. After each close momo
+          adds the day's bar and handles splits. Plan on 1 to 3 GB.</p>
         <p><code>momo.db</code>: your watchlists, drawings, chart settings, saved screens and
-          alerts. Back it up like any file.</p>
-        <p><code>live.toml</code>: your Schwab app keys and sign-in, readable only by your user
-          account. They never leave your machine.</p>
+          alerts. Back it up like any other file.</p>
+        <p><code>live.toml</code>: your Schwab app keys and sign-in. Only your user account can read
+          it, and it never leaves your machine.</p>
       </div>
     </div>
   </div>
@@ -796,10 +798,10 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">Honest comparison</div>
-        <h2 id="cmp-h">Is it a TradingView <em>alternative</em>?</h2>
+        <div class="eyebrow">Compared</div>
+        <h2 id="cmp-h">Can it replace <em>TradingView</em>?</h2>
       </div>
-      <p>It can be, if you chart US stocks. Here is where it fits and where it doesn't.</p>
+      <p>If you only chart US stocks, it might. Here's what it does and doesn't do.</p>
     </div>
     <div class="reveal" style="overflow-x:auto">
       <table class="cmp">
@@ -824,10 +826,11 @@
     <div class="sec-head reveal">
       <div>
         <div class="eyebrow">Install</div>
-        <h2 id="setup-h">Running in <em>about two minutes</em>.</h2>
+        <h2 id="setup-h">Up and running in <em>a couple of minutes</em>.</h2>
       </div>
-      <p>All you install is <a href="https://docs.astral.sh/uv/">uv</a>; it fetches the right
-        Python on its own. The Schwab app takes a few days to be approved, so start that first.</p>
+      <p>The only thing to install is <a href="https://docs.astral.sh/uv/">uv</a>, which fetches the
+        right Python by itself. Schwab takes a few days to approve a new app, so start that part
+        first.</p>
     </div>
 
     <div class="steps">
@@ -847,21 +850,22 @@
           <li><code><span class="p">&gt;</span>git clone https://github.com/alx-kap/momo-charts.git; cd momo-charts</code><button class="cp">copy</button></li>
           <li><code><span class="p">&gt;</span>uv run momo serve</code><button class="cp">copy</button><span class="note">Installs dependencies on first run, then starts the server.</span></li>
         </ol>
-        <div class="term-foot">Then open <a href="http://127.0.0.1:8790">http://127.0.0.1:8790</a>. The Market data window asks for your Schwab keys.</div>
+        <div class="term-foot">Then open <a href="http://127.0.0.1:8790">http://127.0.0.1:8790</a>. momo will ask for your Schwab keys.</div>
       </div>
 
       <div class="reveal">
-        <p class="aside-h">Connect Schwab, once</p>
+        <p class="aside-h">Connecting Schwab (once)</p>
         <ol class="schwab">
-          <li>At <a href="https://developer.schwab.com">developer.schwab.com</a>, sign in with your
-            Schwab login and create an app with <strong>Market Data Production</strong> (add
-            <strong>Accounts and Trading Production</strong> to stream quotes). Callback
-            <code>https://127.0.0.1:8182</code>, order limit <code>0</code>.</li>
-          <li>Wait for approval, usually a few days. The app page then shows an <strong>App Key</strong>
-            and a <strong>Secret</strong>.</li>
+          <li>Go to <a href="https://developer.schwab.com">developer.schwab.com</a>, sign in with your
+            normal Schwab login and create an app with <strong>Market Data Production</strong>. Add
+            <strong>Accounts and Trading Production</strong> too if you want streaming quotes. Use
+            the callback <code>https://127.0.0.1:8182</code> and an order limit of <code>0</code>.</li>
+          <li>Wait for Schwab to approve it, usually a few days. The app's page will then show an
+            <strong>App Key</strong> and a <strong>Secret</strong>.</li>
           <li>Paste both into momo's Market data window and click <strong>Save and connect</strong>.</li>
-          <li>Click <strong>Sign in to Schwab…</strong>, approve, and paste back the address of the
-            page that fails to load. It lasts 7 days; the live badge warns a day ahead.</li>
+          <li>Click <strong>Sign in to Schwab…</strong> and approve. You'll land on a page that won't
+            load; copy its address back into momo. The sign-in lasts 7 days, and the live badge
+            warns you a day before.</li>
         </ol>
         <figure class="first-run" style="margin:8px 0 0">
           <img src="screenshots/first-run.png" width="785" height="628" loading="lazy" alt="The first-run Market data window, with fields for the Schwab app key, secret and callback URL">
@@ -875,34 +879,34 @@
 <section class="block" id="faq" aria-labelledby="faq-h">
   <div class="wrap">
     <div class="eyebrow">Questions</div>
-    <h2 id="faq-h" style="margin-bottom:28px">Before you clone.</h2>
+    <h2 id="faq-h" style="margin-bottom:28px">Common questions</h2>
     <div class="faq">
       <details><summary>Does it place trades?</summary>
-        <p>No. momo only reads market data. The Schwab app it uses is created with an order limit
+        <p>No. It only reads market data, and the Schwab app you set up for it has an order limit
           of 0.</p></details>
       <details><summary>Do I need a Schwab account?</summary>
-        <p>Today, yes: Schwab supplies the prices and history, and the Trader API's market data
-          comes with a brokerage account at no extra cost. Other providers can be added: implement
-          <code>daily()</code> history and <code>sweep()</code> quotes like
-          <code>live/schwab.py</code>, or fill <code>bars.db</code> yourself.</p></details>
+        <p>For now, yes. Schwab is where the prices and history come from, and if you have a
+          brokerage account the data doesn't cost extra. You can add another provider by writing
+          <code>daily()</code> for history and <code>sweep()</code> for quotes, the way
+          <code>live/schwab.py</code> does, or by filling <code>bars.db</code> yourself.</p></details>
       <details><summary>Where does it run?</summary>
-        <p>Anywhere Python 3.12 runs. It's developed on Linux and used from a browser on a Mac. The
-          server listens on your own computer only (127.0.0.1) unless you choose otherwise.</p></details>
+        <p>Anywhere Python 3.12 does. I develop it on Linux and use it from a browser on a Mac. The
+          server only listens on your own computer (127.0.0.1) unless you change that.</p></details>
       <details><summary>How do I get earnings dates and fundamentals?</summary>
-        <p>Run <code>uv run momo fundamentals-update</code> (SEC EDGAR and Nasdaq). SEC asks for a
-          contact address: set <code>user_agent = "momo you@example.com"</code> under
-          <code>[fundamentals]</code> in <code>config/momo.toml</code>. Futures positioning is
-          <code>uv run momo cot-update</code>.</p></details>
+        <p>Run <code>uv run momo fundamentals-update</code>, which pulls from SEC EDGAR and Nasdaq.
+          The SEC wants a contact address, so first set <code>user_agent = "momo you@example.com"</code>
+          under <code>[fundamentals]</code> in <code>config/momo.toml</code>. For futures
+          positioning, run <code>uv run momo cot-update</code>.</p></details>
       <details><summary>Is it affiliated with TradingView or Schwab?</summary>
-        <p>No. Charts are drawn by momo's own engine, and Schwab data is used through your own
-          developer app.</p></details>
+        <p>No. The charts are drawn by momo's own code, and you reach Schwab's data through your
+          own developer app.</p></details>
     </div>
   </div>
 </section>
 
 <section class="closing">
   <div class="wrap">
-    <h2 class="reveal">Own your <em>charts</em> again.</h2>
+    <h2 class="reveal">Give it <em>a try</em>.</h2>
     <div class="oneliner reveal"><code id="oneliner">git clone https://github.com/alx-kap/momo-charts.git &amp;&amp; cd momo-charts &amp;&amp; uv run momo serve</code><button class="cp" style="opacity:1" data-copy="oneliner">copy</button></div>
     <div class="cta-row reveal">
       <a class="btn btn-primary" href="https://github.com/alx-kap/momo-charts">Get it on GitHub</a>
@@ -916,7 +920,7 @@
 <footer>
   <div class="wrap">
     <p>momo charts is open source under the <a href="https://github.com/alx-kap/momo-charts/blob/main/LICENSE">Apache License 2.0</a>.
-      Charts are drawn by momo's own engine, with no dependencies.
+      The charts are drawn by momo's own engine, with no dependencies.
       Not affiliated with TradingView or Charles Schwab. Not investment advice.</p>
     <p><a href="https://github.com/alx-kap/momo-charts">GitHub</a> · <a href="https://github.com/alx-kap/momo-charts#readme">README</a> · <a href="https://github.com/alx-kap/momo-charts/blob/main/llms.txt">llms.txt</a></p>
   </div>
