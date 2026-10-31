@@ -8,10 +8,12 @@ cannot trigger them through the browser.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import importlib.util
 import json
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -44,6 +46,19 @@ SETTING_KEYS = {
     "alert_prefs": 2_000,  # price alerts: line colour and style, sound
 }
 CHART_BARS = 520
+# Pictures placed on charts (the Image drawing tool), told apart by their first bytes.
+IMAGE_TYPES = {
+    b"GIF87a": "gif", b"GIF89a": "gif", b"\x89PNG\r\n\x1a\n": "png", b"\xff\xd8\xff": "jpg",
+}
+IMAGE_MEDIA = {"gif": "image/gif", "png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}
+IMAGE_MAX_BYTES = 10_000_000
+IMAGE_NAME = re.compile(r"^[0-9a-f]{24}\.(gif|png|jpg|webp)$")
+
+
+def image_kind(data: bytes) -> str | None:
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    return next((kind for magic, kind in IMAGE_TYPES.items() if data.startswith(magic)), None)
 LIVE_FLUSH_SECONDS = 0.1  # at most 10 live messages a second per browser tab
 
 
@@ -651,6 +666,38 @@ def create_app(
             raise HTTPException(400, f"Settings must be a JSON object under {limit} bytes")
         storage().save_setting(key, body, user(request))
         return {"saved": True}
+
+    # Images on charts: stored once by content under data/images, named by their hash, so the
+    # drawing keeps only a short address and the same GIF placed twice is one file.
+    images_dir = data_dir / "images"
+
+    @app.post("/api/images")
+    async def upload_image(request: Request) -> dict[str, str]:
+        require_header(request)
+        data = await request.body()
+        if len(data) > IMAGE_MAX_BYTES:
+            raise HTTPException(413, f"Images must be under {IMAGE_MAX_BYTES // 1_000_000} MB")
+        kind = image_kind(data)
+        if not kind:
+            raise HTTPException(400, "Only GIF, PNG, JPEG or WebP images")
+        name = f"{hashlib.sha256(data).hexdigest()[:24]}.{kind}"
+        path = images_dir / name
+        if not path.exists():
+            images_dir.mkdir(parents=True, exist_ok=True)
+            temp = path.with_suffix(".tmp")
+            temp.write_bytes(data)
+            os.replace(temp, path)
+        return {"url": f"/api/images/{name}"}
+
+    @app.get("/api/images/{name}")
+    async def get_image(name: str) -> FileResponse:
+        path = images_dir / name
+        if not IMAGE_NAME.match(name) or not path.is_file():
+            raise HTTPException(404, "No such image")
+        return FileResponse(
+            path, media_type=IMAGE_MEDIA[name.rsplit(".", 1)[1]],
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
 
     def found(ok: Any, what: str) -> dict[str, Any]:
         if not ok:

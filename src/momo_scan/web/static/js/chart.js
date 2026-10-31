@@ -1512,6 +1512,21 @@ function createPane(root, { side, owner, settings, info = true }) {
     ctx.fillStyle = getComputedStyle(document.body).backgroundColor || "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(shot, 0, 0);
+    // Images placed on the chart (a GIF as its current frame), clipped to the plot as on screen.
+    const base = el["chart"].getBoundingClientRect();
+    for (const holder of root.querySelectorAll(".draw-images")) {
+      const clip = holder.getBoundingClientRect();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect((clip.left - base.left) * scale, (clip.top - base.top) * scale, clip.width * scale, clip.height * scale);
+      ctx.clip();
+      for (const img of holder.querySelectorAll("img")) {
+        if (!img.complete || !img.naturalWidth) continue;
+        const at = img.getBoundingClientRect();
+        ctx.drawImage(img, (at.left - base.left) * scale, (at.top - base.top) * scale, at.width * scale, at.height * scale);
+      }
+      ctx.restore();
+    }
     if (svg && svg.childElementCount) {
       const markup = new XMLSerializer().serializeToString(svg);
       const image = new Image();

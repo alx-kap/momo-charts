@@ -1234,6 +1234,9 @@ body:not(.mode-chart) .lg-row.chart-only { display: none; }
 .chart-pane [data-part="drawings"] .hit-box { pointer-events: all; }
 .chart-pane [data-part="drawings"] .handle { pointer-events: all; cursor: move; }
 .chart-pane [data-part="drawings"] .handle.ew { cursor: ew-resize; }
+.chart-pane [data-part="drawings"] .handle.nwse { cursor: nwse-resize; }
+.chart-pane .draw-images { position: absolute; left: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.chart-pane .draw-images img { position: absolute; user-select: none; }
 .chart-pane [data-part="drawings"].capture { pointer-events: all; cursor: crosshair; }
 #draw-toolbar {
   position: fixed; z-index: 6; max-width: calc(100vw - 8px); flex-wrap: wrap;

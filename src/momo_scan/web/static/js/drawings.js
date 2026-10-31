@@ -5,7 +5,7 @@ import { swatch } from "./colorpicker.js";
 
 // Drawing tools, TradingView-style: trend line (⌥T), ray, arrow, horizontal line (⌥H), horizontal
 // ray (⌥J), vertical line, rectangle, label (a text box on a line from the point you click) and
-// floating text. Points are stored as a date and a price, so a line drawn on the daily chart lands
+// floating text, and images (an animated GIF keeps playing). Points are stored as a date and a price, so a line drawn on the daily chart lands
 // in the right place on the weekly. On intraday charts a point is a time (New York wall-clock
 // seconds, as the chart shows them); a date maps to that day's 9:30 there, and a time to its
 // date on daily charts, so drawings are shared across timeframes. Drawings are kept per ticker and saved to the server;
@@ -379,6 +379,7 @@ function arrowHead(a, b, item) {
 function shape(item, ctx, isSelected) {
   if (item.type === "text") return textShape(item, ctx, isSelected);
   if (item.type === "rect") return rectShape(item, ctx, isSelected);
+  if (item.type === "image") return imageShape(item, ctx, isSelected);
   const ends = lineEnds(item, ctx);
   if (!ends) return "";
   const [a, b] = ends;
@@ -416,10 +417,11 @@ function renderLayer(l) {
   if (area.hidden || !area.clientWidth) return; // a chart that isn't showing (e.g. outside Chart mode)
   svg.setAttribute("width", area.clientWidth);
   svg.setAttribute("height", area.clientHeight);
-  if (!ctx.bars.length || hidden) { svg.innerHTML = ""; return; }
+  if (!ctx.bars.length || hidden) { svg.innerHTML = ""; l.images.replaceChildren(); return; }
   const working = l === layer;
   const items = [...itemsOf(l)];
   if (pending && working) items.push({ ...pending, id: null });
+  renderImages(l, items, ctx);
   const isSelected = (item) => working && item.id === selected;
   const clip = `draw-clip-${pane.side}`;
   svg.innerHTML =
@@ -437,10 +439,10 @@ function renderToolbar() {
   const sig = item.id + (item.boxW ? "w" : ""); // rebuilt when "Auto width" should appear or go
   if (bar.dataset.id === sig) return; // keep focus on the controls while editing
   bar.dataset.id = sig;
-  const line = item.type !== "text";
+  const line = item.type !== "text" && item.type !== "image";
   bar.innerHTML =
     `<span class="db-grip" title="Drag to move">${FLOAT_GRIP}</span>` +
-    swatch(escapeHtml(item.color), `data-k="color" title="${line ? "Colour" : "Text colour"}"`) +
+    (item.type === "image" ? `<button data-k="natural" title="Back to the image's own size (up to ${IMAGE_MAX_W}px wide)">Reset size</button>` : swatch(escapeHtml(item.color), `data-k="color" title="${line ? "Colour" : "Text colour"}"`)) +
     (hasText(item.type) ? `<select data-k="size" title="Text size">${SIZES.map((n) => `<option value="${n}" ${(item.size || (item.type === "text" ? 14 : 12)) === n ? "selected" : ""}>${n}px</option>`).join("")}</select>` : "") +
     (line ? `<select data-k="width" title="Width">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${item.width === n ? "selected" : ""}>${n}px</option>`).join("")}</select>` +
     `<select data-k="dash" title="Style">${[[0, "Solid"], [2, "Dashed"], [1, "Dotted"]].map(([v, l]) => `<option value="${v}" ${item.dash === v ? "selected" : ""}>${l}</option>`).join("")}</select>` : "") +
@@ -448,6 +450,94 @@ function renderToolbar() {
     (item.type === "text" && item.boxW ? `<button data-k="autowidth" title="Stop wrapping: one line per line you type">Auto width</button>` : "") +
     (alertable(item) ? `<button class="icon${alertHooks.has(item.id) ? " active" : ""}" data-k="alert" title="${alertHooks.has(item.id) ? "Edit its alert" : "Add an alert on this line (⌥A)"}" aria-label="Alert"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5V8a4.5 4.5 0 0 1 9 0v4.5l1.2 1.5H3.3zM7.5 15.5a1.6 1.6 0 0 0 3 0"/></svg></button>` : "") +
     `<button class="icon" data-k="delete" title="Remove (Delete)" aria-label="Remove drawing"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h12M7 5V3h4v2M4.5 5l.8 10h7.4l.8-10M7.5 8v4.5M10.5 8v4.5"/></svg></button>`;
+}
+
+// ---------- images ----------
+
+// An image hangs from its top-left point and keeps its size in pixels (`w`, and `ratio` for the
+// height), so zooming the chart moves it but never stretches it. The pictures themselves are
+// <img> elements under the SVG, kept from one render to the next so a GIF doesn't restart; the
+// SVG only carries the box you pick it up by and its handles.
+const IMAGE_MAX_W = 240;
+const imageSize = (item) => ({ w: item.w, h: item.w / (item.ratio || 1) });
+
+function imageShape(item, ctx, isSelected) {
+  const a = toPixel(item.p1, ctx);
+  if (!a) return "";
+  const { w, h } = imageSize(item);
+  const box = `x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"`;
+  if (!item.id) return `<rect ${box} fill="none" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 3"/>`;
+  let out = `<rect class="hit hit-box" data-id="${item.id}" ${box} fill="transparent"` +
+    `${isSelected ? ' stroke="rgba(255,255,255,.5)" stroke-dasharray="3 3"' : ""}/>`;
+  if (isSelected && !item.locked) {
+    out += `<circle class="handle" data-id="${item.id}" data-end="p1" cx="${a.x.toFixed(1)}" cy="${a.y.toFixed(1)}" r="4" fill="#000" stroke="#fff" stroke-width="2"/>` +
+      `<rect class="handle nwse" data-id="${item.id}" data-end="size" x="${(a.x + w - 5).toFixed(1)}" y="${(a.y + h - 5).toFixed(1)}" width="10" height="10" rx="2" fill="#000" stroke="#fff" stroke-width="1.5"/>`;
+  }
+  return out;
+}
+
+function renderImages(l, items, ctx) {
+  const holder = l.images;
+  holder.style.cssText = `top:${ctx.box.top}px; width:${ctx.plotWidth}px; height:${ctx.box.height}px;`;
+  const keep = new Set();
+  for (const item of items) {
+    if (item.type !== "image" || !item.src) continue;
+    const a = toPixel(item.p1, ctx);
+    if (!a) continue;
+    const id = item.id || "pending";
+    keep.add(id);
+    let img = holder.querySelector(`img[data-id="${id}"]`);
+    if (!img || img.getAttribute("src") !== item.src) {
+      img?.remove();
+      img = document.createElement("img");
+      img.dataset.id = id;
+      img.alt = "";
+      img.draggable = false;
+      img.src = item.src;
+      holder.append(img);
+    }
+    const { w, h } = imageSize(item);
+    img.style.cssText = `left:${a.x.toFixed(1)}px; top:${(a.y - ctx.box.top).toFixed(1)}px; width:${w.toFixed(1)}px; height:${h.toFixed(1)}px;`;
+  }
+  for (const img of [...holder.children]) if (!keep.has(img.dataset.id)) img.remove();
+}
+
+// Upload a picture and put it in the middle of the working chart, selected.
+export async function addImage(file) {
+  if (!file || !/^image\/(gif|png|jpeg|webp)$/.test(file.type)) return toast("Pick a GIF, PNG, JPEG or WebP image");
+  if (!layer || !chartContext().bars.length) return toast("Open a chart first");
+  const owner = layer;
+  let url;
+  try {
+    ({ url } = await api("/api/images", { method: "POST", body: file, headers: { "Content-Type": file.type } }));
+  } catch (error) {
+    return toast(`Couldn't add the image: ${error.message}`);
+  }
+  const img = new Image();
+  img.src = url;
+  try { await img.decode(); } catch { return toast("Couldn't read that image"); }
+  if (layer !== owner) return; // the chart changed while it uploaded
+  const ctx = chartContext();
+  const w = Math.max(24, Math.min(IMAGE_MAX_W, img.naturalWidth, ctx.plotWidth * 0.5));
+  const ratio = img.naturalWidth / img.naturalHeight || 1;
+  const x = ctx.plotWidth / 2 - w / 2;
+  const y = ctx.box.height / 2 - w / ratio / 2;
+  const logical = ctx.chart.timeScale().coordinateToLogical(x);
+  const price = ctx.candles.coordinateToPrice(y);
+  if (logical == null || price == null) return;
+  if (tool) setTool(null);
+  if (hidden) toggleDrawingsHidden();
+  pending = { type: "image", p1: { t: logicalToTime(Math.round(logical), ctx.bars, ctx.interval), p: price }, src: url, w, ratio };
+  finish();
+}
+
+// The toolbar's Image button: pick a file.
+export function pickImage() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/gif,image/png,image/jpeg,image/webp";
+  input.addEventListener("change", () => addImage(input.files[0]));
+  input.click();
 }
 
 // ---------- editing ----------
@@ -580,7 +670,7 @@ function lock(item) {
 
 const TYPE_NAMES = {
   trend: "Trend line", arrow: "Arrow", hline: "Horizontal line", hray: "Horizontal ray", vline: "Vertical line",
-  rect: "Rectangle", label: "Label", text: "Text",
+  rect: "Rectangle", label: "Label", text: "Text", image: "Image",
 };
 
 // Dates use the chart's wall clock, including intraday bars, and snap to the nearest bar.
@@ -782,6 +872,12 @@ function onPointerMove(event) {
   if (drag.end === "width") {
     const at = toPixel(drag.item.p1, ctx);
     if (at) drag.item.boxW = Math.max(40, Math.round(localXY(event).x - at.x));
+  } else if (drag.end === "size") { // an image's corner: wider or narrower, same shape
+    const at = toPixel(drag.item.p1, ctx);
+    const here = localXY(event);
+    const ratio = drag.item.ratio || 1;
+    // Follow whichever way the corner went further, so a mostly-down drag still grows it.
+    if (at) drag.item.w = Math.round(Math.max(24, here.x - at.x, (here.y - at.y) * ratio));
   } else if (drag.end === "c12" || drag.end === "c21") { // a rectangle's other two corners
     const point = pointAt(event);
     const [timeEnd, priceEnd] = drag.end === "c12" ? ["p1", "p2"] : ["p2", "p1"];
@@ -830,6 +926,18 @@ function onToolbar(event) {
   if (!item || !el) return;
   if (el.dataset.k === "delete") return event.type === "click" && deleteSelected();
   if (el.dataset.k === "alert") return event.type === "click" && alertHooks.open(item, key);
+  if (el.dataset.k === "natural") {
+    if (event.type !== "click") return;
+    const img = new Image();
+    img.src = item.src;
+    img.decode().then(() => {
+      remember();
+      item.w = Math.max(24, Math.min(IMAGE_MAX_W, img.naturalWidth));
+      item.ratio = img.naturalWidth / img.naturalHeight || item.ratio;
+      persist();
+    }).catch(() => toast("Couldn't read that image"));
+    return;
+  }
   if (el.dataset.k === "autowidth") {
     if (event.type !== "click") return;
     remember();
@@ -854,8 +962,23 @@ function onToolbar(event) {
 // A chart's layer, made (and wired up) the first time it is needed.
 function layerFor(pane) {
   if (!layers.has(pane)) {
-    const l = { pane, svg: pane.root.querySelector('[data-part="drawings"]'), key: null, scratch: [] };
+    const svg = pane.root.querySelector('[data-part="drawings"]');
+    const images = document.createElement("div");
+    images.className = "draw-images";
+    svg.before(images);
+    const l = { pane, svg, images, key: null, scratch: [] };
     layers.set(pane, l);
+    // Drop an image file on a chart, as well as the toolbar's Image button and pasting.
+    pane.root.addEventListener("dragover", (event) => {
+      if ([...event.dataTransfer.items].some((each) => each.kind === "file")) event.preventDefault();
+    });
+    pane.root.addEventListener("drop", (event) => {
+      const file = [...event.dataTransfer.files].find((each) => each.type.startsWith("image/"));
+      if (!file) return;
+      event.preventDefault();
+      work(l);
+      addImage(file);
+    });
     const enter = (handler) => (event) => { work(l); handler(event); };
     l.svg.addEventListener("pointerdown", enter(onPointerDown));
     l.svg.addEventListener("pointermove", (event) => { if (l === layer) onPointerMove(event); });
@@ -934,5 +1057,13 @@ export function bindDrawings() {
   document.querySelectorAll("[data-tool]").forEach((button) =>
     button.addEventListener("click", () => setTool(tool === button.dataset.tool ? null : button.dataset.tool)));
   window.addEventListener("resize", () => scheduleCallouts());
+  // Paste an image (a copied GIF file or screenshot) onto the chart.
+  document.addEventListener("paste", (event) => {
+    if (event.target.closest?.("input, textarea, [contenteditable]") || !document.body.classList.contains("mode-chart")) return;
+    const file = [...(event.clipboardData?.files || [])].find((each) => each.type.startsWith("image/"));
+    if (!file) return;
+    event.preventDefault();
+    addImage(file);
+  });
   syncDrawings();
 }

@@ -1,6 +1,6 @@
 import { $, store, toast } from "./util.js";
 import {
-  deleteSelected, drawingsHidden, drawingTool, duplicateSelected, onDrawingTool, redo, removeAllDrawings, setTool,
+  deleteSelected, drawingsHidden, drawingTool, duplicateSelected, onDrawingTool, pickImage, redo, removeAllDrawings, setTool,
   toggleDrawingsHidden, undo,
 } from "./drawings.js";
 import { armMeasure } from "./measure.js";
@@ -30,6 +30,7 @@ const TOOLS = [
   "-",
   ["text", "Text: click where it goes, then type", icon('<path d="M3.5 4.5V2.8h11v1.7M9 2.8v12.4M6.8 15.2h4.4"/>')],
   ["label", "Label: click a point, then click where the text goes", icon(`${dot(3.5, 14.5)}<path d="M4.8 13.2 8.5 9.5"/><rect x="8.2" y="2.8" width="8.3" height="6.7" rx="1.6"/>`)],
+  ["image", "Image or GIF: pick a file, or paste or drop one on the chart", icon('<rect x="2.5" y="3.5" width="13" height="11" rx="1.5"/><circle cx="6.5" cy="7.3" r="1.3"/><path d="m2.8 13.2 4-3.7 2.7 2.4 2.2-1.9 3.5 3"/>')],
   ["measure", "Measure: drag over a move for its % change and bars (or Shift+drag)", icon('<path d="M3 15 15 3M5 13l1.6 1.6M7.4 10.6 8.6 11.8M9.8 8.2l1.6 1.6M12.2 5.8l1.2 1.2"/>')],
   "-",
   ["hide", "Hide drawings", EYE],
@@ -92,6 +93,7 @@ function save(changes) {
 async function act(name) {
   if (name === "cursor") { setTool(null); armMeasure(false); }
   else if (name === "hide") toggleDrawingsHidden();
+  else if (name === "image") { setTool(null); armMeasure(false); pickImage(); }
   else if (name === "clone") duplicateSelected();
   else if (name === "delete") { if (!deleteSelected()) toast("Select a drawing to remove it"); }
   else if (name === "clear") {
