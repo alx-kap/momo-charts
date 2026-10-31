@@ -1513,18 +1513,29 @@ function createPane(root, { side, owner, settings, info = true }) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(shot, 0, 0);
     // Images placed on the chart (a GIF as its current frame), clipped to the plot as on screen.
+    // Another site's picture would make the canvas unreadable, so it comes through momo instead.
     const base = el["chart"].getBoundingClientRect();
+    const local = async (img) => {
+      if (new URL(img.src).origin === location.origin) return img;
+      try {
+        const response = await fetch(`/api/images/fetch?url=${encodeURIComponent(img.src)}`, { headers: { "X-Momo": "1" } });
+        return response.ok ? await createImageBitmap(await response.blob()) : null;
+      } catch {
+        return null;
+      }
+    };
     for (const holder of root.querySelectorAll(".draw-images")) {
+      const imgs = [...holder.querySelectorAll("img")].filter((img) => img.complete && img.naturalWidth);
+      const pictures = await Promise.all(imgs.map(local));
       const clip = holder.getBoundingClientRect();
       ctx.save();
       ctx.beginPath();
       ctx.rect((clip.left - base.left) * scale, (clip.top - base.top) * scale, clip.width * scale, clip.height * scale);
       ctx.clip();
-      for (const img of holder.querySelectorAll("img")) {
-        // A picture from another site would make the canvas unreadable, so it's left out.
-        if (!img.complete || !img.naturalWidth || new URL(img.src).origin !== location.origin) continue;
+      for (const [i, img] of imgs.entries()) {
+        if (!pictures[i]) continue;
         const at = img.getBoundingClientRect();
-        ctx.drawImage(img, (at.left - base.left) * scale, (at.top - base.top) * scale, at.width * scale, at.height * scale);
+        ctx.drawImage(pictures[i], (at.left - base.left) * scale, (at.top - base.top) * scale, at.width * scale, at.height * scale);
       }
       ctx.restore();
     }

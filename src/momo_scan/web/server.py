@@ -10,19 +10,22 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import importlib.util
+import ipaddress
 import json
 import logging
 import os
 import re
+import socket
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -53,6 +56,42 @@ IMAGE_TYPES = {
 IMAGE_MEDIA = {"gif": "image/gif", "png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}
 IMAGE_MAX_BYTES = 10_000_000
 IMAGE_NAME = re.compile(r"^[0-9a-f]{24}\.(gif|png|jpg|webp)$")
+
+
+async def public_address(url: str) -> bool:
+    """An http(s) address whose host is on the public internet, not this machine or the LAN."""
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        return False
+    try:
+        found = await asyncio.to_thread(socket.getaddrinfo, parts.hostname, parts.port or 443)
+    except OSError:
+        return False
+    return bool(found) and all(ipaddress.ip_address(info[4][0]).is_global for info in found)
+
+
+async def fetch_image(url: str, redirects: int = 3) -> tuple[bytes, str]:
+    """A picture from another site, read into memory (never saved), checked by its first bytes."""
+    async with httpx.AsyncClient(timeout=10) as client:
+        for _ in range(redirects + 1):
+            if not await public_address(url):
+                raise HTTPException(400, "Not a public image address")
+            async with client.stream("GET", url, headers={"User-Agent": "momo"}) as response:
+                if response.is_redirect:
+                    url = str(response.url.join(response.headers.get("location", "")))
+                    continue
+                if response.status_code != 200:
+                    raise HTTPException(502, f"The image's site answered {response.status_code}")
+                data = bytearray()
+                async for chunk in response.aiter_bytes():
+                    data += chunk
+                    if len(data) > IMAGE_MAX_BYTES:
+                        raise HTTPException(413, "That image is too large")
+            kind = image_kind(bytes(data))
+            if not kind:
+                raise HTTPException(400, "Not a GIF, PNG, JPEG or WebP image")
+            return bytes(data), IMAGE_MEDIA[kind]
+    raise HTTPException(502, "Too many redirects")
 
 
 def image_kind(data: bytes) -> str | None:
@@ -688,6 +727,14 @@ def create_app(
             temp.write_bytes(data)
             os.replace(temp, path)
         return {"url": f"/api/images/{name}"}
+
+    # A picture shown from another site, passed through for chart snapshots: the browser can't
+    # copy another site's pixels into an image, but can copy momo's. Nothing is kept.
+    @app.get("/api/images/fetch")
+    async def fetch_remote_image(url: str, request: Request) -> Response:
+        require_header(request)
+        data, media = await fetch_image(url)
+        return Response(data, media_type=media, headers={"Cache-Control": "private, max-age=3600"})
 
     @app.get("/api/images/{name}")
     async def get_image(name: str) -> FileResponse:
