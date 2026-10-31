@@ -1521,7 +1521,8 @@ function createPane(root, { side, owner, settings, info = true }) {
       ctx.rect((clip.left - base.left) * scale, (clip.top - base.top) * scale, clip.width * scale, clip.height * scale);
       ctx.clip();
       for (const img of holder.querySelectorAll("img")) {
-        if (!img.complete || !img.naturalWidth) continue;
+        // A picture from another site would make the canvas unreadable, so it's left out.
+        if (!img.complete || !img.naturalWidth || new URL(img.src).origin !== location.origin) continue;
         const at = img.getBoundingClientRect();
         ctx.drawImage(img, (at.left - base.left) * scale, (at.top - base.top) * scale, at.width * scale, at.height * scale);
       }

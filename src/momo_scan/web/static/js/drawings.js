@@ -493,6 +493,7 @@ function renderImages(l, items, ctx) {
       img.dataset.id = id;
       img.alt = "";
       img.draggable = false;
+      img.referrerPolicy = "no-referrer"; // some GIF sites refuse pictures shown on other sites
       img.src = item.src;
       holder.append(img);
     }
@@ -503,17 +504,23 @@ function renderImages(l, items, ctx) {
 }
 
 // Upload a picture and put it in the middle of the working chart, selected.
-export async function addImage(file) {
-  if (!file || !/^image\/(gif|png|jpeg|webp)$/.test(file.type)) return toast("Pick a GIF, PNG, JPEG or WebP image");
+// A file is uploaded; a web address (a picture copied or dragged from a page) is shown from
+// where it lives, and nothing is stored.
+export async function addImage(source) {
+  const address = typeof source === "string";
+  if (!source || (!address && !/^image\/(gif|png|jpeg|webp)$/.test(source.type))) return toast("Pick a GIF, PNG, JPEG or WebP image");
   if (!layer || !chartContext().bars.length) return toast("Open a chart first");
   const owner = layer;
-  let url;
-  try {
-    ({ url } = await api("/api/images", { method: "POST", body: file, headers: { "Content-Type": file.type } }));
-  } catch (error) {
-    return toast(`Couldn't add the image: ${error.message}`);
+  let url = address ? source : null;
+  if (!address) {
+    try {
+      ({ url } = await api("/api/images", { method: "POST", body: source, headers: { "Content-Type": source.type } }));
+    } catch (error) {
+      return toast(`Couldn't add the image: ${error.message}`);
+    }
   }
   const img = new Image();
+  img.referrerPolicy = "no-referrer";
   img.src = url;
   try { await img.decode(); } catch { return toast("Couldn't read that image"); }
   if (layer !== owner) return; // the chart changed while it uploaded
@@ -529,6 +536,23 @@ export async function addImage(file) {
   if (hidden) toggleDrawingsHidden();
   pending = { type: "image", p1: { t: logicalToTime(Math.round(logical), ctx.bars, ctx.interval), p: price }, src: url, w, ratio };
   finish();
+}
+
+// What a paste or drop carries. "Copy image" on a web page puts a still PNG of a GIF on the
+// clipboard, with the page's <img> beside it, so the picture's address comes before any PNG; a
+// GIF file (copied in Finder, say) is taken as it is.
+const IMAGE_URL = /^https?:\/\/\S+\.(gif|png|jpe?g|webp)(\?\S*)?$/i;
+export function imageFrom(data) {
+  if (!data) return null;
+  const files = [...(data.files || [])].filter((each) => each.type.startsWith("image/"));
+  const gif = files.find((each) => each.type === "image/gif");
+  if (gif) return gif;
+  const html = data.getData("text/html");
+  const src = html && new DOMParser().parseFromString(html, "text/html").querySelector("img")?.getAttribute("src");
+  if (src && /^https?:\/\//i.test(src)) return src;
+  const text = (data.getData("text/uri-list") || data.getData("text/plain") || "").trim().split(/\s+/)[0];
+  if (IMAGE_URL.test(text)) return text;
+  return files[0] || null;
 }
 
 // The toolbar's Image button: pick a file.
@@ -929,6 +953,7 @@ function onToolbar(event) {
   if (el.dataset.k === "natural") {
     if (event.type !== "click") return;
     const img = new Image();
+    img.referrerPolicy = "no-referrer";
     img.src = item.src;
     img.decode().then(() => {
       remember();
@@ -970,14 +995,15 @@ function layerFor(pane) {
     layers.set(pane, l);
     // Drop an image file on a chart, as well as the toolbar's Image button and pasting.
     pane.root.addEventListener("dragover", (event) => {
-      if ([...event.dataTransfer.items].some((each) => each.kind === "file")) event.preventDefault();
+      const types = event.dataTransfer.types;
+      if (types.includes("Files") || types.includes("text/uri-list")) event.preventDefault();
     });
     pane.root.addEventListener("drop", (event) => {
-      const file = [...event.dataTransfer.files].find((each) => each.type.startsWith("image/"));
-      if (!file) return;
+      const source = imageFrom(event.dataTransfer);
+      if (!source) return;
       event.preventDefault();
       work(l);
-      addImage(file);
+      addImage(source);
     });
     const enter = (handler) => (event) => { work(l); handler(event); };
     l.svg.addEventListener("pointerdown", enter(onPointerDown));
@@ -1057,13 +1083,13 @@ export function bindDrawings() {
   document.querySelectorAll("[data-tool]").forEach((button) =>
     button.addEventListener("click", () => setTool(tool === button.dataset.tool ? null : button.dataset.tool)));
   window.addEventListener("resize", () => scheduleCallouts());
-  // Paste an image (a copied GIF file or screenshot) onto the chart.
+  // Paste an image (a GIF copied from a page, a GIF file, a screenshot) onto the chart.
   document.addEventListener("paste", (event) => {
     if (event.target.closest?.("input, textarea, [contenteditable]") || !document.body.classList.contains("mode-chart")) return;
-    const file = [...(event.clipboardData?.files || [])].find((each) => each.type.startsWith("image/"));
-    if (!file) return;
+    const source = imageFrom(event.clipboardData);
+    if (!source) return;
     event.preventDefault();
-    addImage(file);
+    addImage(source);
   });
   syncDrawings();
 }
