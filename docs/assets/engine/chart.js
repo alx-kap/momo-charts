@@ -71,6 +71,7 @@ class Pane {
     this.top = 0;
     this.height = 0;
     this.watermark = null;
+    this.primitives = []; // things painted over the series by their owners (callouts)
     this.api = {
       getHeight: () => { chart._ensure(); return this.height; },
       setStretchFactor: (factor) => { this.stretch = factor; chart._changed(); },
@@ -78,6 +79,17 @@ class Pane {
       getHTMLElement: () => null,
       paneIndex: () => chart.panes_.indexOf(this),
       getSeries: () => this.series.map((s) => s.api),
+      // `primitive.paint(ctx, { width, height })` paints over the series in CSS px, clipped to
+      // the pane, in the same frame as the bars; `attached({ requestUpdate })` hands it a repaint.
+      attachPrimitive: (primitive) => {
+        this.primitives.push(primitive);
+        primitive.attached?.({ requestUpdate: () => chart.repaint() });
+        chart.repaint();
+      },
+      detachPrimitive: (primitive) => {
+        this.primitives = this.primitives.filter((p) => p !== primitive);
+        chart.repaint();
+      },
       _pane: this,
     };
   }
@@ -101,6 +113,7 @@ export class Chart {
     this.timesDirty = false;
     this.layoutDirty = true;
     this.frame = 0;
+    this.dirty = true; // the bars need repainting, not just the crosshair
     this.axisW = 0;
     this.plotW = 0;
     this.timeH = 0;
@@ -112,7 +125,7 @@ export class Chart {
     this.pinch = null;
     this.glide = 0; // the momentum scroll's animation frame
     this.hoverSeparator = -1;
-    this.subs = { crosshair: [], click: [], range: [], size: [] };
+    this.subs = { crosshair: [], click: [], range: [], size: [], paint: [] };
     this.lastRange = null;
     this.lastSize = null;
     this.applyTimeOptions(this.o.timeScale);
@@ -129,7 +142,7 @@ export class Chart {
     // picture stretched to the new size (a stutter when a side panel opens or closes).
     this.observer = new ResizeObserver(() => {
       if (this.frame) cancelAnimationFrame(this.frame);
-      this.layoutDirty = true;
+      this.layoutDirty = this.dirty = true;
       this.render();
     });
     this.observer.observe(container);
@@ -174,6 +187,11 @@ export class Chart {
 
   _changed() {
     this.layoutDirty = true;
+    this.repaint();
+  }
+
+  repaint() {
+    this.dirty = true;
     this.schedule();
   }
 
@@ -287,19 +305,25 @@ export class Chart {
 
   // ---------- painting ----------
 
+  // A frame. Moving the crosshair only repaints its own canvas; anything else repaints the bars,
+  // then tells the page's overlays (legends, drawings, earnings) in the same frame, so they never
+  // trail the bars.
   render() {
     this.frame = 0;
     this._ensure();
     const dpr = window.devicePixelRatio || 1;
     const w = Math.round(this.width * dpr), h = Math.round(this.height * dpr);
     for (const canvas of [this.canvas, this.top]) {
-      if (canvas.width !== w || canvas.height !== h) [canvas.width, canvas.height] = [w, h];
+      if (canvas.width !== w || canvas.height !== h) { [canvas.width, canvas.height] = [w, h]; this.dirty = true; }
     }
+    const painted = this.dirty;
+    this.dirty = false;
     if (w && h) {
-      this.paint(dpr);
+      if (painted) this.paint(dpr);
       this.paintCrosshair(dpr);
     }
     this.emitChanges();
+    if (painted) for (const fn of this.subs.paint) fn();
   }
 
   emitChanges() {
@@ -349,6 +373,14 @@ export class Chart {
           s.paint({ ...view, scale: s.scale });
         }
         this.paintPriceLines(ctx, pane, dpr);
+      }
+      if (pane.primitives.length) {
+        ctx.scale(dpr, dpr);
+        for (const primitive of pane.primitives) {
+          ctx.save();
+          primitive.paint(ctx, { width: this.plotW, height: pane.height });
+          ctx.restore();
+        }
       }
       ctx.restore();
     }
@@ -899,6 +931,10 @@ export class Chart {
       unsubscribeCrosshairMove: (fn) => { chart.subs.crosshair = chart.subs.crosshair.filter((f) => f !== fn); },
       subscribeClick: (fn) => chart.subs.click.push(fn),
       unsubscribeClick: (fn) => { chart.subs.click = chart.subs.click.filter((f) => f !== fn); },
+      // After every frame that repainted the bars (not crosshair-only ones).
+      subscribePaint: (fn) => chart.subs.paint.push(fn),
+      unsubscribePaint: (fn) => { chart.subs.paint = chart.subs.paint.filter((f) => f !== fn); },
+      repaint: () => chart.repaint(),
       // Show the crosshair at a price and time (another chart's crosshair, a dragged line).
       setCrosshairPosition(price, time, sApi) {
         const s = seriesApis.get(sApi);
@@ -913,6 +949,7 @@ export class Chart {
       },
       clearCrosshairPosition() { chart.setCross(null); },
       takeScreenshot() {
+        chart.dirty = true;
         chart.render();
         const shot = document.createElement("canvas");
         [shot.width, shot.height] = [chart.canvas.width, chart.canvas.height];

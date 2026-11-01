@@ -166,22 +166,6 @@ body.split .chart-pane.active-pane::after {
 }
 .chart-pane [data-part="chart"] { position: absolute; inset: 0; }
 
-.chart-pane [data-part="callouts"] { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
-.co-stems { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.co-stems line { stroke-width: 1; opacity: .75; }
-.co-label {
-  position: absolute;
-  font: 600 11px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .3px;
-  padding: 4px 8px; border-radius: 999px; white-space: nowrap; color: var(--c);
-  background: rgba(12, 14, 19, .92); border: 1px solid var(--c); box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
-}
-.co-badge {
-  position: absolute; width: 16px; height: 16px; border-radius: 50%;
-  background: var(--c); color: #fff; font: 700 10px/16px Inter, -apple-system, sans-serif; text-align: center;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, .6);
-}
-.co-badge:empty { width: 6px; height: 6px; }
-
 .chart-pane { --chart-text: #b2b5be; }
 .chart-pane [data-part="legend"] {
   position: absolute; top: 6px; left: 10px; z-index: 3; pointer-events: none;

@@ -862,30 +862,30 @@ function createPane(root, { side, owner, settings, info = true }) {
   }
 
   // ---------- callouts ----------
-  // Event labels (scan, fill, exit, …) drawn as HTML pills joined to their candles by stems,
-  // instead of chart markers whose text sits on top of the bars. Labels whose candles are close
-  // together are spaced out in time order left to right, each as close to its own candle as the
-  // order allows, and each sits just above the candles beneath it (below them if there's no room
-  // above), so it never covers a bar. `badge: true` draws a small dot (or numbered dot) under the bar
-  // instead. Labels only appear once their bar is on the chart, so they arrive with the bar
+  // Event labels (scan, fill, exit, …) painted by the engine as pills joined to their candles by
+  // stems, instead of chart markers whose text sits on top of the bars. Labels whose candles are
+  // close together are spaced out in time order left to right, each as close to its own candle as
+  // the order allows, and each sits just above the candles beneath it (below them if there's no
+  // room above), so it never covers a bar. `badge: true` paints a small dot (or numbered dot) under
+  // the bar instead. Labels only appear once their bar is on the chart, so they arrive with the bar
   // during a replay.
-  const calloutLayer = el["callouts"];
-  const SVG = "http://www.w3.org/2000/svg";
   let callouts = [];
-  let calloutFrame = 0;
   const CLEARANCE = 16; // px between a row and the candles it spans
   const PILL_GAP = 6; // px between pills in a row
   const CLUSTER_GAP = 40; // px: pills further apart than this get rows of their own
+  const PILL_FONT = '600 11px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  const BADGE_FONT = "700 10px Inter, -apple-system, sans-serif";
+  const PILL_H = 21; // 11px text, 4px padding and a 1px border, top and bottom
 
+  // Overlays (legends, margin handles, earnings, drawings) follow every frame that moved the bars.
   function scheduleCallouts() {
-    if (!calloutFrame) calloutFrame = requestAnimationFrame(() => {
-      calloutFrame = 0;
-      renderCallouts();
-      earnings.render();
-      layoutOverlays();
-      for (const fn of renderHooks) fn(pane);
-    });
+    chart.repaint();
   }
+  chart.subscribePaint(() => {
+    earnings.render();
+    layoutOverlays();
+    for (const fn of renderHooks) fn(pane);
+  });
 
   // Highest high and lowest low (as y coordinates) of the candles between two x positions.
   function candleExtent(left, right) {
@@ -921,10 +921,9 @@ function createPane(root, { side, owner, settings, info = true }) {
     return centres.map((c) => c + shift);
   }
 
-  function renderCallouts() {
+  function paintCallouts(ctx, { width, height: paneHeight }) {
+    if (!callouts.length) return;
     const shown = new Map(currentBars.map((bar) => [bar.time, bar]));
-    const width = calloutLayer.clientWidth - chart.priceScale("right").width();
-    const paneHeight = chart.panes()[0].getHeight();
     const items = callouts
       .filter((item) => shown.has(item.time))
       .map((item, order) => {
@@ -937,25 +936,10 @@ function createPane(root, { side, owner, settings, info = true }) {
       .filter((item) => item.x != null && item.high != null && item.x >= 0 && item.x <= width)
       .sort((a, b) => a.x - b.x || a.order - b.order);
 
-    calloutLayer.innerHTML = "";
-    const svg = document.createElementNS(SVG, "svg");
-    svg.setAttribute("class", "co-stems");
-    calloutLayer.appendChild(svg);
-    const stems = [];
-    const pills = [];
-    for (const item of items) {
-      const node = document.createElement("div");
-      node.className = item.badge ? "co-badge" : "co-label";
-      node.textContent = item.text || "";
-      node.style.setProperty("--c", item.color);
-      calloutLayer.appendChild(node);
-      if (item.badge) {
-        node.style.left = `${item.x - node.offsetWidth / 2}px`;
-        node.style.top = `${item.low + 6}px`;
-      } else {
-        pills.push({ ...item, node, w: node.offsetWidth, h: node.offsetHeight });
-      }
-    }
+    ctx.font = PILL_FONT;
+    ctx.letterSpacing = "0.3px";
+    const pills = items.filter((item) => !item.badge)
+      .map((item) => ({ ...item, text: item.text || "", w: Math.ceil(ctx.measureText(item.text || "").width) + 18, h: PILL_H }));
 
     // Group pills whose natural spots would crowd each other into rows.
     const rows = [];
@@ -978,22 +962,67 @@ function createPane(root, { side, owner, settings, info = true }) {
         const fitsAbove = above >= 2;
         const fitsBelow = below + pill.h <= paneHeight - 2;
         const up = pill.position === "belowBar" ? !fitsBelow && fitsAbove : fitsAbove || !fitsBelow;
-        const top = up ? Math.max(2, above) : Math.min(paneHeight - pill.h - 2, below);
-        pill.node.style.left = `${cx - pill.w / 2}px`;
-        pill.node.style.top = `${top}px`;
-        // The stem runs from the candle's high (or low) to the nearest point on the pill's edge.
-        const anchorY = up ? pill.high - 3 : pill.low + 3;
-        const endY = up ? top + pill.h : top;
-        const endX = Math.max(cx - pill.w / 2 + 8, Math.min(cx + pill.w / 2 - 8, pill.x));
-        stems.push(`<line x1="${pill.x.toFixed(1)}" y1="${anchorY.toFixed(1)}" x2="${endX.toFixed(1)}" y2="${endY.toFixed(1)}" stroke="${pill.color}"/>` +
-          `<circle cx="${pill.x.toFixed(1)}" cy="${anchorY.toFixed(1)}" r="2.5" fill="${pill.color}"/>`);
+        Object.assign(pill, { up, left: cx - pill.w / 2, top: up ? Math.max(2, above) : Math.min(paneHeight - pill.h - 2, below) });
       });
     }
-    svg.innerHTML = stems.join("");
-  }
 
-  chart.timeScale().subscribeVisibleLogicalRangeChange(scheduleCallouts);
-  chart.timeScale().subscribeSizeChange(scheduleCallouts);
+    // Stems first, so the pills sit over them. A stem runs from the candle's high (or low) to the
+    // nearest point on its pill's edge.
+    ctx.lineWidth = 1;
+    for (const pill of pills) {
+      const anchorY = pill.up ? pill.high - 3 : pill.low + 3;
+      const endY = pill.up ? pill.top + pill.h : pill.top;
+      const endX = Math.max(pill.left + 8, Math.min(pill.left + pill.w - 8, pill.x));
+      ctx.strokeStyle = ctx.fillStyle = pill.color;
+      ctx.globalAlpha = 0.75;
+      ctx.beginPath();
+      ctx.moveTo(pill.x, anchorY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(pill.x, anchorY, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    for (const pill of pills) {
+      const box = [Math.round(pill.left) + 0.5, Math.round(pill.top) + 0.5, pill.w - 1, pill.h - 1];
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, .5)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = "rgba(12, 14, 19, .92)";
+      ctx.beginPath();
+      ctx.roundRect(...box, pill.h / 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = ctx.fillStyle = pill.color;
+      ctx.stroke();
+      ctx.fillText(pill.text, pill.left + pill.w / 2, pill.top + pill.h / 2 + 0.5);
+    }
+
+    ctx.font = BADGE_FONT;
+    ctx.letterSpacing = "0px";
+    for (const item of items.filter((each) => each.badge)) {
+      const r = item.text ? 8 : 3;
+      const cy = item.low + 6 + r;
+      ctx.fillStyle = "rgba(0, 0, 0, .6)";
+      ctx.beginPath();
+      ctx.arc(item.x, cy, r + 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = item.color;
+      ctx.beginPath();
+      ctx.arc(item.x, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      if (item.text) {
+        ctx.fillStyle = "#fff";
+        ctx.fillText(String(item.text), item.x, cy + 0.5);
+      }
+    }
+  }
+  chart.panes()[0].attachPrimitive({ paint: paintCallouts });
+
   // Remember a zoom you made yourself: the range also changes when a chart loads or resizes, so
   // only count changes right after a wheel, drag or touch.
   let lastInput = 0;
@@ -1005,10 +1034,6 @@ function createPane(root, { side, owner, settings, info = true }) {
     const spacing = chart.timeScale().options().barSpacing;
     if (spacing !== savedZoom(lastShown.interval)) saveZoom(lastShown.interval, spacing);
   });
-  // Price-scale drags and wheel zooms have no event of their own.
-  for (const type of ["wheel", "pointermove", "pointerup"]) {
-    el["chart"].addEventListener(type, scheduleCallouts, { passive: true });
-  }
 
   function applyMarkers() {
     if (view.markers) callouts = view.markers;
