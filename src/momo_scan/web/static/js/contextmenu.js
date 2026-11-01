@@ -12,18 +12,21 @@ export const svgIcon = (...paths) => `<svg viewBox="0 0 24 24">${paths.map((d) =
 let root = null; // the open menus, outermost first: [{ el, items, active }]
 let stack = [];
 let opener = null;
+let anchor = null; // the button a dropdown hangs from: pressing it again closes the menu
+let pressedAnchor = null; // that press's click is swallowed, so it doesn't open the menu again
 
 export const menuOpen = () => stack.length > 0;
 
 // True when this right-click should get the app's menu: not on a text field, not with Shift.
 export const wantsMenu = (event) => !event.shiftKey && !event.target.closest("input, textarea, select, [contenteditable]");
 
-export function openMenu(event, items) {
+export function openMenu(event, items, from = null) {
   closeMenu();
   const entries = items.filter(Boolean);
   if (!entries.some((item) => item.run || item.items)) return;
   event.preventDefault();
   opener = document.activeElement;
+  anchor = from;
   root = document.createElement("div");
   root.className = "ctx-root";
   document.body.append(root);
@@ -35,6 +38,7 @@ export function closeMenu() {
   root.remove();
   root = null;
   stack = [];
+  anchor = null;
   if (opener && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true });
   opener = null;
 }
@@ -118,6 +122,13 @@ document.addEventListener("pointerover", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  const pressed = pressedAnchor;
+  pressedAnchor = null;
+  if (pressed && pressed.contains(event.target)) {
+    event.stopPropagation();
+    event.preventDefault();
+    return;
+  }
   if (!root) return;
   const button = event.target.closest(".ctx-item");
   if (button && root.contains(button)) {
@@ -128,7 +139,10 @@ document.addEventListener("click", (event) => {
 
 // A click, a second right-click, a scroll or a resize elsewhere dismisses it.
 document.addEventListener("contextmenu", (event) => { if (root && !root.contains(event.target)) closeMenu(); }, true);
-document.addEventListener("pointerdown", (event) => { if (root && !root.contains(event.target)) closeMenu(); }, true);
+document.addEventListener("pointerdown", (event) => {
+  pressedAnchor = root && anchor && anchor.contains(event.target) ? anchor : null;
+  if (root && !root.contains(event.target)) closeMenu();
+}, true);
 window.addEventListener("blur", closeMenu);
 window.addEventListener("resize", closeMenu);
 document.addEventListener("wheel", (event) => { if (root && !root.contains(event.target)) closeMenu(); }, { passive: true, capture: true });

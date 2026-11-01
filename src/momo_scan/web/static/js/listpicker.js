@@ -13,6 +13,19 @@ const COPY = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"
 const TRASH = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.2c0 .5.4.8.9.8h4c.5 0 .9-.3.9-.8l.6-8.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const RECENT_MAX = 5;
 
+// A press on the backdrop closes a picker. The backdrop is gone before the button comes up, so
+// that press's click would land on whatever is underneath (the list name that opened it, which
+// would open it again): swallow it.
+function dismissPress(finish) {
+  return (event) => {
+    if (event.target !== event.currentTarget) return;
+    const swallow = (click) => { click.stopPropagation(); click.preventDefault(); };
+    window.addEventListener("click", swallow, { capture: true, once: true });
+    setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 600);
+    finish();
+  };
+}
+
 export function pickWatchlist({ state, recent = [], rename, duplicate, remove }) {
   open?.finish(null);
   return new Promise((resolve) => {
@@ -119,7 +132,7 @@ export function pickWatchlist({ state, recent = [], rename, duplicate, remove })
     };
 
     input.addEventListener("input", () => { query = input.value.trim().toLowerCase(); cursor = 0; render(); });
-    back.addEventListener("pointerdown", (event) => { if (event.target === back) finish(null); });
+    back.addEventListener("pointerdown", dismissPress(() => finish(null)));
     listEl.addEventListener("focusout", (event) => { if (event.target.matches(".wlp-edit")) commitEdit(true); });
     back.addEventListener("click", (event) => {
       const action = event.target.closest("[data-action]");
@@ -218,7 +231,7 @@ export function pickAddTo({ symbol, lists, toggle }) {
       event.stopPropagation();
     };
     input.addEventListener("input", () => { query = input.value.trim().toLowerCase(); cursor = 0; render(); });
-    back.addEventListener("pointerdown", (event) => { if (event.target === back) finish(); });
+    back.addEventListener("pointerdown", dismissPress(() => finish()));
     back.addEventListener("click", (event) => {
       const row = event.target.closest(".wlp-row");
       if (row) flip(row.dataset.id);
@@ -270,7 +283,7 @@ export function askSymbolsPanel({ listName }) {
       event.preventDefault();
       event.stopPropagation();
     };
-    back.addEventListener("pointerdown", (event) => { if (event.target === back) finish(null); });
+    back.addEventListener("pointerdown", dismissPress(() => finish(null)));
     back.querySelector(".wlp-go").addEventListener("click", accept);
     document.body.appendChild(back);
     open = { back, finish };

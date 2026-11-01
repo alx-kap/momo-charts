@@ -277,11 +277,11 @@ function watchShown() {
     watchBuzz("screener", []);
     return watchLive("screener", []);
   }
-  const body = $("sc-body");
-  const lines = [...body.querySelectorAll(".sc-line")];
+  const scroller = $("sc-scroll");
+  const lines = [...$("sc-body").querySelectorAll(".sc-line")];
   const height = lines[0] ? lines[0].offsetHeight || 22 : 22;
-  const first = Math.max(0, Math.floor(body.scrollTop / height) - SPARE_ROWS);
-  const last = Math.ceil((body.scrollTop + body.clientHeight) / height) + SPARE_ROWS;
+  const first = Math.max(0, Math.floor(scroller.scrollTop / height) - SPARE_ROWS);
+  const last = Math.ceil((scroller.scrollTop + scroller.clientHeight) / height) + SPARE_ROWS;
   const symbols = lines.slice(first, last).map((line) => line.dataset.symbol);
   watchLive("screener", symbols);
   watchBuzz("screener", shown().some((key) => key === "buzz" || key === "ext_vol") ? symbols : []);
@@ -364,12 +364,15 @@ async function run() {
     sectors = result.sectors;
     if (first) renderRules();
     rows = result.rows;
-    $("sc-count").textContent = result.total === rows.length ? `${result.total} match` : `${result.total} match · top ${rows.length}`;
+    // " · top N" gives way first when the window is narrow; the count itself always shows.
+    const top = result.total === rows.length ? "" : ` · top ${rows.length}`;
+    $("sc-count").innerHTML = `${result.total} match<span class="sc-top">${top}</span>`;
+    $("sc-count").title = `${result.total} match${top}`;
     const funds = result.etfs ? ` + ${result.etfs.toLocaleString()} ETFs` : "";
     $("sc-foot").textContent = `${result.universe.toLocaleString()} stocks${funds} · through ${result.as_of}`;
-    const scroll = $("sc-body").scrollTop;
+    const scroll = $("sc-scroll").scrollTop;
     renderBody();
-    $("sc-body").scrollTop = scroll;
+    $("sc-scroll").scrollTop = scroll;
     $("sc-live-label").hidden = !result.can_sweep;
     if (!result.can_sweep && liveScan) liveScan = false;
     $("sc-live").checked = liveScan;
@@ -549,7 +552,10 @@ export function dockScreener(on) {
   if (on) $("side-home").before(box);
   else $("charts").after(box);
   applyPlace();
-  $("sc-dock").innerHTML = on ? "Float" : "Dock";
+  // Like the other header buttons, a narrow window shows the icon instead of the word.
+  $("sc-dock").innerHTML = on
+    ? `<svg class="sc-ico" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M5.5 2.5h8v8M2.5 5.5h8v8h-8z"/></svg><span class="sc-lbl">Float</span>`
+    : `<svg class="sc-ico" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2.5 3h11v10h-11zM9.5 3v10"/></svg><span class="sc-lbl">Dock</span>`;
 }
 
 export function bindScreener() {
@@ -729,7 +735,7 @@ export function bindScreener() {
     const line = event.target.closest(".sc-line[data-symbol]");
     if (line) warmSymbol(line.dataset.symbol);
   });
-  $("sc-body").addEventListener("scroll", () => {
+  $("sc-scroll").addEventListener("scroll", () => {
     if (!watchFrame) watchFrame = requestAnimationFrame(() => { watchFrame = 0; watchShown(); });
   }, { passive: true });
 }

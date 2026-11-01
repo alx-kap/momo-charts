@@ -440,10 +440,8 @@ function overlayKey(event) {
   }
   if (chartSettingsOpen() && event.key === "Escape") { closeChartSettings(); return true; }
   if (extra?.overlayKey(event)) return true;
-  if (themesOpen()) {
-    if (event.key === "Escape") closeThemes();
-    return true;
-  }
+  // The Market window floats like the screener: the chart's keys still work under it.
+  if (themesOpen() && event.key === "Escape") { closeThemes(); return true; }
   return false;
 }
 

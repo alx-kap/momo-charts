@@ -43,6 +43,7 @@ const activeList = () => data.lists.find((list) => list.id === data.active);
 // The row last opened from the list keeps its highlight when the chart moves elsewhere (a typed
 // symbol, the screener); the chart's own symbol, if it's in the list, is outlined instead.
 let picked = null;
+let revealed = ""; // the row last scrolled into view, so a redraw only scrolls when it changes
 
 // Sections are "###Name" entries, TradingView's own watchlist format.
 const SECTION = "###";
@@ -245,7 +246,7 @@ function openWatchlistDropdown(event) {
     { label: "Import from TradingView…", run: () => menu("import") },
     "-",
     { label: flags ? "Clear all flags…" : "Delete list…", danger: true, run: () => menu("delete") },
-  ]);
+  ], event.currentTarget);
 }
 
 export function renderWatchlists() {
@@ -319,8 +320,12 @@ function renderRows() {
       `<button class="hw-x" data-remove-section="${escapeHtml(group.name)}" title="Remove section (keeps its symbols)">×</button></div>`) +
     (collapsed.has(group.name) ? "" : group.symbols.map((symbol) => rowHtml(symbol, current, picked)).join(""))).join("")
     : "";
+  // Scroll to the outlined or active row only when it changes: a redraw for a flag or a price
+  // keeps the list where you left it.
   const shown = $("wl-rows").querySelector(".found") || $("wl-rows").querySelector(".active");
-  if (shown) shown.scrollIntoView({ block: "nearest" });
+  const reveal = shown ? `${list.id}|${shown.dataset.symbol}` : "";
+  if (shown && reveal !== revealed) shown.scrollIntoView({ block: "nearest" });
+  revealed = reveal;
 }
 
 // Live prices update the rows' numbers in place: no re-sort, no lost scroll or hover.
