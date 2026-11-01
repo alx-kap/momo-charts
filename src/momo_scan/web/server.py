@@ -47,6 +47,7 @@ SETTING_KEYS = {
     "chart": 50_000, "chart_right": 50_000,  # split view: the left and right charts
     "watchlists": 200_000, "drawings": 2_000_000, "screens": 50_000,
     "alert_prefs": 2_000,  # price alerts: line colour and style, sound
+    "prefs": 20_000,  # settings kept in the browser that follow the account (store.follow)
 }
 CHART_BARS = 520
 # Pictures placed on charts (the Image drawing tool), told apart by their first bytes.

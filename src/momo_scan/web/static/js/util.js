@@ -5,8 +5,57 @@ export const store = {
     try { const v = localStorage.getItem("momo." + key); return v === null ? fallback : JSON.parse(v); }
     catch { return fallback; }
   },
-  set: (key, value) => localStorage.setItem("momo." + key, JSON.stringify(value)),
+  set: (key, value) => {
+    const text = JSON.stringify(value);
+    const before = localStorage.getItem("momo." + key);
+    localStorage.setItem("momo." + key, text);
+    if (followed.has(key) && text !== before) prefsChanged();
+  },
+  // These keys follow the account between computers (saved as the "prefs" setting).
+  follow: (keys) => {
+    for (const key of keys) followed.add(key);
+    // Nothing on the server yet, or this browser changed them since: send this browser's. (Not
+    // when the server couldn't be asked: its copy may be newer.)
+    if (prefsKnown && (!serverPrefs || store.get("prefsSavedAt", "") > (serverPrefs.savedAt || ""))) prefsChanged(false);
+  },
 };
+
+// Preferences kept in the browser that follow the account: the server's copy is written into
+// this browser before any module reads it, unless this browser saved something newer.
+const followed = new Set();
+let serverPrefs = null;
+let prefsKnown = false; // the server answered at load
+let prefsTimer = 0;
+
+function prefsChanged(stamp = true) {
+  if (stamp) localStorage.setItem("momo.prefsSavedAt", JSON.stringify(new Date().toISOString()));
+  // The server didn't answer at load, so its copy may be newer: keep the change here, and the
+  // next load sends it if it's still the newest.
+  if (!prefsKnown) return;
+  clearTimeout(prefsTimer);
+  prefsTimer = setTimeout(() => {
+    const savedAt = store.get("prefsSavedAt", "") || new Date().toISOString();
+    const values = Object.fromEntries([...followed].map((key) => [key, store.get(key, null)]).filter(([, v]) => v !== null));
+    serverPrefs = { savedAt, values };
+    api("/api/settings/prefs", { method: "PUT", body: JSON.stringify(serverPrefs) })
+      .catch((error) => toast(`Couldn't save settings: ${error.message}`));
+  }, 600);
+}
+
+async function loadPrefs() {
+  try {
+    const timeout = new Promise((resolve) => setTimeout(resolve, 1500, null));
+    const response = await Promise.race([fetch("/api/settings/prefs"), timeout]);
+    if (!response?.ok) return;
+    serverPrefs = (await response.json()).value;
+    prefsKnown = true;
+  } catch {
+    return;
+  }
+  if (!serverPrefs || (serverPrefs.savedAt || "") <= store.get("prefsSavedAt", "")) return;
+  for (const [key, value] of Object.entries(serverPrefs.values || {})) localStorage.setItem("momo." + key, JSON.stringify(value));
+  localStorage.setItem("momo.prefsSavedAt", JSON.stringify(serverPrefs.savedAt));
+}
 
 export const narrow = () => window.matchMedia("(max-width: 820px)").matches;
 
@@ -54,3 +103,5 @@ export function typing(target) {
 
 // Tags are stored lowercase; show the acronyms properly.
 export const tagLabel = (tag) => tag.replace(/\bmas\b/g, "MAs").replace(/\b(rs|ma|adr|ep)\b/g, (m) => m.toUpperCase());
+
+await loadPrefs();
