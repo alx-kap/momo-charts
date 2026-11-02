@@ -1026,6 +1026,7 @@ function bindDrag() {
     const target = dropTarget(event);
     const entry = dragged;
     const section = draggedSection;
+    const held = lift.els[lift.start];
     endDrag();
     if (!target) return;
     event.preventDefault();
@@ -1039,11 +1040,22 @@ function bindDrag() {
       save();
       return renderRows();
     }
+    let at = target.index;
+    if (list.sort) {
+      // A sorted list has no hand order to change: keep the order on screen, drop the sort, and
+      // place the symbol where the gap was.
+      let next = target.before;
+      if (next === held) next = held.nextElementSibling;
+      list.symbols = groups(list).flatMap((group) => (group.name === null ? group.symbols : [SECTION + group.name, ...group.symbols]));
+      delete list.sort;
+      const rest = list.symbols.filter((item) => item !== entry);
+      const ahead = next && (next.dataset.symbol ?? SECTION + next.dataset.section);
+      at = ahead == null ? rest.length : rest.indexOf(ahead);
+      if (at < 0) at = rest.length;
+      toast("Sort cleared: the list keeps the order you set");
+    }
     const without = list.symbols.filter((item) => item !== entry);
-    const before = sectionOf(list, entry);
-    without.splice(target.index, 0, entry);
-    // Sorted lists order each section themselves: only a change of section sticks.
-    if (list.sort && sectionOf({ symbols: without }, entry) === before) return toast("Clear the sort (right-click the column) to reorder by hand");
+    without.splice(at, 0, entry);
     list.symbols = without;
     save();
     renderRows();
