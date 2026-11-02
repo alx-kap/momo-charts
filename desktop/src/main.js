@@ -3,9 +3,14 @@
 //
 // Environment, for checks and development:
 //   MOMO_DESKTOP_PROFILE   a data folder instead of the user's (settings, open tabs)
+//
+// Run from source (`npm run dev`), the app keeps its own data folder ("momo-dev"), so it opens
+// beside an installed momo instead of handing over to it, marks its tab strip "dev" and skips
+// the update check.
 //   MOMO_DESKTOP_READONLY  1: refuse every request that would change momo (PUT/POST/DELETE)
 //   MOMO_DESKTOP_RELEASES  where to look for new versions (updates.js)
 
+const path = require("node:path");
 const { app, dialog, ipcMain, session, shell } = require("electron");
 const { buildMenu } = require("./menu");
 const server = require("./server");
@@ -15,6 +20,7 @@ const { MomoWindow } = require("./window");
 
 app.setName("momo");
 if (process.env.MOMO_DESKTOP_PROFILE) app.setPath("userData", process.env.MOMO_DESKTOP_PROFILE);
+else if (!app.isPackaged) app.setPath("userData", path.join(app.getPath("appData"), "momo-dev"));
 if (!app.requestSingleInstanceLock()) app.exit(0);
 
 const ctl = {
@@ -146,7 +152,7 @@ app.whenReady().then(() => {
   app.setAboutPanelOptions({ applicationName: "momo", applicationVersion: app.getVersion() });
   buildMenu(ctl);
   updates.onChange(() => { for (const window of ctl.windows) window.render(); });
-  updates.start();
+  if (app.isPackaged || process.env.MOMO_DESKTOP_RELEASES) updates.start();
   ctl.restore();
 });
 

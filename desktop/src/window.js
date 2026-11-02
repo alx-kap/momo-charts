@@ -2,7 +2,7 @@
 // and one view per tab below it. Every tab keeps its page loaded, so switching is instant.
 
 const path = require("node:path");
-const { BrowserWindow, Menu, WebContentsView, shell } = require("electron");
+const { BrowserWindow, Menu, WebContentsView, app, shell } = require("electron");
 
 const STRIP = 40; // tab strip height, matching momo's top bar
 const BACKGROUND = "#000000"; // momo's --bg: no white flash while a page loads
@@ -203,6 +203,7 @@ class MomoWindow {
       active: this.active,
       update: this.ctl.update(),
       fullscreen: this.win.isFullScreen(),
+      dev: !app.isPackaged,
     });
   }
 

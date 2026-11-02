@@ -1,6 +1,7 @@
 # Builds the desktop app (desktop/) for Mac and Windows and publishes it as a GitHub release
 # tagged desktop-v<version>, once for each version in desktop/package.json: raising the
-# version is what releases it. The app's update pill looks for these tags. Unsigned for now.
+# version is what releases it. Its notes are that version's section of desktop/CHANGELOG.md.
+# The app's update pill looks for these tags. Unsigned for now.
 
 name: Desktop app
 
@@ -12,6 +13,11 @@ on:
 
 permissions:
   contents: write
+
+# One release run at a time: a push during a build waits, then finds the release made.
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
 
 jobs:
   version:
@@ -68,6 +74,7 @@ jobs:
     needs: [version, build]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: out
@@ -76,7 +83,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          cat > notes.md <<'NOTES'
+          # This version's section of the changelog, then how to install.
+          awk -v head="## $VERSION" '$0 == head || index($0, head " ") == 1 {on = 1; next} /^## / {on = 0} on' \
+            desktop/CHANGELOG.md > notes.md
+          cat >> notes.md <<'NOTES'
+
+          ### Install
           **Mac**: `momo-VERSION-arm64.dmg` for Apple silicon (M1 and later), `momo-VERSION-x64.dmg` for Intel. Drag momo to Applications.
           **Windows**: `momo-VERSION-setup.exe`.
 

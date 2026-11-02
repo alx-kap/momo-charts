@@ -99,6 +99,7 @@ window.shell.on("tabs", (state) => {
   for (const [id, tab] of elements) {
     if (!seen.has(id)) { tab.remove(); elements.delete(id); }
   }
+  document.getElementById("dev").hidden = !state.dev;
   const update = document.getElementById("update");
   update.hidden = !state.update;
   update.title = state.update ? `momo ${state.update} is ready to download` : "";
