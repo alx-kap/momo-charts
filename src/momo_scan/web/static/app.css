@@ -1483,8 +1483,8 @@ body:not(.mode-chart) .lg-row.chart-only { display: none; }
 .col-grip.r { right: -8px; }
 .col-grip::after { content: ""; position: absolute; top: 5px; bottom: 5px; left: 5px; width: 1px; background: var(--accent); opacity: 0; transition: opacity var(--fast); }
 .col-grip:hover::after, .resizing .col-grip::after { opacity: 1; }
-[data-col].dragging { opacity: .4; }
-[data-col].drop { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+[data-col].lifted { visibility: hidden; }
+.reordering > [data-col] { transition: transform .16s ease; }
 
 /* ---------- themes ---------- */
 /* A floating window like the screener; the opening width is also its minimum. */
@@ -1664,8 +1664,6 @@ table.th-table { table-layout: fixed; width: 100%; border-collapse: collapse; fo
 .sc-colhead > span:nth-child(2) { text-align: left; }
 .sc-colhead > span.l { text-align: left; }
 .sc-colhead > span:hover, .sc-colhead > span.sorted { color: var(--text); }
-.sc-colhead > span.dragging { opacity: .4; }
-.sc-colhead > span.drop { box-shadow: inset 2px 0 0 var(--accent); }
 .sc-colhead .col-grip { position: absolute; top: 0; bottom: 0; right: 0; width: 6px; cursor: col-resize; }
 .sc-colhead .col-grip:hover, .sc-colhead.resizing .col-grip { background: rgba(61, 116, 255, .5); }
 .sc-line { height: 28px; border-bottom: 1px solid var(--tile-line); cursor: pointer; font-variant-numeric: tabular-nums; }

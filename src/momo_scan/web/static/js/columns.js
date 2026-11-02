@@ -46,31 +46,72 @@ export function bindColumns(header, { width, setWidth, move, room }) {
     if (event.target.closest(".col-grip")) event.stopPropagation();
   }, true);
 
+  // While a column is held the others slide aside to open its landing slot. Cells are measured
+  // once, at the start: where a slide has put them must not move the target under the pointer.
+  let lift = null; // { cells: the draggable cells, spots: [{ left, width }], from, at, gap }
+  const place = () => {
+    const { cells, spots, from, at, gap } = lift;
+    const span = (from + 1 < spots.length ? spots[from + 1].left : spots[from].left + spots[from].width + gap) - spots[from].left;
+    cells.forEach((cell, i) => {
+      const shift = at > from && i > from && i <= at ? -span : at < from && i >= at && i < from ? span : 0;
+      cell.style.transform = shift ? `translateX(${shift}px)` : "";
+    });
+  };
+  const slotAt = (event) => {
+    const x = event.clientX - header.getBoundingClientRect().left;
+    const { spots } = lift;
+    const found = spots.findIndex((spot) => x < spot.left + spot.width);
+    return found < 0 ? spots.length - 1 : found;
+  };
+  const endDrag = () => {
+    dragging = null;
+    if (lift) lift.cells.forEach((cell) => { cell.style.transform = ""; cell.classList.remove("lifted"); });
+    lift = null;
+    header.classList.remove("reordering");
+  };
   header.addEventListener("dragstart", (event) => {
     const cell = event.target.closest("[data-col]");
     if (!cell) return event.preventDefault();
     dragging = cell.dataset.col;
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", dragging);
-    cell.classList.add("dragging");
+    const origin = header.getBoundingClientRect().left;
+    const cells = [...header.querySelectorAll("[data-col][draggable=true]")];
+    const spots = cells.map((each) => {
+      const box = each.getBoundingClientRect();
+      return { left: box.left - origin, width: box.width };
+    });
+    const from = cells.indexOf(cell);
+    lift = { cells, spots, from, at: from, gap: spots.length > 1 ? Math.max(0, spots[1].left - spots[0].left - spots[0].width) : 0 };
+    // Hide the held header once the browser has taken its drag picture of it.
+    setTimeout(() => {
+      if (!lift) return;
+      header.classList.add("reordering");
+      cell.classList.add("lifted");
+    }, 0);
   });
+  // Cells sliding under a still pointer make the browser enter a new element: accept it too.
+  header.addEventListener("dragenter", (event) => { if (lift) event.preventDefault(); });
   header.addEventListener("dragover", (event) => {
-    const cell = event.target.closest("[data-col]");
-    header.querySelectorAll(".drop").forEach((item) => item.classList.remove("drop"));
-    if (!dragging || !cell || cell.dataset.col === dragging) return;
+    if (!lift) return;
     event.preventDefault();
-    cell.classList.add("drop");
+    event.dataTransfer.dropEffect = "move";
+    const at = slotAt(event);
+    if (at === lift.at) return;
+    lift.at = at;
+    place();
   });
   header.addEventListener("drop", (event) => {
-    const cell = event.target.closest("[data-col]");
-    if (!dragging || !cell || cell.dataset.col === dragging) return;
+    if (!lift) return;
+    const { cells, from, at } = lift;
+    const key = dragging;
+    const target = cells[at].dataset.col;
+    endDrag();
+    if (at === from) return;
     event.preventDefault();
-    move(dragging, cell.dataset.col);
+    move(key, target);
   });
-  header.addEventListener("dragend", () => {
-    dragging = null;
-    header.querySelectorAll(".dragging, .drop").forEach((item) => item.classList.remove("dragging", "drop"));
-  });
+  header.addEventListener("dragend", endDrag);
 }
 
 // Take `key` out of `order` and put it where `target` was.
