@@ -12,7 +12,7 @@ import { bindPalette, closePalette, openPalette, paletteOpen } from "./palette.j
 import {
   bindChartSettings, changeSettings, chartSettingsOpen, closeChartSettings, openChartSettings, syncChartSettings,
 } from "./chartsettings.js";
-import { bindIndustry, closeIndustry, markIndustrySymbol, openIndustry } from "./industry.js";
+import { bindIndustry, closeIndustry, industryNeighbors, markIndustrySymbol, openIndustry, stepIndustry } from "./industry.js";
 import { bindScreener, closeScreener, markScreenerSymbol, refreshScreener, screenerNeighbors, stepScreener } from "./screener.js";
 import { bindThemes, closeThemes, openThemes, themesOpen } from "./themes.js";
 import { bindColorPicker } from "./colorpicker.js";
@@ -150,7 +150,7 @@ async function showHome({ follow = true } = {}) {
   if (replay) return;
   // Step order: next, the one after, then back one; for the other chart's timeframe too.
   const offsets = [1, 2, -1];
-  const near = screenerNeighbors(state.home.symbol, offsets);
+  const near = [industryNeighbors, screenerNeighbors].map((find) => find(state.home.symbol, offsets)).find((found) => found.length) || [];
   const next = near.length ? near : watchlistNeighbors(offsets);
   prefetchSymbols(next, options.interval, options.count);
   if (other && linked()) prefetchSymbols(next, other.record.interval, CHART_BARS[other.record.interval.slice(-1)]);
@@ -376,7 +376,7 @@ function redraw({ follow = true } = {}) {
 }
 
 function step(delta) {
-  if (state.mode === "chart") return stepScreener(delta, state.home.symbol) || stepWatchlist(delta);
+  if (state.mode === "chart") return stepIndustry(delta, state.home.symbol) || stepScreener(delta, state.home.symbol) || stepWatchlist(delta);
   extra?.step(delta);
 }
 

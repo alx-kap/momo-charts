@@ -1,4 +1,4 @@
-import { $, api, escapeHtml, store, ticker } from "./util.js";
+import { $, api, escapeHtml, store, ticker, toast } from "./util.js";
 import { actions, state } from "./state.js";
 import { FLAG_SVG, flagCell, toggleFlag } from "./watchlists.js";
 import { bindColumns, gripHtml, moved } from "./columns.js";
@@ -158,8 +158,34 @@ export function markIndustrySymbol(symbol) {
   activeSymbol = symbol || null;
   if (!industryOpen()) return;
   for (const line of $("in-body").querySelectorAll(".sc-line")) {
-    line.classList.toggle("active", ticker(line.dataset.symbol) === ticker(activeSymbol || ""));
+    const hit = ticker(line.dataset.symbol) === ticker(activeSymbol || "");
+    line.classList.toggle("active", hit);
+    if (hit) line.scrollIntoView({ block: "nearest" });
   }
+}
+
+// Walk the list in its sorted order from the symbol on the chart (Space, ↑↓). False when the
+// chart isn't on one of its stocks, so the screener or watchlist keeps its own stepping.
+export function stepIndustry(delta, current) {
+  if (!industryOpen() || !rows.length) return false;
+  const list = sorted();
+  const at = list.findIndex((row) => ticker(row.symbol) === ticker(current || ""));
+  if (at < 0) return false;
+  const next = at + delta;
+  if (next < 0 || next >= list.length) {
+    toast(next < 0 ? "Top of the list" : "End of the list");
+    return true;
+  }
+  actions.openSymbol(list[next].symbol);
+  return true;
+}
+
+// Symbols a few steps ahead of (and one behind) the chart, for prefetching.
+export function industryNeighbors(current, offsets) {
+  if (!industryOpen() || !rows.length) return [];
+  const list = sorted();
+  const at = list.findIndex((row) => ticker(row.symbol) === ticker(current || ""));
+  return at < 0 ? [] : offsets.map((offset) => list[at + offset]).filter(Boolean).map((row) => row.symbol);
 }
 
 export async function openIndustry(name, symbol) {
