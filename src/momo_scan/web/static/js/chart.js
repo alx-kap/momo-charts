@@ -1,5 +1,6 @@
 import { $, api, escapeHtml, fmtBig, fmtPct, fmtPrice, narrow, store, ticker } from "./util.js";
 import { state, throughDate } from "./state.js";
+import { bindReorder } from "./reorder.js";
 import { chartProfile, openChartSettings, removeIndicator, toggleIndicator, useChartProfile } from "./chartsettings.js";
 import { INDICATORS, ema, shownOn, sma } from "./indicators.js";
 import { formatColor, parseColor } from "./colorpicker.js";
@@ -524,14 +525,16 @@ function createPane(root, { side, owner, settings, info = true }) {
 
   const GRIP = '<i class="lg-grip" title="Drag to move this pane up or down"><svg viewBox="0 0 8 12" width="8" height="12" fill="currentColor"><circle cx="2" cy="2" r="1"/><circle cx="6" cy="2" r="1"/><circle cx="2" cy="6" r="1"/><circle cx="6" cy="6" r="1"/><circle cx="2" cy="10" r="1"/><circle cx="6" cy="10" r="1"/></svg></i>';
 
-  function legendRow(ind, grip = false) {
+  // `mode`: "pane" (an indicator pane's own legend, moved with the pointer) or "stack" (a row of
+  // the price legend, dragged to re-order); nothing for a plain row.
+  function legendRow(ind, mode = null) {
     const def = INDICATORS[ind.type];
     const shown = def.kind === "levels" ? [{ key: def.value, color: ind.style[def.plots[0].key].color }]
       : def.plots.map((plot) => ({ key: plot.key, color: ind.style[plot.key].color }));
     const values = ind.visible
       ? shown.map((plot) => `<span class="v" data-ind="${ind.id}" data-plot="${plot.key}" style="color:${plot.color}"></span>`).join("")
       : "";
-    return `<div class="lg-row ${ind.visible ? "" : "off"}${def.chartOnly ? " chart-only" : ""}">${grip ? GRIP : ""}<span class="label">${escapeHtml(def.label(ind.params))}</span>${values}${tools(ind.id)}</div>`;
+    return `<div class="lg-row ${ind.visible ? "" : "off"}${def.chartOnly ? " chart-only" : ""}" data-id="${ind.id}"${mode === "stack" ? ' draggable="true"' : ""}>${mode ? GRIP : ""}<span class="label">${escapeHtml(def.label(ind.params))}</span>${values}${tools(ind.id)}</div>`;
   }
 
   // TradingView's arrow under the price legend: hide the indicator rows, or show how many there are.
@@ -543,7 +546,7 @@ function createPane(root, { side, owner, settings, info = true }) {
       (!INDICATORS[ind.type].chartOnly || (state.mode === "chart" && !view.anonymous)) &&
       (INDICATORS[ind.type].pane === "price" || !ind.visible));
     el["legend-ma"].innerHTML = rows.length
-      ? `<div class="lg-rows">${rows.map(legendRow).join("")}</div>` +
+      ? `<div class="lg-rows">${rows.map((ind) => legendRow(ind, "stack")).join("")}</div>` +
         `<button class="lg-collapse" data-lg="collapse" title="Hide or show the indicator legend">` +
         `${CHEVRON}<span>${rows.length}</span></button>`
       : "";
@@ -552,7 +555,7 @@ function createPane(root, { side, owner, settings, info = true }) {
         return `<div class="pane-legend" data-pane="volume"><div class="lg-row"><span class="vol-values"></span>${tools("volume", false)}</div></div>`;
       }
       const ind = S.indicators.find((item) => item.id === key);
-      return `<div class="pane-legend" data-pane="${key}">${legendRow(ind, true)}</div>`;
+      return `<div class="pane-legend" data-pane="${key}">${legendRow(ind, "pane")}</div>`;
     }).join("");
     renderLegend(null);
   }
@@ -666,6 +669,20 @@ function createPane(root, { side, owner, settings, info = true }) {
   }
   el["legend"].addEventListener("click", onLegendClick);
   el["pane-legends"].addEventListener("click", onLegendClick);
+
+  // Drag a row of the price legend (the moving averages and the like) to re-order them.
+  bindReorder(el["legend-ma"], {
+    item: ".lg-row[draggable]",
+    onMove: (from, to) => {
+      const ids = [...el["legend-ma"].querySelectorAll(".lg-row[draggable]")].map((row) => row.dataset.id);
+      ids.splice(to, 0, ...ids.splice(from, 1));
+      settings.change((s) => {
+        const slots = s.indicators.map((ind, i) => (ids.includes(ind.id) ? i : -1)).filter((i) => i >= 0);
+        const ordered = ids.map((id) => s.indicators.find((ind) => ind.id === id));
+        slots.forEach((slot, k) => { s.indicators[slot] = ordered[k]; });
+      }, "series");
+    },
+  });
 
   // Drag an indicator pane's legend to move the pane up or down: the panes swap live as the
   // pointer passes the middle of a neighbour, and the order is saved when it's let go.
