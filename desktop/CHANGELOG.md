@@ -9,12 +9,13 @@ version; this file is for the app around it.
 ## Unreleased
 
 ### What's new
-- Right-click a tab for TradingView Desktop's tab menu: Duplicate tab (⌘U), Reload tab, Pin
-  tab, Detach tab (into its own window), Customize tab title, Close, Close other
-  tabs, Close tabs to the right.
-- Tab syncing lives in that menu too: pick a colour, and tabs of one colour follow each other's
-  symbol and, with their switches on, interval, scrolling and dates in view. Linked tabs show
-  their colour as a dot. (Before this version, momo's chain button does the linking.)
+- Tab syncing on the tab itself: click the slot at a tab's left edge to pick a colour, and
+  tabs of one colour follow each other's symbol and, with their switches on, interval,
+  scrolling and dates in view. A linked tab shows its colour in the slot and along its top
+  edge. (Before this version, momo's chain button does the linking.)
+- Right-click a tab for its menu: Duplicate tab (⌘U), Reload tab, Pin tab, Detach tab (into
+  its own window), Customize tab title, Close, Close other tabs, Close tabs to the right.
+- Tabs are named by their chart: symbol and timeframe, such as "NVDA 1D".
 - Pinned tabs and custom titles come back with the rest of your tabs.
 - Running from source (`npm run dev` in `desktop/`) pulls the latest code first, keeps its own
   tabs and settings so it opens beside an installed momo, and marks its tab strip "dev".

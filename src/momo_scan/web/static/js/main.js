@@ -232,14 +232,14 @@ function saveCharts() {
   syncAddress();
 }
 
-// The page's title and address carry the chart, so a reload, a bookmark or a desktop tab opens
-// where it was. Other modes show only their name: Practice charts are blind.
+// The page's title ("NVDA 1D") and address carry the chart, so a reload, a bookmark or a
+// desktop tab opens where it was. Other modes show only their name: Practice charts are blind.
 function syncAddress(mode = state.mode) {
   if (mode !== "chart") {
     document.title = `${{ review: "Daily review", practice: "Practice" }[mode] || "momo"} · momo`;
     return;
   }
-  document.title = `${ticker(state.home.symbol)} · momo`;
+  document.title = `${ticker(state.home.symbol)} ${state.interval} · momo`;
   const link = linkColor() ? `&link=${linkColor()}` : "";
   const query = `?symbol=${encodeURIComponent(state.home.symbol)}&interval=${encodeURIComponent(state.interval)}${link}`;
   if (location.search !== query) history.replaceState(null, "", query);

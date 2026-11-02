@@ -1,7 +1,8 @@
 // One momo window: a tab strip drawn in the title bar (the window's own page, ui/strip.html)
 // and one view per tab below it. Every tab keeps its page loaded, so switching is instant.
-// Right-clicking a tab opens TradingView Desktop's tab menu, drawn in a transparent view laid
-// over the whole window (ui/menu.html), which also holds the tab's link colour and switches.
+// Right-clicking a tab opens its menu (duplicate, pin, detach…) and clicking its link slot the
+// sync panel (colour and switches); both are drawn in a transparent view laid over the whole
+// window (ui/menu.html).
 
 const path = require("node:path");
 const { BrowserWindow, Menu, WebContentsView, app, shell } = require("electron");
@@ -306,7 +307,8 @@ class MomoWindow {
 
   // ---------- the tab menu ----------
 
-  openMenu(id, x, y) {
+  // `mode`: "tab" (the right-click menu) or "link" (the sync panel).
+  openMenu(id, x, y, mode = "tab") {
     const tab = this.find(id);
     if (!tab) return;
     if (!this.menu) {
@@ -322,7 +324,7 @@ class MomoWindow {
     this.win.contentView.addChildView(this.menu); // to the top
     this.layout();
     this.menu.setVisible(true);
-    this.menuAt = { x, y };
+    this.menuAt = { x, y, mode };
     if (!this.menu.webContents.isLoading()) this.sendMenu();
     this.menu.webContents.focus();
   }
@@ -399,6 +401,7 @@ class MomoWindow {
     else if (action === "new") this.addTab("/", { after: this.current() });
     else if (action === "move") this.move(data.id, data.index);
     else if (action === "menu") this.openMenu(data.id, Number(data.x) || 0, Number(data.y) || STRIP);
+    else if (action === "link") this.openMenu(data.id, Number(data.x) || 0, Number(data.y) || STRIP, "link");
     else if (action === "update") this.ctl.openUpdate();
   }
 }

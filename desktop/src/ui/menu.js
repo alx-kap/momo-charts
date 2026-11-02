@@ -1,6 +1,7 @@
-// The tab menu. The main process sends what to show ("menu": the tab's title, pinned state,
-// what can close and its link state); the menu sends back what was picked. Link changes go to
-// the tab's page, which reports its new state, so the menu redraws while it stays open.
+// The tab menu and the sync panel. The main process sends what to show ("menu": the mode, the
+// tab's title, pinned state, what can close and its link state); this sends back what was
+// picked. Link changes go to the tab's page, which reports its new state, so the panel redraws
+// while it stays open.
 
 const panel = document.getElementById("panel");
 let state = null;
@@ -42,6 +43,13 @@ const sep = () => Object.assign(document.createElement("div"), { className: "sep
 function render() {
   if (!state) return;
   if (editing) return renderEdit();
+  panel.className = state.mode;
+  if (state.mode === "link") {
+    panel.replaceChildren();
+    if (state.link) renderLink(state.link);
+    else panel.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "This tab can link once momo has loaded." }));
+    return place();
+  }
   const k = (key) => (state.mac ? `⌘${key}` : `Ctrl+${key}`);
   panel.replaceChildren(
     item({ action: "duplicate", label: "Duplicate tab", key: k("U"), iconName: "duplicate" }),
@@ -55,13 +63,12 @@ function render() {
     item({ action: "close-others", label: "Close other tabs", disabled: !state.canCloseOthers }),
     item({ action: "close-right", label: "Close tabs to the right", disabled: !state.canCloseRight }),
   );
-  if (state.link) renderLink(state.link);
   place();
 }
 
 // Tab syncing: the colours (the picked one again unlinks) and that colour's switches.
 function renderLink({ color, colors, switches }) {
-  panel.append(sep(), Object.assign(document.createElement("div"), { className: "head", textContent: "Tab syncing" }));
+  panel.append(Object.assign(document.createElement("div"), { className: "head", textContent: "Tab syncing" }));
   const swatches = Object.assign(document.createElement("div"), { className: "swatches" });
   for (const [name, hex] of Object.entries(colors || {})) {
     const swatch = document.createElement("button");

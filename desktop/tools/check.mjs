@@ -139,18 +139,18 @@ try {
     await openSymbol(second, "AAPL");
     await new Promise((resolve) => setTimeout(resolve, 300));
     let tabs = await stripTitles(strip);
-    ok("the strip names each tab's chart", tabs.map((t) => t.title).join(",") === "NVDA,AAPL", JSON.stringify(tabs));
+    ok("the strip names each tab's chart", tabs.map((t) => t.title).join(",") === "NVDA 1D,AAPL 1D", JSON.stringify(tabs));
 
-    // Link both tabs red from the tab menu (right-click a tab), as in TradingView Desktop: the
-    // strip shows their colour, and a symbol opened in one opens in both.
-    ok("the chain button gives way to the tab menu", await page.evaluate(() => document.querySelector(".link-wrap").hidden));
+    // Link both tabs red from their link slots: the strip shows their colour, and a symbol
+    // opened in one opens in both.
+    ok("the chain button gives way to the tab's link slot", await page.evaluate(() => document.querySelector(".link-wrap").hidden));
     for (const n of [1, 2]) {
-      await strip.click(`.tab:nth-child(${n})`, { button: "right" });
+      await strip.click(`.tab:nth-child(${n}) .slot`);
       const menu = await pageOf(app, (url) => url.endsWith("menu.html"));
       await menu.waitForSelector("#panel:not([hidden]) .swatch");
       await menu.click('.swatch[title="Red"]');
       await menu.waitForSelector('.swatch.active[title="Red"]');
-      if (n === 2) await menu.locator("#panel").screenshot({ path: path.join(OUT, "6-tab-menu.png") });
+      if (n === 2) await menu.locator("#panel").screenshot({ path: path.join(OUT, "6-sync-panel.png") });
       await menu.keyboard.press("Escape");
     }
     await strip.waitForFunction(() => document.querySelectorAll(".tab.linked").length === 2, null, { timeout: 5000 });
@@ -186,7 +186,7 @@ try {
     ok("relaunch to a painted chart", true, `${Date.now() - started} ms from launch`);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const tabs = await stripTitles(strip);
-    ok("tabs come back", tabs.map((t) => t.title).join(",") === "MSFT,MSFT", JSON.stringify(tabs));
+    ok("tabs come back", tabs.map((t) => t.title).join(",") === "MSFT 1D,MSFT 1D", JSON.stringify(tabs));
     const linked = await strip.$$eval(".tab.linked", (each) => each.length);
     ok("and stay linked", linked === 2, `${linked} linked`);
 
@@ -198,6 +198,12 @@ try {
       await menu.click(`.item:has-text("${label}")`);
       return menu;
     };
+    const menu = await menuDo(1, "Reload tab").then(() => pageOf(app, (url) => url.endsWith("menu.html")));
+    await strip.click(".tab:nth-child(1)", { button: "right" });
+    await menu.waitForSelector("#panel.tab:not([hidden]) .item");
+    ok("the tab menu holds tab actions only", (await menu.$$(".swatch")).length === 0);
+    await menu.locator("#panel").screenshot({ path: path.join(OUT, "7-tab-menu.png") });
+    await menu.keyboard.press("Escape");
     await menuDo(1, "Duplicate tab");
     await strip.waitForFunction(() => document.querySelectorAll(".tab").length === 3);
     const copied = await strip.waitForFunction(() => document.querySelectorAll(".tab.linked").length === 3, null, { timeout: 15000 })
