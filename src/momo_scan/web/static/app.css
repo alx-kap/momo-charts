@@ -217,9 +217,12 @@ body.split .chart-pane.active-pane::after {
 .chart-pane [data-part="pane-legends"] .pane-legend {
   position: absolute; left: 10px; z-index: 3; pointer-events: none; font-size: 13px; color: var(--chart-text);
 }
-.pane-legend:not([data-pane="volume"]) .label { cursor: grab; touch-action: none; }
-.pane-legend.held .lg-row { background: var(--accent-soft); border-radius: 6px; cursor: grabbing; }
-.pane-legend.held .label { cursor: grabbing; }
+.pane-legend:not([data-pane="volume"]) .lg-row { cursor: grab; touch-action: none; }
+.pane-legend.held .lg-row, .pane-legend.held .lg-row * { cursor: grabbing; }
+.pane-legend.held .lg-row { background: var(--accent-soft); border-radius: 6px; }
+.lg-grip { display: inline-grid; place-items: center; width: 8px; margin-right: -4px; color: var(--muted); opacity: 0; cursor: grab; }
+.lg-row:hover .lg-grip, .pane-legend.held .lg-grip { opacity: .8; }
+.lg-tools button { cursor: pointer; }
 
 /* TC2000-style margin handles on the price axis */
 .chart-pane [data-part="margin-handles"] { position: absolute; inset: 0; z-index: 4; pointer-events: none; }

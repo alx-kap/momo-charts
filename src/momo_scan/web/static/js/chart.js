@@ -522,14 +522,16 @@ function createPane(root, { side, owner, settings, info = true }) {
     `<button data-lg="edit" data-id="${id}" title="Settings">⚙</button>` +
     (removable ? `<button data-lg="remove" data-id="${id}" title="Remove">×</button>` : "") + `</span>`;
 
-  function legendRow(ind) {
+  const GRIP = '<i class="lg-grip" title="Drag to move this pane up or down"><svg viewBox="0 0 8 12" width="8" height="12" fill="currentColor"><circle cx="2" cy="2" r="1"/><circle cx="6" cy="2" r="1"/><circle cx="2" cy="6" r="1"/><circle cx="6" cy="6" r="1"/><circle cx="2" cy="10" r="1"/><circle cx="6" cy="10" r="1"/></svg></i>';
+
+  function legendRow(ind, grip = false) {
     const def = INDICATORS[ind.type];
     const shown = def.kind === "levels" ? [{ key: def.value, color: ind.style[def.plots[0].key].color }]
       : def.plots.map((plot) => ({ key: plot.key, color: ind.style[plot.key].color }));
     const values = ind.visible
       ? shown.map((plot) => `<span class="v" data-ind="${ind.id}" data-plot="${plot.key}" style="color:${plot.color}"></span>`).join("")
       : "";
-    return `<div class="lg-row ${ind.visible ? "" : "off"}${def.chartOnly ? " chart-only" : ""}"><span class="label">${escapeHtml(def.label(ind.params))}</span>${values}${tools(ind.id)}</div>`;
+    return `<div class="lg-row ${ind.visible ? "" : "off"}${def.chartOnly ? " chart-only" : ""}">${grip ? GRIP : ""}<span class="label">${escapeHtml(def.label(ind.params))}</span>${values}${tools(ind.id)}</div>`;
   }
 
   // TradingView's arrow under the price legend: hide the indicator rows, or show how many there are.
@@ -550,7 +552,7 @@ function createPane(root, { side, owner, settings, info = true }) {
         return `<div class="pane-legend" data-pane="volume"><div class="lg-row"><span class="vol-values"></span>${tools("volume", false)}</div></div>`;
       }
       const ind = S.indicators.find((item) => item.id === key);
-      return `<div class="pane-legend" data-pane="${key}">${legendRow(ind)}</div>`;
+      return `<div class="pane-legend" data-pane="${key}">${legendRow(ind, true)}</div>`;
     }).join("");
     renderLegend(null);
   }
