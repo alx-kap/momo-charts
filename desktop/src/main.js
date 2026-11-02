@@ -134,6 +134,9 @@ ipcMain.handle("connect:retry", async () => {
   return ok;
 });
 ipcMain.on("connect:cancel", () => ctl.reconnect());
+ipcMain.on("momo:link", (event, color) => {
+  for (const window of ctl.windows) window.setLink(event.sender, color);
+});
 ipcMain.on("strip", (event, action, data) => {
   for (const window of ctl.windows) if (window.win.webContents === event.sender) window.strip(action, data);
 });

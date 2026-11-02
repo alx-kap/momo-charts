@@ -903,6 +903,8 @@ export class Chart {
         chart._changed();
       },
       options: () => merge({}, chart.o),
+      // momo's own: true while a swipe coasts on after the pointer let go.
+      gliding: () => chart.glide !== 0,
       addSeries(type, options = {}, paneIndex = 0) {
         const pane = paneAt(paneIndex);
         const s = new Series(chart, type, options, pane);

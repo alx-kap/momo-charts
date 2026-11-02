@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("momoDesktop", {
   platform: process.platform,
   // Menu commands: "settings", "help".
   onCommand: (listener) => ipcRenderer.on("momo:command", (_event, name) => listener(name)),
+  // The tab's link colour (a hex colour, or null), shown as a dot on its tab.
+  setLink: (color) => ipcRenderer.send("momo:link", typeof color === "string" ? color : null),
 });
 
 if (location.protocol === "file:") {

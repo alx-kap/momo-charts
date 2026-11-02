@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#000000">
 <title>Momo</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/static/app.css?v=233">
+<link rel="stylesheet" href="/static/app.css?v=234">
 </head>
 <body>
 <header id="topbar">
@@ -50,6 +50,18 @@
       <div class="lm-h">Sync between charts</div>
       <label class="lm-row"><span><b>Symbol</b><em>Change one chart, the other follows</em></span><input type="checkbox" class="switch" data-sync="symbol"></label>
       <label class="lm-row"><span><b>Crosshair</b><em>Hover one chart, the other follows</em></span><input type="checkbox" class="switch" data-sync="crosshair"></label>
+    </div>
+  </span>
+  <span class="link-wrap">
+    <button id="link-button" class="icon" title="Link tabs" aria-label="Link tabs"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7.6 10.4a2.9 2.9 0 0 0 4.1 0l2.4-2.4a2.9 2.9 0 0 0-4.1-4.1l-.9.9"/><path d="M10.4 7.6a2.9 2.9 0 0 0-4.1 0L3.9 10a2.9 2.9 0 0 0 4.1 4.1l.9-.9"/></svg></button>
+    <div id="link-menu" hidden>
+      <div class="lm-h">Link tabs</div>
+      <div id="link-colors"></div>
+      <p class="link-hint">Tabs of one colour follow each other.</p>
+      <label class="lm-row"><span><b>Symbol</b><em>Change it in one, the others follow</em></span><input type="checkbox" class="switch" data-link="symbol"></label>
+      <label class="lm-row"><span><b>Interval</b><em>Same timeframe in every tab</em></span><input type="checkbox" class="switch" data-link="interval"></label>
+      <label class="lm-row"><span><b>Time</b><em>Scroll one, the others follow</em></span><input type="checkbox" class="switch" data-link="time"></label>
+      <label class="lm-row"><span><b>Date range</b><em>Every tab shows the same dates</em></span><input type="checkbox" class="switch" data-link="range"></label>
     </div>
   </span>
   <button id="snapshot-button" class="icon" title="Copy a picture of the chart (⌥S) · ⇧⌥S saves a PNG"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M2.5 6.2c0-.9.7-1.6 1.6-1.6h1.8l1.2-1.8h3.8l1.2 1.8h1.8c.9 0 1.6.7 1.6 1.6v7c0 .9-.7 1.6-1.6 1.6H4.1c-.9 0-1.6-.7-1.6-1.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="9" cy="9.6" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>

@@ -9,6 +9,8 @@ version; this file is for the app around it.
 ## Unreleased
 
 ### What's new
+- Linked tabs show their link colour as a dot on the tab. (Linking itself comes from momo's
+  chain button and works in any version.)
 - Running from source (`npm run dev` in `desktop/`) pulls the latest code first, keeps its own
   tabs and settings so it opens beside an installed momo, and marks its tab strip "dev".
 

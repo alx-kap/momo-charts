@@ -40,6 +40,11 @@ body:not(.darwin) {
 }
 .tab.offline .title { color: var(--faint); }
 
+/* A linked tab's colour (momo's link.js), before its title. */
+.tab .link { display: none; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--link); }
+.tab.linked .link { display: block; }
+.tab.loading .link { display: none; }
+
 /* A loading ring, shown only when a load takes long enough to notice. */
 .tab .ring {
   display: none; flex: none; width: 9px; height: 9px; border-radius: 50%;

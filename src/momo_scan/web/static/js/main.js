@@ -1,7 +1,7 @@
 import { $, api, store, ticker, toast, typing } from "./util.js";
 import { actions, state } from "./state.js";
 import {
-  activateChart, activePane, applyLevels, chartMessage, chartPane, onChartActivate, onChartLoad, onFundamentalsLoad, resetView, rightPane,
+  activateChart, activePane, applyLevels, chartMessage, chartPane, onChartActivate, onChartLoad, onChartScroll, onFundamentalsLoad, resetView, rightPane,
   setCrosshairSync, showChart, copySnapshot, snapshot,
 } from "./chart.js";
 import { CHART_BARS, isIntraday, prefetchSymbols } from "./feed.js";
@@ -30,6 +30,7 @@ import { applyRails, bindRails, showScreener } from "./rails.js";
 import { bindReplay, exitReplay, replayDay, replayKey, replayOptions, startReplay } from "./replay.js";
 import { bindAlerts, loadAlerts, newAlert } from "./alerts.js";
 import { bindDesktop } from "./desktop.js";
+import { bindLink, closeLinkMenu, linkColor, linkMenuOpen, publish } from "./link.js";
 import {
   bindSymbolSearch, closeSymbolSearch, intervalBoxOpen, openIntervalBox, openSymbolSearch, rememberSymbol,
   symbolSearchOpen,
@@ -239,9 +240,21 @@ function syncAddress(mode = state.mode) {
     return;
   }
   document.title = `${ticker(state.home.symbol)} · momo`;
-  const query = `?symbol=${encodeURIComponent(state.home.symbol)}&interval=${encodeURIComponent(state.interval)}`;
+  const link = linkColor() ? `&link=${linkColor()}` : "";
+  const query = `?symbol=${encodeURIComponent(state.home.symbol)}&interval=${encodeURIComponent(state.interval)}${link}`;
   if (location.search !== query) history.replaceState(null, "", query);
+  publish("symbol", state.home.symbol);
+  publish("interval", state.interval);
 }
+
+// ---------- linked tabs ----------
+// Tabs of one colour follow each other (link.js); here is what following means in Chart mode.
+const charting = () => state.mode === "chart" && !practicing();
+let viewFrame = 0;
+onChartScroll((pane) => {
+  if (pane !== activePane() || !charting() || !linkColor() || viewFrame) return;
+  viewFrame = requestAnimationFrame(() => { viewFrame = 0; publish("view", activePane().visibleTimes()); });
+});
 
 function showOther({ side, record }) {
   const pane = side === "right" ? rightPane() : chartPane("left");
@@ -501,9 +514,10 @@ document.addEventListener("keydown", (event) => {
 
   const key = event.key;
   if (key === "Escape") {
-    const menuOpen = !$("settings").hidden || !$("layout-menu").hidden;
+    const menuOpen = !$("settings").hidden || !$("layout-menu").hidden || linkMenuOpen();
     $("settings").hidden = true;
     closeLayoutMenu();
+    closeLinkMenu();
     armMeasure(false);
     if (cancelDrawing()) return event.preventDefault();
     if (replayDay() && state.mode === "chart" && !menuOpen) { exitReplay(); return event.preventDefault(); }
@@ -591,6 +605,12 @@ bindMenus();
 bindSidebar();
 bindSymbolSearch();
 bindDesktop({ settings: () => openChartSettings("symbol"), help: openHelp });
+bindLink({
+  symbol: (symbol) => { if (charting()) openSymbol(symbol); },
+  interval: (interval) => { if (charting() && interval !== state.interval) changeInterval(interval); },
+  view: (times, fit) => { if (charting()) activePane().showTimes(times, fit); },
+  colored: () => syncAddress(),
+});
 syncChartSettings();
 syncWatchlists();
 

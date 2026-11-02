@@ -52,10 +52,15 @@ const renderHooks = []; // run on every redraw (scroll, zoom, resize, new bars)
 const crosshairHooks = []; // fn(pane, { time, price } or null) as the pointer moves over a chart
 const loadHooks = []; // run when a chart loads
 const fundamentalsHooks = []; // fundamentals can arrive after bars paint
+const scrollHooks = []; // fn(pane) when you pan or zoom a chart yourself
 export const onChartRender = (fn) => renderHooks.push(fn);
 export const onChartLoad = (fn) => loadHooks.push(fn);
 export const onFundamentalsLoad = (fn) => fundamentalsHooks.push(fn);
 export const onCrosshair = (fn) => crosshairHooks.push(fn);
+export const onChartScroll = (fn) => scrollHooks.push(fn);
+
+// A bar's time in unix seconds: intraday bars carry them, daily and longer ones a day.
+const seconds = (time) => (typeof time === "number" ? time : Date.parse(`${time}T00:00:00Z`) / 1000);
 
 // One chart: its series, indicators, legends, handles and callouts, inside `root` (a chart area
 // whose parts carry data-part attributes). `owner` names its live symbol to the feed; `settings`
@@ -1109,7 +1114,10 @@ function createPane(root, { side, owner, settings, info = true }) {
   for (const type of ["wheel", "pointerdown", "touchmove"]) el["chart"].addEventListener(type, touched, { passive: true });
   el["chart"].addEventListener("pointermove", (event) => { if (event.buttons) touched(); }, { passive: true });
   chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-    if (Date.now() - lastInput > 400 || lastShown.anonymous || !lastShown.interval || replaying) return;
+    if (lastShown.anonymous || !lastShown.interval || replaying) return;
+    // Linked tabs follow the coast after a swipe too (the engine's glide).
+    if (Date.now() - lastInput <= 400 || chart.gliding()) for (const fn of scrollHooks) fn(pane);
+    if (Date.now() - lastInput > 400) return;
     const spacing = chart.timeScale().options().barSpacing;
     if (spacing !== savedZoom(lastShown.interval)) saveZoom(lastShown.interval, spacing);
   });
@@ -1556,6 +1564,34 @@ function createPane(root, { side, owner, settings, info = true }) {
     return { from: day(from), to: day(to) };
   }
 
+  // The window in view as unix seconds, for linked tabs (link.js): from the first bar in view to
+  // the end of the last one (the next bar's start). `to` is null when the latest bar is in view.
+  function visibleTimes() {
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (!range || !currentBars.length) return null;
+    const last = currentBars.length - 1;
+    const first = Math.max(0, Math.min(last, Math.ceil(range.from)));
+    const end = Math.max(0, Math.floor(range.to));
+    return { from: seconds(currentBars[first].time), to: end < last ? seconds(currentBars[end + 1].time) - 1 : null };
+  }
+
+  // Show another chart's window: `fit` shows from..to, otherwise this chart keeps its zoom and
+  // puts `to` at the right edge. Bars of any timeframe line up by time.
+  function showTimes({ from, to }, fit) {
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (!range || !currentBars.length) return;
+    const last = currentBars.length - 1;
+    const before = (time) => { // the last bar starting at or before `time`
+      let lo = 0, hi = last;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (seconds(currentBars[mid].time) <= time) lo = mid; else hi = mid - 1; }
+      return lo;
+    };
+    const right = to === null ? last + S.scale.rightOffset : before(to) + 0.5;
+    const left = fit ? Math.min(before(from) + (seconds(currentBars[before(from)].time) < from ? 1 : 0), right - 1) - 0.5
+      : right - (range.to - range.from);
+    chart.timeScale().setVisibleLogicalRange({ from: left, to: right });
+  }
+
   // ⌥R in TradingView: back to the default view, auto-scaled.
   function resetView() {
     if (lastShown.interval && !lastShown.anonymous) forgetZoom(lastShown.interval);
@@ -1684,7 +1720,7 @@ function createPane(root, { side, owner, settings, info = true }) {
   let lastShown = { symbol: null, interval: null, anonymous: false };
   pane = {
     side, root, settings, show: showChart, applyLevels, setLastPriceLine, scheduleCallouts, context: chartContext,
-    interval: currentInterval, resetView, showRange, visibleDates, pickBar, message: chartMessage, snapshot, copySnapshot,
+    interval: currentInterval, resetView, showRange, visibleDates, visibleTimes, showTimes, pickBar, message: chartMessage, snapshot, copySnapshot,
     replayTo, replayNext, replayDayOf, replayDay: () => (view.replay ? view.replayFrom : null), setAlertLines,
     shown: () => lastShown, setInfo(on) { info = on; el["info-table"].hidden = !on; }, echoCrosshair,
     fundamentals: () => earnings.record(), clearEarnings: () => earnings.clear(),

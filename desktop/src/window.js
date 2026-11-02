@@ -67,7 +67,7 @@ class MomoWindow {
     view.setBackgroundColor(BACKGROUND);
     view.setVisible(false);
     this.win.contentView.addChildView(view);
-    const tab = { id: nextId++, view, path: address, title: "", loading: true, offline: false };
+    const tab = { id: nextId++, view, path: address, title: "", loading: true, offline: false, link: null };
     const index = after ? this.tabs.indexOf(after) + 1 : this.tabs.length;
     this.tabs.splice(index, 0, tab);
     this.watch(tab);
@@ -187,6 +187,14 @@ class MomoWindow {
     for (const tab of this.tabs) if (tab.offline) this.load(tab);
   }
 
+  // A page's link colour (link.js), drawn as a dot on its tab.
+  setLink(contents, color) {
+    const tab = this.tabs.find((each) => each.view.webContents === contents);
+    if (!tab || tab.link === color) return;
+    tab.link = /^#[0-9a-f]{6}$/i.test(color || "") ? color : null;
+    this.render();
+  }
+
   // Menu commands for the page (Settings, Keyboard shortcuts), handled by momo's desktop.js.
   command(name) {
     const tab = this.current();
@@ -197,8 +205,9 @@ class MomoWindow {
   render() {
     if (this.win.isDestroyed() || this.win.webContents.isLoading()) return;
     this.win.webContents.send("tabs", {
-      tabs: this.tabs.map(({ id, title, loading, offline }) => ({
+      tabs: this.tabs.map(({ id, title, loading, offline, link }) => ({
         id, title: offline ? (this.ctl.server() ? "Offline" : "Connect") : title, loading, offline,
+        link: offline ? null : link,
       })),
       active: this.active,
       update: this.ctl.update(),

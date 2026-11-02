@@ -18,7 +18,7 @@ function make(id) {
   const tab = document.createElement("div");
   tab.className = "tab";
   tab.setAttribute("role", "tab");
-  tab.innerHTML = '<i class="ring"></i><span class="title"></span>'
+  tab.innerHTML = '<i class="ring"></i><i class="link"></i><span class="title"></span>'
     + '<button class="close" aria-label="Close tab"><svg width="8" height="8" viewBox="0 0 8 8">'
     + '<path d="M1 1l6 6M7 1L1 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>';
   tab.querySelector(".close").addEventListener("pointerdown", (event) => event.stopPropagation());
@@ -89,6 +89,8 @@ window.shell.on("tabs", (state) => {
     tab.classList.toggle("active", info.id === state.active);
     tab.classList.toggle("loading", info.loading);
     tab.classList.toggle("offline", info.offline);
+    tab.classList.toggle("linked", Boolean(info.link));
+    tab.style.setProperty("--link", info.link || "transparent");
     tab.setAttribute("aria-selected", String(info.id === state.active));
     const title = info.title || (info.loading ? "" : "momo");
     tab.querySelector(".title").textContent = title;
