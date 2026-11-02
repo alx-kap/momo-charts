@@ -112,6 +112,7 @@ export class Chart {
     this.order = 0;
     this.timesDirty = false;
     this.layoutDirty = true;
+    this.sizeDirty = true; // the container's size is read again only after a resize
     this.frame = 0;
     this.dirty = true; // the bars need repainting, not just the crosshair
     this.axisW = 0;
@@ -142,7 +143,7 @@ export class Chart {
     // picture stretched to the new size (a stutter when a side panel opens or closes).
     this.observer = new ResizeObserver(() => {
       if (this.frame) cancelAnimationFrame(this.frame);
-      this.layoutDirty = this.dirty = true;
+      this.layoutDirty = this.dirty = this.sizeDirty = true;
       this.render();
     });
     this.observer.observe(container);
@@ -212,8 +213,13 @@ export class Chart {
 
   layout() {
     this.layoutDirty = false;
-    this.width = this.el.clientWidth;
-    this.height = this.el.clientHeight;
+    if (this.sizeDirty) {
+      // Read only after a resize: a pan lays out every frame, and the page's overlays may have
+      // written to the DOM since, which would make this read force a layout.
+      this.sizeDirty = false;
+      this.width = this.el.clientWidth;
+      this.height = this.el.clientHeight;
+    }
     const fs = this.o.layout.fontSize;
     this.timeH = this.o.timeScale.visible ? Math.round(fs * 2.3) : 0;
     let axisW = this.axisW || Math.round(fs * 4.5);

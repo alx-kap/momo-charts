@@ -186,12 +186,12 @@ export function createEarnings(root, chart, context) {
   const tip = Object.assign(root.appendChild(document.createElement("div")), { className: "earnings-tip", hidden: true, id: `${root.id}-earnings-tip` });
   tip.setAttribute("role", "tooltip");
   let data = null, token = 0, record = null, calendarKey = "", events = [];
-  let placed = { key: null, times: [] }; // each event's bar time, kept while bars and data hold
   const allowed = () => context().allowed;
 
   function clear() {
     token++;
     data = record = null;
+    placed = { key: null, future: [], buttons: [] };
     layer.innerHTML = "";
     close();
     calendarKey = "";
@@ -212,11 +212,16 @@ export function createEarnings(root, chart, context) {
     }
   }
 
+  // The markers are built when the bars, interval or fundamentals change; a pan or zoom only
+  // moves them, so a frame does no date maths and no HTML parsing.
+  let placed = { key: null, future: [], buttons: [] };
   function render() {
     const ctx = context();
     const on = ctx.allowed && ctx.enabled && data?.quarters.length && ctx.bars.length;
     const next = on && data.next_earnings;
-    const future = next ? futureTimes(ctx.bars, ctx.interval, data.asof, next.date) : [];
+    const placeKey = on ? [data, ctx.interval, ctx.bars.length, ctx.bars[0].time, ctx.bars.at(-1).time] : null;
+    const fresh = !placeKey || !placed.key || placed.key.some((part, n) => part !== placeKey[n]);
+    const future = !fresh ? placed.future : next ? futureTimes(ctx.bars, ctx.interval, data.asof, next.date) : [];
     const key = `${ctx.interval}:${future[0]}:${future.at(-1)}:${future.length}`;
     if (key !== calendarKey) {
       calendarKey = key;
@@ -225,27 +230,35 @@ export function createEarnings(root, chart, context) {
       if (range) chart.timeScale().setVisibleLogicalRange(range);
     }
     layer.hidden = !on;
-    if (!on) { layer.innerHTML = ""; close(); return 0; }
-    events = data.events.filter((e) => e.date <= data.asof);
-    if (next) events.push(next);
+    if (!on) { placed = { key: null, future: [], buttons: [] }; layer.innerHTML = ""; close(); return 0; }
+    if (fresh) {
+      events = data.events.filter((e) => e.date <= data.asof);
+      if (next) events.push(next);
+      const ahead = next ? [...ctx.bars, ...future.map((time) => ({ time }))] : ctx.bars;
+      layer.innerHTML = events.map((event, i) => {
+        const change = event.reaction?.day_pct;
+        const tone = change > 0 ? "positive" : change < 0 ? "negative" : "";
+        return `<button class="earnings-marker ${tone}${event.date > data.asof ? " future" : ""}${event.estimated ? " estimated" : ""}" ` +
+          `data-event="${i}" data-date="${event.date}" aria-label="Earnings ${event.date}${event.estimated ? ', estimated' : ''}" aria-describedby="${tip.id}" hidden>E</button>`;
+      }).join("");
+      const buttons = [...layer.children].map((button, i) => ({
+        button, x: null,
+        time: events[i].date > data.asof
+          ? eventBar({ ...events[i], reaction: null, timing: "unknown" }, ahead, ctx.interval)
+          : eventBar(events[i], ctx.bars, ctx.interval),
+      }));
+      placed = { key: placeKey, future, buttons };
+    }
     layer.style.top = `${ctx.box.top + ctx.box.height - 22}px`;
     layer.style.width = `${ctx.plotWidth}px`;
-    const placeKey = [data, ctx.interval, ctx.bars.length, ctx.bars[0].time, ctx.bars.at(-1).time, key];
-    if (placed.key?.some((part, n) => part !== placeKey[n]) ?? true) {
-      const ahead = next ? [...ctx.bars, ...future.map((time) => ({ time }))] : ctx.bars;
-      placed = { key: placeKey, times: events.map((event) => (event.date > data.asof
-        ? eventBar({ ...event, reaction: null, timing: "unknown" }, ahead, ctx.interval)
-        : eventBar(event, ctx.bars, ctx.interval))) };
+    const scale = chart.timeScale();
+    for (const marker of placed.buttons) {
+      const x = marker.time == null ? null : scale.timeToCoordinate(marker.time);
+      const off = x == null || x < 9 || x > ctx.plotWidth - 9;
+      if (marker.button.hidden !== off) marker.button.hidden = off;
+      if (!off && x !== marker.x) marker.button.style.left = `${x}px`;
+      marker.x = off ? null : x;
     }
-    layer.innerHTML = events.map((event, i) => {
-      const time = placed.times[i];
-      const x = time == null ? null : chart.timeScale().timeToCoordinate(time);
-      if (x == null || x < 9 || x > ctx.plotWidth - 9) return "";
-      const change = event.reaction?.day_pct;
-      const tone = change > 0 ? "positive" : change < 0 ? "negative" : "";
-      return `<button class="earnings-marker ${tone}${event.date > data.asof ? " future" : ""}${event.estimated ? " estimated" : ""}" ` +
-        `style="left:${x}px" data-event="${i}" data-date="${event.date}" aria-label="Earnings ${event.date}${event.estimated ? ', estimated' : ''}" aria-describedby="${tip.id}">E</button>`;
-    }).join("");
     if (shown) {
       layer.querySelector(`.earnings-marker[data-date="${shown}"]`)?.classList.add("open");
       place();
@@ -253,13 +266,17 @@ export function createEarnings(root, chart, context) {
     return future.length;
   }
 
+  let pillKey = null, pillHtml = "";
   function pill() {
     const ctx = context();
     const next = ctx.allowed && ctx.enabled && data?.next_earnings;
     if (!next) return "";
+    const key = `${data.next_asof || data.asof}:${next.date}:${next.timing}:${next.reference_date}`;
+    if (key === pillKey) return pillHtml; // the legend redraws as the crosshair moves
+    pillKey = key;
     const days = sessionsBetween(data.next_asof || data.asof, next.date);
     const title = `${days} trading sessions · ${stamp(next.date)} · ${timing(next)}${next.estimated ? ` · Estimated from ${stamp(next.reference_date)} + 52 weeks` : ""}`;
-    return `<span class="earnings-pill ${days <= 3 ? "imminent" : days <= 10 ? "soon" : ""}" title="${escapeHtml(title)}">E ${next.estimated ? "~" : ""}${days}d</span>`;
+    return pillHtml = `<span class="earnings-pill ${days <= 3 ? "imminent" : days <= 10 ? "soon" : ""}" title="${escapeHtml(title)}">E ${next.estimated ? "~" : ""}${days}d</span>`;
   }
 
   // Click a marker for its card (it fades in); click it again, anywhere else, or Esc to close.

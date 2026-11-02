@@ -413,21 +413,29 @@ function render(only = null) {
 function renderLayer(l) {
   const { svg, pane } = l;
   const ctx = pane.context();
-  const area = pane.root;
-  if (area.hidden || !area.clientWidth) return; // a chart that isn't showing (e.g. outside Chart mode)
-  svg.setAttribute("width", area.clientWidth);
-  svg.setAttribute("height", area.clientHeight);
-  if (!ctx.bars.length || hidden) { svg.innerHTML = ""; l.images.replaceChildren(); return; }
+  if (pane.root.hidden || !ctx.width) return; // a chart that isn't showing (e.g. outside Chart mode)
+  if (l.size !== `${ctx.width}x${ctx.height}`) {
+    l.size = `${ctx.width}x${ctx.height}`;
+    svg.setAttribute("width", ctx.width);
+    svg.setAttribute("height", ctx.height);
+  }
+  if (!ctx.bars.length || hidden) { setSvg(l, ""); l.images.replaceChildren(); return; }
   const working = l === layer;
   const items = [...itemsOf(l)];
   if (pending && working) items.push({ ...pending, id: null });
   renderImages(l, items, ctx);
   const isSelected = (item) => working && item.id === selected;
   const clip = `draw-clip-${pane.side}`;
-  svg.innerHTML =
+  setSvg(l,
     `<defs><clipPath id="${clip}"><rect x="0" y="${ctx.box.top}" width="${ctx.plotWidth}" height="${ctx.box.height}"/></clipPath></defs>` +
     `<g clip-path="url(#${clip})">${items.filter((item) => clipped(item.type)).map((item) => shape(item, ctx, isSelected(item))).join("")}</g>` +
-    items.filter((item) => !clipped(item.type)).map((item) => shape(item, ctx, isSelected(item))).join("");
+    items.filter((item) => !clipped(item.type)).map((item) => shape(item, ctx, isSelected(item))).join(""));
+}
+
+// The layer's markup, replaced only when it changed: with no drawings in view a pan would
+// otherwise rebuild the SVG every frame.
+function setSvg(l, html) {
+  if (html !== l.html) l.svg.innerHTML = l.html = html;
 }
 
 function renderToolbar() {

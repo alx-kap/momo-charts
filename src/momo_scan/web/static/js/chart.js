@@ -64,6 +64,10 @@ function createPane(root, { side, owner, settings, info = true }) {
   const S = settings.S; // replaced in place, never swapped, so this stays current
   let loadToken = 0;
   let pane = null; // this chart's handle, given to hooks
+  // The chart area's size, kept from a ResizeObserver: overlays redraw every frame of a pan and
+  // reading clientWidth after they write would force a layout each time.
+  const size = { width: root.clientWidth, height: root.clientHeight };
+  new ResizeObserver(() => { size.width = root.clientWidth; size.height = root.clientHeight; }).observe(root);
 
   const chart = LC.createChart(el["chart"], {
     autoSize: true,
@@ -556,6 +560,7 @@ function createPane(root, { side, owner, settings, info = true }) {
     return def.format ? def.format(value) : def.pane === "price" ? fmtPrice(value) : value.toFixed(2);
   }
 
+  let legendHtml = "";
   function renderLegend(index) {
     const bars = currentBars;
     if (!bars.length) return;
@@ -579,7 +584,8 @@ function createPane(root, { side, owner, settings, info = true }) {
       ` · ${currentRequest.interval} · ${chartInfo.exchange || ""}`,
       ...ohlc,
     ];
-    el["legend-title"].innerHTML = parts.join("");
+    const title = parts.join("");
+    if (title !== legendHtml) el["legend-title"].innerHTML = legendHtml = title; // the crosshair moves within a bar
     for (const node of root.querySelectorAll('[data-part="legend"] .v, [data-part="pane-legends"] .v')) {
       const item = plots.find((p) => p.ind.id === node.dataset.ind && p.plot.key === node.dataset.plot);
       const set = !item && levelSets.find((s) => s.ind.id === node.dataset.ind);
@@ -664,19 +670,17 @@ function createPane(root, { side, owner, settings, info = true }) {
   // highest and lowest bars sit. Drag them to give the chart more or less room above and below.
 
   function paneBoxes() {
-    const area = root.getBoundingClientRect();
     let top = 0;
     return chart.panes().map((pane) => {
-      const el = pane.getHTMLElement && pane.getHTMLElement();
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        return { top: rect.top - area.top, height: rect.height };
-      }
       const box = { top, height: pane.getHeight() };
       top += box.height + 1;
       return box;
     });
   }
+
+  // Writes only what changed: this runs every frame of a pan, and most frames move nothing here.
+  const put = (node, prop, value) => { if (node.style[prop] !== value) node.style[prop] = value; };
+  const titled = (node, title) => { if (node.title !== title) node.title = title; };
 
   function layoutOverlays() {
     const boxes = paneBoxes();
@@ -684,12 +688,12 @@ function createPane(root, { side, owner, settings, info = true }) {
       const n = paneKeys.indexOf(node.dataset.pane);
       if (n < 1 || !boxes[n]) { node.hidden = true; continue; }
       node.hidden = false;
-      node.style.top = `${boxes[n].top + 4}px`;
+      put(node, "top", `${boxes[n].top + 4}px`);
     }
     const layer = el["margin-handles"];
     if (!S.scale.handles || !currentBars.length) { layer.innerHTML = ""; return; }
     const axis = chart.priceScale("right").width();
-    const left = root.clientWidth - axis;
+    const left = size.width - axis;
     if (layer.childElementCount !== paneKeys.length * 2 + 1) {
       layer.innerHTML = paneKeys.map((key, n) =>
         `<div class="mh top" data-n="${n}" data-edge="top"></div><div class="mh bottom" data-n="${n}" data-edge="bottom"></div>`).join("") +
@@ -705,9 +709,9 @@ function createPane(root, { side, owner, settings, info = true }) {
       const y = node.dataset.edge === "top"
         ? Math.max(box.top + 12, box.top + margins.top * box.height)
         : Math.min(box.top + box.height - 12, box.top + (1 - margins.bottom) * box.height);
-      node.style.left = `${left}px`;
-      node.style.top = `${y}px`;
-      node.title = `${node.dataset.edge === "top" ? "Top" : "Bottom"} margin ${Math.round(margins[node.dataset.edge] * 100)}% · drag to adjust`;
+      put(node, "left", `${left}px`);
+      put(node, "top", `${y}px`);
+      titled(node, `${node.dataset.edge === "top" ? "Top" : "Bottom"} margin ${Math.round(margins[node.dataset.edge] * 100)}% · drag to adjust`);
     }
   }
 
@@ -718,9 +722,9 @@ function createPane(root, { side, owner, settings, info = true }) {
     const x = chart.timeScale().logicalToCoordinate(currentBars.length - 1);
     node.hidden = x == null || x < 0 || x > plotWidth;
     if (node.hidden) return;
-    node.style.left = `${x}px`;
-    node.style.top = `${last.top + last.height + 1}px`;
-    node.title = `Right margin ${S.scale.rightOffset} bars · drag to adjust`;
+    put(node, "left", `${x}px`);
+    put(node, "top", `${last.top + last.height + 1}px`);
+    titled(node, `Right margin ${S.scale.rightOffset} bars · drag to adjust`);
   }
 
   function setRightOffset(offset) {
@@ -1441,7 +1445,8 @@ function createPane(root, { side, owner, settings, info = true }) {
     const box = paneBoxes()[0] || { top: 0, height: 0 };
     return {
       chart, candles, bars: currentBars, box,
-      plotWidth: root.clientWidth - chart.priceScale("right").width(),
+      plotWidth: size.width - chart.priceScale("right").width(),
+      width: size.width, height: size.height,
       interval: currentRequest.interval,
     };
   }
