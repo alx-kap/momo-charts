@@ -254,54 +254,68 @@ function renderFavorites() {
 function bindFavorites() {
   const box = $("wl-favs");
   let press = null;
-  const targetAt = (x, y) => {
-    const chips = [...box.querySelectorAll(".fav:not(.held)")];
-    let best = null;
-    for (const chip of chips) {
-      const r = chip.getBoundingClientRect();
-      const inRow = y >= r.top - 4 && y <= r.bottom + 4;
-      if (inRow && x < r.left + r.width / 2) return { chip, after: false };
-      if (inRow) best = { chip, after: true };
-    }
-    return best;
+  const chipsOf = () => [...box.querySelectorAll(".fav")];
+  // While a chip is held the others slide aside to open its landing slot.
+  const startDrag = () => {
+    const chips = chipsOf();
+    const from = chips.indexOf(press.chip);
+    Object.assign(press, {
+      drag: true, chips, from, at: from, scroll0: box.scrollLeft,
+      step: chips.length > 1 ? chips[1].offsetLeft - chips[0].offsetLeft : 38,
+    });
+    press.chip.classList.add("held");
+    box.classList.add("sorting");
   };
-  const clear = () => box.querySelectorAll(".drop-before, .drop-after").forEach((el) => el.classList.remove("drop-before", "drop-after"));
+  const shift = (chips, from, at, step) => chips.forEach((chip, i) => {
+    if (i === from) return;
+    const slot = from < at && i > from && i <= at ? i - 1 : from > at && i >= at && i < from ? i + 1 : i;
+    chip.style.transform = slot === i ? "" : `translateX(${(slot - i) * step}px)`;
+  });
   box.addEventListener("pointerdown", (event) => {
     const chip = event.target.closest(".fav");
     if (!chip || event.button !== 0) return;
-    press = { chip, id: chip.dataset.id, x: event.clientX, y: event.clientY, drag: false, drop: null };
-    press.timer = setTimeout(() => { if (press) { press.drag = true; chip.classList.add("held"); } }, 280);
+    press = { chip, id: chip.dataset.id, x: event.clientX, y: event.clientY, drag: false };
+    press.timer = setTimeout(() => { if (press) startDrag(); }, 280);
     chip.setPointerCapture(event.pointerId);
   });
   box.addEventListener("pointermove", (event) => {
     if (!press) return;
     if (!press.drag) {
-      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 6) { clearTimeout(press.timer); press.drag = true; press.chip.classList.add("held"); }
-      else return;
+      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < 6) return;
+      clearTimeout(press.timer);
+      startDrag();
     }
-    clear();
-    press.chip.style.transform = `translate(${event.clientX - press.x}px, ${event.clientY - press.y}px) scale(1.06)`;
-    press.drop = targetAt(event.clientX, event.clientY);
-    if (press.drop) press.drop.chip.classList.add(press.drop.after ? "drop-after" : "drop-before");
+    const edge = box.getBoundingClientRect();
+    if (event.clientX < edge.left + 20) box.scrollLeft -= 10;
+    else if (event.clientX > edge.right - 20) box.scrollLeft += 10;
+    const { chips, from, step, chip } = press;
+    const dx = event.clientX - press.x + box.scrollLeft - press.scroll0;
+    chip.style.transform = `translateX(${dx}px) scale(1.1)`;
+    press.at = Math.max(0, Math.min(chips.length - 1, Math.round((chip.offsetLeft + dx - chips[0].offsetLeft) / step)));
+    shift(chips, from, press.at, step);
   });
   const end = (event) => {
     if (!press) return;
-    const { chip, id, drag, drop } = press;
+    const { chip, id, drag, from, at, step } = press;
     clearTimeout(press.timer);
     press = null;
-    chip.style.transform = "";
-    clear();
-    chip.classList.remove("held");
     if (!drag) return event.type === "pointerup" ? switchList(id) : undefined;
     // A drag that ends isn't a click: swallow the click the release would send.
     window.addEventListener("click", (click) => { click.stopPropagation(); click.preventDefault(); }, { capture: true, once: true });
-    if (event.type !== "pointerup" || !drop) return;
+    const done = () => { box.classList.remove("sorting"); renderFavorites(); };
+    if (event.type !== "pointerup" || at === from) {
+      chip.classList.remove("held");
+      chip.style.transform = "";
+      shift(chipsOf(), -1, -1, step);
+      return setTimeout(done, 180);
+    }
     const order = favorites().filter((each) => each !== id);
-    const at = order.indexOf(drop.chip.dataset.id) + (drop.after ? 1 : 0);
     order.splice(at, 0, id);
     data.favorites = order;
     save();
-    renderFavorites();
+    chip.classList.replace("held", "settling");
+    chip.style.transform = `translateX(${(at - from) * step}px)`;
+    setTimeout(done, 180);
   };
   box.addEventListener("wheel", (event) => {
     if (box.scrollWidth <= box.clientWidth || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;

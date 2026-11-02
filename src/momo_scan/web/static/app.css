@@ -1089,9 +1089,9 @@ button.mini.active { border-color: rgba(61, 116, 255, .55); color: #fff; backgro
 #wl-favs .fav:hover { color: var(--text); border-color: var(--muted); }
 #wl-favs .fav.on { background: #fff; border-color: #fff; color: #0b0d12; }
 #wl-favs .fav .flag { color: var(--pass); }
-#wl-favs .fav.held { transform: scale(1.1); box-shadow: 0 4px 14px rgba(0, 0, 0, .5); position: relative; z-index: 2; cursor: grabbing; }
-#wl-favs .fav.drop-before { box-shadow: -4px 0 0 -1px var(--accent); }
-#wl-favs .fav.drop-after { box-shadow: 4px 0 0 -1px var(--accent); }
+#wl-favs.sorting .fav:not(.held) { transition: transform .18s ease; }
+#wl-favs .fav.held { box-shadow: 0 4px 14px rgba(0, 0, 0, .5); position: relative; z-index: 2; cursor: grabbing; }
+#wl-favs .fav.settling { transition: transform .18s ease; }
 #wl-tray {
   position: absolute; z-index: 5; left: 14px; right: 14px; top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   padding: 8px; background: #0e1015; border: 1px dashed var(--line-strong); border-radius: 10px;
