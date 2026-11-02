@@ -232,6 +232,14 @@ function toggleFavorite(id) {
   renderFavorites();
 }
 
+// A chip's label: a short first word ("0", "WL") as is, otherwise the initials of its words.
+function chipLabel(name) {
+  const words = name.trim().split(/[\s\-–_]+/).filter(Boolean);
+  if (!words.length) return "?";
+  if (words[0].length <= 3) return words[0];
+  return words.slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+}
+
 function renderFavorites() {
   const box = $("wl-favs");
   const ids = favorites();
@@ -239,7 +247,7 @@ function renderFavorites() {
   box.innerHTML = ids.map((id) => {
     const list = data.lists.find((each) => each.id === id);
     return `<button type="button" class="fav${id === data.active ? " on" : ""}" data-id="${escapeHtml(id)}" title="${escapeHtml(list.name)} · ${symbolsOf(list).length}">` +
-      `${id === FLAGGED ? FLAG_SVG : ""}<span>${escapeHtml(list.name)}</span></button>`;
+      `${id === FLAGGED ? FLAG_SVG : `<span>${escapeHtml(chipLabel(list.name))}</span>`}</button>`;
   }).join("");
 }
 
@@ -295,6 +303,11 @@ function bindFavorites() {
     save();
     renderFavorites();
   };
+  box.addEventListener("wheel", (event) => {
+    if (box.scrollWidth <= box.clientWidth || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+    box.scrollLeft += event.deltaY;
+    event.preventDefault();
+  }, { passive: false });
   box.addEventListener("pointerup", end);
   box.addEventListener("pointercancel", end);
   box.addEventListener("contextmenu", (event) => {

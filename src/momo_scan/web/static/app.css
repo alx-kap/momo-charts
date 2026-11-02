@@ -1078,19 +1078,20 @@ button.mini.active { border-color: rgba(61, 116, 255, .55); color: #fff; backgro
 .hw-sec.dragging { opacity: .4; }
 .hw-sec.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
 .hw-sec.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
-#wl-favs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+#wl-favs { display: flex; flex-wrap: nowrap; gap: 8px; padding: 4px 14px 10px; overflow-x: auto; overflow-y: hidden; }
 .compact-sidebar #side-home #wl-favs { padding-left: 8px; padding-right: 8px; }
 #wl-favs .fav {
-  display: inline-flex; align-items: center; gap: 5px; max-width: 100%; height: 26px; padding: 0 11px; background: var(--tile);
-  color: var(--text2); border: 1px solid var(--tile-line); border-radius: 13px; font: inherit; font-size: 12px; cursor: pointer; touch-action: none; user-select: none;
+  flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; background: transparent;
+  color: var(--text2); border: 1px solid var(--line-strong); border-radius: 50%; font: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer; touch-action: pan-x; user-select: none;
 }
-#wl-favs .fav span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 110px; }
-#wl-favs .fav:hover { color: var(--text); border-color: var(--line-strong); }
-#wl-favs .fav.on { background: var(--accent-soft); border-color: var(--accent); color: #fff; }
-#wl-favs .fav .flag { color: var(--pass); flex: none; }
-#wl-favs .fav.held { transform: scale(1.06); box-shadow: 0 4px 14px rgba(0, 0, 0, .5); position: relative; z-index: 2; cursor: grabbing; }
-#wl-favs .fav.drop-before { box-shadow: -3px 0 0 var(--accent); }
-#wl-favs .fav.drop-after { box-shadow: 3px 0 0 var(--accent); }
+#wl-favs .fav span { max-width: 26px; overflow: hidden; white-space: nowrap; }
+#wl-favs .fav:hover { color: var(--text); border-color: var(--muted); }
+#wl-favs .fav.on { background: #fff; border-color: #fff; color: #0b0d12; }
+#wl-favs .fav .flag { color: var(--pass); }
+#wl-favs .fav.held { transform: scale(1.1); box-shadow: 0 4px 14px rgba(0, 0, 0, .5); position: relative; z-index: 2; cursor: grabbing; }
+#wl-favs .fav.drop-before { box-shadow: -4px 0 0 -1px var(--accent); }
+#wl-favs .fav.drop-after { box-shadow: 4px 0 0 -1px var(--accent); }
 #wl-tray {
   position: absolute; z-index: 5; left: 14px; right: 14px; top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   padding: 8px; background: #0e1015; border: 1px dashed var(--line-strong); border-radius: 10px;
