@@ -8,6 +8,8 @@ version; this file is for the app around it.
 
 ## Unreleased
 
+## 0.1.3 · 2026-11-02
+
 ### What's new
 - Tab syncing on the tab itself: click the slot at a tab's left edge to pick a colour, and
   tabs of one colour follow each other's symbol and, with their switches on, interval,
