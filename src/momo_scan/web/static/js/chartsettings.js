@@ -47,7 +47,7 @@ export function defaultSettings() {
     margins: { price: { top: 0.27, bottom: 0.04 }, volume: { top: 0.15, bottom: 0 } },
     indicators: [...MAS.map(([period, color]) => newIndicator("sma", {
       params: { period }, style: { line: { color, width: 1 } },
-    })), newIndicator("earnings")],
+    }))],
   };
 }
 
@@ -74,9 +74,6 @@ function merge(defaults, saved) {
         })),
       };
     });
-    if ((saved.version || 1) < 2 && !out.indicators.some((item) => item.type === "earnings")) {
-      out.indicators.push(newIndicator("earnings"));
-    }
   }
   out.version = 2;
   return out;

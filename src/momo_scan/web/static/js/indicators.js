@@ -163,10 +163,6 @@ export function hvcLevels(bars, stats, p, n = bars.length) {
 // horizontal lines from `lines(bars, result, params, n)` instead of one line per plot; its
 // plots are styles (major, minor) and `value` names the series the legend shows.
 export const INDICATORS = {
-  earnings: {
-    name: "Earnings", pane: "price", kind: "events", chartOnly: true,
-    inputs: [], plots: [], label: () => "Earnings",
-  },
   sma: {
     name: "Moving average (simple)", pane: "price",
     inputs: [{ key: "period", label: "Length", value: 20, min: 1, max: 500 }],

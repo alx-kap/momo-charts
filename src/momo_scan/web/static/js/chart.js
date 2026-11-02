@@ -2,7 +2,7 @@ import { $, api, escapeHtml, fmtBig, fmtPct, fmtPrice, narrow, store, ticker } f
 import { state, throughDate } from "./state.js";
 import { bindReorder } from "./reorder.js";
 import { chartProfile, openChartSettings, removeIndicator, toggleIndicator, useChartProfile } from "./chartsettings.js";
-import { INDICATORS, ema, shownOn, sma } from "./indicators.js";
+import { INDICATORS, ema, shownOn, sma, timeframeOf } from "./indicators.js";
 import { formatColor, parseColor } from "./colorpicker.js";
 import { CHART_BARS, DECK_BARS, fetchBars, inRegular, isIntraday, prefetchNeighbors, series, showLive } from "./feed.js";
 import { extendedQuote, marketSession, onLiveQuotes, onSessionChange, watchBuzz } from "./live.js";
@@ -118,7 +118,7 @@ function createPane(root, { side, owner, settings, info = true }) {
   const earnings = createEarnings(root, chart, () => ({
     ...chartContext(),
     allowed: state.mode === "chart" && !view.anonymous && (!view.replayFrom || view.replay),
-    enabled: S.indicators.some((ind) => ind.type === "earnings" && drawn(ind)),
+    enabled: ["D", "W", "M"].includes(timeframeOf(currentRequest.interval)), // not intraday
   }));
 
   // Pre- and post-market: the last extended-hours trade, as a tag on the price scale, a line
