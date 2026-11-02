@@ -1,7 +1,7 @@
 import { escapeHtml } from "./util.js";
 
 // The watchlist switcher: a centered panel with a search box, recent lists and all lists.
-//   pickWatchlist({ state: () => ({ lists: [{ id, name, count, flagged? }], active }), recent: [id], rename, duplicate, remove })
+//   pickWatchlist({ state: () => ({ lists: [{ id, name, count, flagged?, fav? }], active }), recent: [id], rename, duplicate, remove, favorite })
 // resolves to { id } (open that list), { action } (new / import), or null if dismissed. Hover a
 // row to rename it in place (double-click the name too), make a copy or delete it. Type to filter; ↑ ↓ Enter and Esc work; Shift+W opens it.
 let open = null;
@@ -10,6 +10,7 @@ const SEARCH_ICON = `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden
 const FLAG = `<svg class="flag" viewBox="0 0 10 12" width="9" height="11" aria-hidden="true"><path d="M1 0.5v11" stroke="currentColor" stroke-width="1.3"/><path d="M1.6 1h7.4l-2 2.6 2 2.6H1.6z" fill="currentColor"/></svg>`;
 const PENCIL = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 13.5l.6-3L11 2.6a1.4 1.4 0 0 1 2 0l.4.4a1.4 1.4 0 0 1 0 2L5.5 12.9z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
 const COPY = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.5 5.5V4a1.6 1.6 0 0 0-1.6-1.6H4A1.6 1.6 0 0 0 2.4 4v4.9A1.6 1.6 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>`;
+const STAR = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2l1.8 3.8 4.1.5-3 2.9.8 4.1L8 11.2 4.3 13.3l.8-4.1-3-2.9 4.1-.5z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
 const TRASH = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.2c0 .5.4.8.9.8h4c.5 0 .9-.3.9-.8l.6-8.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const RECENT_MAX = 5;
 
@@ -26,7 +27,7 @@ function dismissPress(finish) {
   };
 }
 
-export function pickWatchlist({ state, recent = [], rename, duplicate, remove }) {
+export function pickWatchlist({ state, recent = [], rename, duplicate, remove, favorite }) {
   open?.finish(null);
   return new Promise((resolve) => {
     const back = document.createElement("div");
@@ -71,7 +72,7 @@ export function pickWatchlist({ state, recent = [], rename, duplicate, remove })
             : `<span class="wlp-name">${escapeHtml(list.name)}</span>`;
           return `<div class="wlp-row${list.id === active ? " on" : ""}${index === cursor ? " cur" : ""}${editing === list.id ? " editing" : ""}" data-id="${escapeHtml(list.id)}" data-i="${index}">` +
             `${list.flagged ? FLAG : ""}${name}<span class="wlp-count">${list.count}</span>` +
-            `<span class="wlp-tools">${list.flagged ? "" : `<button type="button" data-tool="rename" title="Rename">${PENCIL}</button>` +
+            `<span class="wlp-tools"><button type="button" data-tool="favorite" class="star${list.fav ? " on" : ""}" title="${list.fav ? "Remove from favorites" : "Add to favorites"}">${STAR}</button>${list.flagged ? "" : `<button type="button" data-tool="rename" title="Rename">${PENCIL}</button>` +
               `<button type="button" data-tool="duplicate" title="Make a copy">${COPY}</button>` +
               `<button type="button" data-tool="delete" class="danger" title="Delete">${TRASH}</button>`}</span></div>`;
         }).join("")).join("")
@@ -104,8 +105,9 @@ export function pickWatchlist({ state, recent = [], rename, duplicate, remove })
     };
     const tool = async (id, which) => {
       if (which === "rename") { editing = id; return render(); }
-      if (which === "duplicate") await duplicate(id);
-      else await remove(id);
+      if (which === "favorite") favorite(id);
+      else       if (which === "duplicate") await duplicate(id);
+      else if (which === "delete") await remove(id);
       render();
     };
 

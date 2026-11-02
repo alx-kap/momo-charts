@@ -1078,6 +1078,19 @@ button.mini.active { border-color: rgba(61, 116, 255, .55); color: #fff; backgro
 .hw-sec.dragging { opacity: .4; }
 .hw-sec.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
 .hw-sec.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+#wl-favs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+.compact-sidebar #side-home #wl-favs { padding-left: 8px; padding-right: 8px; }
+#wl-favs .fav {
+  display: inline-flex; align-items: center; gap: 5px; max-width: 100%; height: 26px; padding: 0 11px; background: var(--tile);
+  color: var(--text2); border: 1px solid var(--tile-line); border-radius: 13px; font: inherit; font-size: 12px; cursor: pointer; touch-action: none; user-select: none;
+}
+#wl-favs .fav span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 110px; }
+#wl-favs .fav:hover { color: var(--text); border-color: var(--line-strong); }
+#wl-favs .fav.on { background: var(--accent-soft); border-color: var(--accent); color: #fff; }
+#wl-favs .fav .flag { color: var(--pass); flex: none; }
+#wl-favs .fav.held { transform: scale(1.06); box-shadow: 0 4px 14px rgba(0, 0, 0, .5); position: relative; z-index: 2; cursor: grabbing; }
+#wl-favs .fav.drop-before { box-shadow: -3px 0 0 var(--accent); }
+#wl-favs .fav.drop-after { box-shadow: 3px 0 0 var(--accent); }
 #wl-tray {
   position: absolute; z-index: 5; left: 14px; right: 14px; top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   padding: 8px; background: #0e1015; border: 1px dashed var(--line-strong); border-radius: 10px;
@@ -1965,11 +1978,15 @@ body:not(.mode-chart) #replay-button, body.practice #replay-button { display: no
 .wlp-row .flag { color: var(--pass); flex: none; }
 .wlp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wlp-count { color: var(--muted); font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
-.wlp-tools { display: flex; gap: 2px; width: 82px; margin-left: -4px; opacity: 0; }
+.wlp-tools { display: flex; gap: 2px; width: 108px; margin-left: -4px; opacity: 0; }
 .wlp-row:hover .wlp-tools, .wlp-row.cur .wlp-tools { opacity: 1; }
 .wlp-tools button { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; background: transparent; border: 0; border-radius: 6px; color: var(--muted); cursor: pointer; }
 .wlp-tools button:hover { background: rgba(255, 255, 255, .08); color: var(--text); }
 .wlp-tools button.danger:hover { color: var(--pass); }
+.wlp-tools button.star.on { color: var(--accent); }
+.wlp-tools button.star.on svg path { fill: currentColor; }
+.wlp-row:has(.star.on) .wlp-tools { opacity: 1; }
+.wlp-row:has(.star.on):not(:hover):not(.cur) .wlp-tools button:not(.star) { visibility: hidden; }
 .wlp-row.editing { background: transparent; }
 .wlp-edit { flex: 1; min-width: 0; height: 28px; margin-left: -8px; padding: 0 8px; background: var(--raised); border: 1px solid var(--accent); border-radius: 7px; color: var(--text); font: inherit; font-weight: 600; outline: 0; box-shadow: 0 0 0 3px var(--accent-soft); }
 .wlp-row.editing .wlp-tools { display: none; }

@@ -186,9 +186,10 @@ async function loadQuotes(symbols) {
 export async function openWatchlistPicker() {
   const chosen = await pickWatchlist({
     state: () => ({
-      lists: data.lists.map((list) => ({ id: list.id, name: list.name, count: symbolsOf(list).length, flagged: list.id === FLAGGED })),
+      lists: data.lists.map((list) => ({ id: list.id, name: list.name, count: symbolsOf(list).length, flagged: list.id === FLAGGED, fav: favorites().includes(list.id) })),
       active: data.active,
     }),
+    favorite: toggleFavorite,
     recent: data.recent || [],
     rename: (id, name) => {
       data.lists.find((list) => list.id === id).name = name;
@@ -221,6 +222,88 @@ export async function openWatchlistPicker() {
   if (chosen.action) menu(chosen.action);
 }
 
+// Favorite lists sit under the list button as chips: click opens one, hold and drag re-orders.
+const favorites = () => (data.favorites || []).filter((id) => data.lists.some((list) => list.id === id));
+
+function toggleFavorite(id) {
+  const now = favorites();
+  data.favorites = now.includes(id) ? now.filter((each) => each !== id) : [...now, id];
+  save();
+  renderFavorites();
+}
+
+function renderFavorites() {
+  const box = $("wl-favs");
+  const ids = favorites();
+  box.hidden = !ids.length;
+  box.innerHTML = ids.map((id) => {
+    const list = data.lists.find((each) => each.id === id);
+    return `<button type="button" class="fav${id === data.active ? " on" : ""}" data-id="${escapeHtml(id)}" title="${escapeHtml(list.name)} · ${symbolsOf(list).length}">` +
+      `${id === FLAGGED ? FLAG_SVG : ""}<span>${escapeHtml(list.name)}</span></button>`;
+  }).join("");
+}
+
+function bindFavorites() {
+  const box = $("wl-favs");
+  let press = null;
+  const targetAt = (x, y) => {
+    const chips = [...box.querySelectorAll(".fav:not(.held)")];
+    let best = null;
+    for (const chip of chips) {
+      const r = chip.getBoundingClientRect();
+      const inRow = y >= r.top - 4 && y <= r.bottom + 4;
+      if (inRow && x < r.left + r.width / 2) return { chip, after: false };
+      if (inRow) best = { chip, after: true };
+    }
+    return best;
+  };
+  const clear = () => box.querySelectorAll(".drop-before, .drop-after").forEach((el) => el.classList.remove("drop-before", "drop-after"));
+  box.addEventListener("pointerdown", (event) => {
+    const chip = event.target.closest(".fav");
+    if (!chip || event.button !== 0) return;
+    press = { chip, id: chip.dataset.id, x: event.clientX, y: event.clientY, drag: false, drop: null };
+    press.timer = setTimeout(() => { if (press) { press.drag = true; chip.classList.add("held"); } }, 280);
+    chip.setPointerCapture(event.pointerId);
+  });
+  box.addEventListener("pointermove", (event) => {
+    if (!press) return;
+    if (!press.drag) {
+      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 6) { clearTimeout(press.timer); press.drag = true; press.chip.classList.add("held"); }
+      else return;
+    }
+    clear();
+    press.chip.style.transform = `translate(${event.clientX - press.x}px, ${event.clientY - press.y}px) scale(1.06)`;
+    press.drop = targetAt(event.clientX, event.clientY);
+    if (press.drop) press.drop.chip.classList.add(press.drop.after ? "drop-after" : "drop-before");
+  });
+  const end = (event) => {
+    if (!press) return;
+    const { chip, id, drag, drop } = press;
+    clearTimeout(press.timer);
+    press = null;
+    chip.style.transform = "";
+    clear();
+    chip.classList.remove("held");
+    if (!drag) return event.type === "pointerup" ? switchList(id) : undefined;
+    // A drag that ends isn't a click: swallow the click the release would send.
+    window.addEventListener("click", (click) => { click.stopPropagation(); click.preventDefault(); }, { capture: true, once: true });
+    if (event.type !== "pointerup" || !drop) return;
+    const order = favorites().filter((each) => each !== id);
+    const at = order.indexOf(drop.chip.dataset.id) + (drop.after ? 1 : 0);
+    order.splice(at, 0, id);
+    data.favorites = order;
+    save();
+    renderFavorites();
+  };
+  box.addEventListener("pointerup", end);
+  box.addEventListener("pointercancel", end);
+  box.addEventListener("contextmenu", (event) => {
+    const chip = event.target.closest(".fav");
+    if (!chip) return;
+    openMenu(event, [{ label: "Remove from favorites", run: () => toggleFavorite(chip.dataset.id) }]);
+  });
+}
+
 function switchList(id) {
   if (id === data.active) return;
   data.recent = [id, data.active, ...(data.recent || [])].filter((each, i, all) => all.indexOf(each) === i).slice(0, 8);
@@ -240,6 +323,7 @@ function openWatchlistDropdown(event) {
     { heading: "Recently used" },
     ...ids.map((id) => ({ label: `${byId.get(id).name} · ${symbolsOf(byId.get(id)).length}`, checked: id === data.active, run: () => switchList(id) })),
     { label: "Open list…", hint: "⇧W", run: openWatchlistPicker },
+    { label: favorites().includes(data.active) ? "Remove from favorites" : "Add to favorites", run: () => toggleFavorite(data.active) },
     "-",
     { label: "New list…", run: () => menu("new") },
     !flags && { label: "Rename list…", run: () => menu("rename") },
@@ -252,6 +336,7 @@ function openWatchlistDropdown(event) {
 export function renderWatchlists() {
   const current = activeList();
   $("wl-select").innerHTML = `<span>${escapeHtml(current.name)} · ${symbolsOf(current).length}</span><i aria-hidden="true">▾</i>`;
+  renderFavorites();
   renderRows();
   loadQuotes(symbolsOf(activeList()));
 }
@@ -733,6 +818,7 @@ function listItems() {
     { heading: list.name },
     list.id !== FLAGGED && { label: "Add symbols…", run: askSymbols },
     { label: "Add section…", run: () => menu("section") },
+    { label: favorites().includes(list.id) ? "Remove from favorites" : "Add to favorites", run: () => toggleFavorite(list.id) },
   ];
 }
 
@@ -926,6 +1012,7 @@ export function bindWatchlists() {
     if (event.target.matches(".dt-fund")) store.set("fundamentalsFold", !event.target.open);
   }, true);
   bindDrag();
+  bindFavorites();
   $("wl-select").addEventListener("click", openWatchlistDropdown);
   $("wl-rows").addEventListener("pointerover", (event) => {
     const row = event.target.closest(".hw-row[data-symbol]");
