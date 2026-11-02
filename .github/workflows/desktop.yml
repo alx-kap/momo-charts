@@ -43,6 +43,9 @@ jobs:
             args: --win --x64
             files: desktop/dist/*.exe
     runs-on: ${{ matrix.os }}
+    # A build takes 2–8 minutes once it has a machine. GitHub's own wait for a free Mac machine
+    # isn't settable: when it gives up the run is cancelled, and pushing again retries.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: desktop
