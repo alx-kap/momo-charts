@@ -55,7 +55,7 @@ const level = (row, key) => (row[key] == null ? "—" : `${row[key] > 0 ? "+" : 
 
 // Columns after Symbol; all of them are in each row the server sends. `live`: updated as
 // prices come in (`price`: flashes green or red with the move, the rest flash bold).
-const COLUMNS = {
+export const COLUMNS = {
   price: { label: "Price", width: 62, live: true, price: true, html: (row) => row.price.toFixed(2) },
   chg: { label: "1D", width: 56, live: true, html: move() },
   gap: { label: "Gap", width: 56, live: true, html: move() },

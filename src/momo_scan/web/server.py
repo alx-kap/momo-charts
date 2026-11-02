@@ -889,6 +889,32 @@ def create_app(
         except KeyError as error:
             raise HTTPException(404, "Unknown market") from error
 
+    async def with_fundamentals(table: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """The screener's rows with each stock's latest fundamentals headline."""
+        from momo_scan import fundamentals
+
+        path = Path(config.storage.database).parent / "fundamentals.db"
+        headlines = await asyncio.to_thread(fundamentals.screen_readings, path)
+        keys = ("earnings_days", "eps_yoy_pct", "revenue_yoy_pct", "eps_annual_yoy_pct",
+                "net_margin_pct", "eps_acceleration", "next_earnings")
+        joined = []
+        for row in table:
+            ticker = row["symbol"].rsplit(":", 1)[-1].replace(".", "-")
+            headline = headlines.get(ticker, {})
+            joined.append({**row, **{key: headline.get(key) for key in keys}})
+        return joined
+
+    @app.get("/api/industry")
+    async def industry_view(name: str) -> dict[str, Any]:
+        """Every stock in one industry group, with the screener's readings."""
+        provider = state.get("provider")
+        if provider is None or not hasattr(provider, "screen_universe"):
+            raise HTTPException(503, "Market data unavailable")
+        latest, table = await screen_table()
+        table = await with_fundamentals(
+            [row for row in table if row["industry"] == name and not row["etf"]])
+        return {"industry": name, "rows": table, "as_of": latest.isoformat()}
+
     @app.get("/api/screen")
     async def screen_view(
         request: Request, filters: str = "[]", sort: str = "m1", dir: str = "desc",
@@ -906,18 +932,7 @@ def create_app(
         except ValueError as error:
             raise HTTPException(400, "filters must be JSON") from error
         latest, table = await screen_table()
-        from momo_scan import fundamentals
-
-        path = Path(config.storage.database).parent / "fundamentals.db"
-        headlines = await asyncio.to_thread(fundamentals.screen_readings, path)
-        keys = ("earnings_days", "eps_yoy_pct", "revenue_yoy_pct", "eps_annual_yoy_pct",
-                "net_margin_pct", "eps_acceleration", "next_earnings")
-        joined = []
-        for row in table:
-            ticker = row["symbol"].rsplit(":", 1)[-1].replace(".", "-")
-            headline = headlines.get(ticker, {})
-            joined.append({**row, **{key: headline.get(key) for key in keys}})
-        table = joined
+        table = await with_fundamentals(table)
         sweep = state.get("sweep")
         sweeping = None
         if live:

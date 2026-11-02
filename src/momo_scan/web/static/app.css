@@ -1586,14 +1586,14 @@ table.th-table { table-layout: fixed; width: 100%; border-collapse: collapse; fo
 .th-spark.down polyline { stroke: var(--pass); }
 
 /* ---------- screener: a floating, resizable window that works like a watchlist ---------- */
-#screener {
+#screener, #industry {
   position: fixed; z-index: 9; display: flex; flex-direction: column; overflow: hidden; resize: both;
   min-width: 360px; min-height: 220px; max-width: 98vw; max-height: 96vh;
   background: var(--float); border: 1px solid var(--line-strong); border-radius: 10px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, .6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   font-size: 12.5px; outline: none;
 }
-#screener.in { animation: fade 160ms ease-out; }
+#screener.in, #industry.in { animation: fade 160ms ease-out; }
 .sc-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; cursor: grab; user-select: none; border-bottom: 1px solid var(--tile-line); flex: none; }
 .sc-head.moving { cursor: grabbing; }
 .sc-head b { font-size: 13px; font-weight: 600; }
@@ -1601,7 +1601,7 @@ table.th-table { table-layout: fixed; width: 100%; border-collapse: collapse; fo
 .sc-head > .spacer { flex: 1; min-width: 0; }
 .sc-head .sc-ico { display: none; vertical-align: -2px; }
 /* A narrow window: the header buttons drop their words for icons, so × always fits. */
-#screener { container-type: inline-size; }
+#screener, #industry { container-type: inline-size; }
 @container (max-width: 520px) {
   .sc-head { gap: 6px; padding-left: 12px; }
   .sc-head .sc-ico { display: inline-block; }
@@ -1664,7 +1664,7 @@ table.th-table { table-layout: fixed; width: 100%; border-collapse: collapse; fo
 .sc-bar button.mini:hover { color: var(--text); }
 .sc-bar button.mini svg { opacity: .8; }
 .sc-bar .toggle { height: 26px; box-sizing: border-box; }
-#sc-scroll { flex: 1; min-height: 0; overflow: auto; }
+#sc-scroll, #in-scroll { flex: 1; min-height: 0; overflow: auto; }
 .sc-row { display: grid; grid-template-columns: var(--sc-grid); width: max-content; min-width: 100%; align-items: center; padding: 0 12px; }
 .sc-colhead { position: sticky; top: 0; z-index: 1; background: var(--panel); height: 28px; color: var(--muted); font-size: 12px; border-bottom: 1px solid var(--tile-line); }
 .sc-colhead > span { position: relative; cursor: pointer; user-select: none; white-space: nowrap; padding-right: 8px; text-align: right; }
@@ -1680,11 +1680,11 @@ table.th-table { table-layout: fixed; width: 100%; border-collapse: collapse; fo
 .sc-line > span { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .sc-line > span.l { text-align: left; }
 .sc-line > span.sym { font-weight: 600; text-align: left; }
-#sc-foot { flex: none; padding: 5px 14px; border-top: 1px solid var(--tile-line); font-size: 11px; }
+#sc-foot, #in-foot { flex: none; padding: 5px 14px; border-top: 1px solid var(--tile-line); font-size: 11px; }
 .sc-empty { padding: 30px; text-align: center; color: var(--muted); }
-#sc-colmenu { position: absolute; right: 8px; top: 40px; z-index: 3; padding: 6px; background: var(--float); border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); max-height: 70%; overflow-y: auto; }
-#sc-colmenu label { display: flex; gap: 8px; align-items: center; padding: 3px 8px; white-space: nowrap; cursor: pointer; }
-#sc-colmenu label:hover { background: var(--hover); }
+#sc-colmenu, #in-colmenu { position: absolute; right: 8px; top: 40px; z-index: 3; padding: 6px; background: var(--float); border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); max-height: 70%; overflow-y: auto; }
+#sc-colmenu label, #in-colmenu label { display: flex; gap: 8px; align-items: center; padding: 3px 8px; white-space: nowrap; cursor: pointer; }
+#sc-colmenu label:hover, #in-colmenu label:hover { background: var(--hover); }
 .sort-arrow.pin svg { margin-right: 2px; vertical-align: -1px; }
 .sc-colhead > span.pinned { color: var(--accent); }
 
@@ -2138,3 +2138,8 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 .ss-card { animation: card-in 180ms cubic-bezier(.2, .9, .3, 1.05); }
 #interval-box { animation: iv-in 180ms cubic-bezier(.2, .9, .3, 1.05); }
 @keyframes iv-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)) scale(.97); } }
+
+/* The industry group list: the sidebar's industry name opens it. */
+.dt-ind .ind-link { color: inherit; padding: 0; border: none; background: none; font: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+.dt-ind .ind-link:hover { color: var(--text); }
+#industry .sc-head b { overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }

@@ -798,14 +798,18 @@ function paintDetails() {
   const pace = last.live ? sessionDone(last.time) : 1;
   const change = last.close - prev;
   const scan = box.id === "details" && latestDeck && latestDeck.get(ticker(symbol));
-  const place = [data.sector, data.industry].filter((name) => name && name !== "Unknown");
+  const known = (name) => name && name !== "Unknown";
+  const place = [data.sector, data.industry].filter(known);
   const fundamentals = state.mode === "chart" && box.id === "details" &&
     detailsFundamentals && ticker(detailsFundamentals.symbol) === ticker(symbol)
     ? fundamentalsTable(detailsFundamentals.data, detailsFundamentals.error) : "";
   box.innerHTML =
     `<div class="dt-name">${escapeHtml(data.company || ticker(symbol))}</div>` +
     `<div class="dt-sub">${escapeHtml(symbol)}</div>` +
-    (place.length ? `<div class="dt-ind" title="${escapeHtml(place.join(" · "))}">${escapeHtml(place.join(" · "))}</div>` : "") +
+    (place.length ? `<div class="dt-ind" title="${escapeHtml(place.join(" · "))}">${[
+      known(data.sector) ? escapeHtml(data.sector) : "",
+      known(data.industry) ? `<button class="ind-link" data-industry="${escapeHtml(data.industry)}" title="Every stock in this industry">${escapeHtml(data.industry)}</button>` : "",
+    ].filter(Boolean).join(" · ")}</div>` : "") +
     `<div class="dt-price"><b>${fmtPrice(last.close)}</b><span class="dt-chg ${change >= 0 ? "up" : "down"}">${change >= 0 ? "+" : ""}${fmtPrice(change)} (${fmtPct((change / prev) * 100)})</span></div>` +
     `<div class="dt-asof">${last.live ? '<i class="dt-live"></i>Live' : "Close"} · ${last.time}</div>` +
     (scan ? `<button class="dt-scan" data-run="${escapeHtml(scan.run)}" data-symbol="${escapeHtml(scan.symbol)}">` +
@@ -1154,6 +1158,8 @@ export function bindWatchlists() {
   $("details").addEventListener("click", (event) => {
     const button = event.target.closest(".dt-scan");
     if (button) actions.reviewSymbol(button.dataset.run, button.dataset.symbol);
+    const industry = event.target.closest(".ind-link");
+    if (industry) actions.openIndustry(industry.dataset.industry, detailsData?.symbol);
   });
   renderWatchlists();
 }

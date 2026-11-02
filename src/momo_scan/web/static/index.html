@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#000000">
 <title>Momo</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/static/app.css?v=232">
+<link rel="stylesheet" href="/static/app.css?v=233">
 </head>
 <body>
 <header id="topbar">
@@ -121,6 +121,21 @@
         <div id="sc-body"></div>
       </div>
       <div id="sc-foot" class="muted"></div>
+    </div>
+    <div id="industry" hidden tabindex="-1">
+      <div class="sc-head" id="in-drag">
+        <b id="in-title">Industry</b>
+        <span id="in-count" class="muted"></span>
+        <span class="spacer"></span>
+        <button id="in-cols-button" class="mini" title="Choose columns"><svg class="sc-ico" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2.5 3h11v10h-11zM6.2 3v10M9.8 3v10"/></svg><span class="sc-lbl">Columns</span></button>
+        <button id="in-close" class="icon" title="Close (Esc)">×</button>
+      </div>
+      <div id="in-colmenu" hidden></div>
+      <div id="in-scroll">
+        <div id="in-cols" class="sc-row sc-colhead"></div>
+        <div id="in-body"></div>
+      </div>
+      <div id="in-foot" class="muted"></div>
     </div>
 
     <svg id="drawings" data-part="drawings" xmlns="http://www.w3.org/2000/svg"></svg>

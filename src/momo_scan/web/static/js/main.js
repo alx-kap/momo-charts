@@ -12,6 +12,7 @@ import { bindPalette, closePalette, openPalette, paletteOpen } from "./palette.j
 import {
   bindChartSettings, changeSettings, chartSettingsOpen, closeChartSettings, openChartSettings, syncChartSettings,
 } from "./chartsettings.js";
+import { bindIndustry, closeIndustry, markIndustrySymbol, openIndustry } from "./industry.js";
 import { bindScreener, closeScreener, markScreenerSymbol, refreshScreener, screenerNeighbors, stepScreener } from "./screener.js";
 import { bindThemes, closeThemes, openThemes, themesOpen } from "./themes.js";
 import { bindColorPicker } from "./colorpicker.js";
@@ -93,7 +94,7 @@ function renderModes(mode) {
     if (chartPane("right")) chartPane("right").clear();
   }
   renderSplit();
-  if (mode !== "chart") { closeScreener(); closeThemes(); }
+  if (mode !== "chart") { closeScreener(); closeThemes(); closeIndustry(); }
   applyRails();
   document.querySelectorAll("#modes button").forEach((button) => button.classList.toggle("active", button.dataset.mode === mode));
   slideModeHighlight();
@@ -127,6 +128,7 @@ const chartOptions = () => ({
 function markLists() {
   markActiveSymbol();
   markScreenerSymbol(state.home.symbol);
+  markIndustrySymbol(state.home.symbol);
 }
 
 async function showHome({ follow = true } = {}) {
@@ -401,7 +403,7 @@ function flagsChanged() {
 
 Object.assign(actions, {
   openThemes: (tab) => state.mode === "chart" && !practicing() && openThemes(tab),
-  openScreener: () => !practicing() && showScreener(), openSymbol, setInterval: changeInterval, setMode, addCurrentToWatchlist,
+  openIndustry, openScreener: () => !practicing() && showScreener(), openSymbol, setInterval: changeInterval, setMode, addCurrentToWatchlist,
   flagCurrent, flagsChanged, removeAllDrawings, setTool, copyChart, saveChart: () => snapshot(drawingsOf()),
   startReplay, newAlert,
 });
@@ -559,6 +561,7 @@ bindWatchlists();
 bindPalette();
 bindThemes();
 bindScreener();
+bindIndustry();
 bindRails();
 bindReplay({ redraw: redrawCharts, onDay: replayMoved });
 bindAlerts({ openSymbol: (symbol) => { if (state.mode !== "chart") setMode("chart").then(() => openSymbol(symbol)); else openSymbol(symbol); } });
