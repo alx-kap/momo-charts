@@ -134,7 +134,7 @@ function markLists() {
   markIndustrySymbol(state.home.symbol);
 }
 
-async function showHome({ follow = true } = {}) {
+async function showHome({ follow = true, interval = false } = {}) {
   chartMessage(null);
   applyLevels(null);
   markLists();
@@ -142,8 +142,9 @@ async function showHome({ follow = true } = {}) {
   const replay = replayDay();
   const details = renderDetails(state.home.symbol, { through: replay }); // shares the chart's request
   // The other chart follows when linked, and fills in when it shows nothing yet.
-  const other = splitOn() && ((follow && linked()) || !shownSymbol(otherSide())) ? otherChart() : null;
+  const other = splitOn() && ((follow && linked()) || (interval && layout.sync.interval) || !shownSymbol(otherSide())) ? otherChart() : null;
   if (other && linked()) other.record.symbol = state.home.symbol;
+  if (other && layout.sync.interval) other.record.interval = state.interval;
   await Promise.all([
     showChart(state.home.symbol, null, { through: null, ...options, ...replayOptions(options.interval) }),
     other ? showOther(other) : null,
@@ -196,17 +197,18 @@ function changeInterval(interval) {
   state.interval = interval;
   saveCharts();
   renderSymbolBar();
-  redraw({ follow: false });
+  redraw({ follow: false, interval: true });
 }
 
 // ---------- split view ----------
 // Two charts side by side in Chart mode, each with its own symbol, timeframe and indicators.
 // The app's current symbol and timeframe (state.home.symbol, state.interval) are the active
 // chart's; `charts` keeps each chart's. The layout menu (the button's menu) picks one chart or
-// two, and what the two share: the symbol, the crosshair.
+// two, and what the two share: the same switches as linked tabs (symbol, interval, time, date
+// range) and the crosshair.
 
 const stored = store.get("layout", {});
-const layout = { split: false, ratio: 0.5, active: "left", ...stored, sync: { symbol: true, crosshair: true, ...stored.sync } };
+const layout = { split: false, ratio: 0.5, active: "left", ...stored, sync: { symbol: true, interval: false, time: false, range: false, crosshair: true, ...stored.sync } };
 const charts = {
   left: { symbol: state.home.symbol, interval: state.interval },
   right: { symbol: state.home.symbol, interval: "5m", ...layout.right },
@@ -252,6 +254,7 @@ function syncAddress(mode = state.mode) {
 const charting = () => state.mode === "chart" && !practicing();
 let viewFrame = 0;
 onChartScroll((pane) => {
+  if (splitOn() && (layout.sync.time || layout.sync.range)) chartPane(pane.side === "left" ? "right" : "left")?.showTimes(pane.visibleTimes(), layout.sync.range);
   if (pane !== activePane() || !charting() || !linkColor() || viewFrame) return;
   viewFrame = requestAnimationFrame(() => { viewFrame = 0; publish("view", activePane().visibleTimes()); });
 });
@@ -312,8 +315,12 @@ $("layout-menu").addEventListener("change", (event) => {
   layout.sync[box.dataset.sync] = box.checked;
   saveCharts();
   renderSplit();
-  // Turning symbol sync on brings the other chart to this one's symbol.
-  if (box.dataset.sync === "symbol" && box.checked && splitOn()) showHome();
+  // Turning a sync on brings the other chart to this one.
+  if (!box.checked || !splitOn()) return;
+  const other = chartPane(otherSide());
+  if (box.dataset.sync === "symbol") showHome();
+  if (box.dataset.sync === "interval") showHome({ follow: false, interval: true });
+  if (box.dataset.sync === "time" || box.dataset.sync === "range") other?.showTimes(activePane().visibleTimes(), layout.sync.range);
 });
 document.addEventListener("pointerdown", (event) => {
   if (!$("layout-menu").hidden && !event.target.closest(".layout-wrap")) closeLayoutMenu();
@@ -331,6 +338,7 @@ async function toggleSplit() {
   if (layout.split) {
     // Symbols changed in single view: a linked right chart catches up as it reopens.
     if (linked() || !charts.right.symbol) charts.right.symbol = state.home.symbol;
+    if (layout.sync.interval) charts.right.interval = state.interval;
     await showOther({ side: "right", record: charts.right });
   }
 }
@@ -398,8 +406,8 @@ function replayMoved(day) {
   }, 300);
 }
 
-function redraw({ follow = true } = {}) {
-  if (state.mode === "chart") return showHome({ follow });
+function redraw({ follow = true, interval = false } = {}) {
+  if (state.mode === "chart") return showHome({ follow, interval });
   return extra?.redraw();
 }
 
@@ -608,7 +616,11 @@ bindDesktop({ settings: () => openChartSettings("symbol"), help: openHelp });
 bindLink({
   symbol: (symbol) => { if (charting()) openSymbol(symbol); },
   interval: (interval) => { if (charting() && interval !== state.interval) changeInterval(interval); },
-  view: (times, fit) => { if (charting()) activePane().showTimes(times, fit); },
+  view: (times, fit) => {
+    if (!charting()) return;
+    activePane().showTimes(times, fit);
+    if (splitOn() && (layout.sync.time || layout.sync.range)) chartPane(otherSide())?.showTimes(times, layout.sync.range);
+  },
   colored: () => syncAddress(),
 });
 syncChartSettings();
