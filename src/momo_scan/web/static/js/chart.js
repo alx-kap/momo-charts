@@ -552,7 +552,7 @@ function createPane(root, { side, owner, settings, info = true }) {
       : "";
     el["pane-legends"].innerHTML = paneKeys.slice(1).map((key) => {
       if (key === "volume") {
-        return `<div class="pane-legend" data-pane="volume"><div class="lg-row"><span class="vol-values"></span>${tools("volume", false)}</div></div>`;
+        return `<div class="pane-legend" data-pane="volume"><div class="lg-row"><span class="vol-values"></span><span class="lg-tools"><button data-lg="edit" data-id="volume" title="Settings">⚙</button></span></div></div>`;
       }
       const ind = S.indicators.find((item) => item.id === key);
       return `<div class="pane-legend" data-pane="${key}">${legendRow(ind, "pane")}</div>`;
@@ -659,8 +659,7 @@ function createPane(root, { side, owner, settings, info = true }) {
     activate(side); // the indicator commands and dialog act on the active chart
     if (lg === "collapse") return settings.change((s) => { s.status.collapsed = !s.status.collapsed; }, "series");
     if (id === "volume") {
-      if (lg === "toggle") settings.change((s) => { s.volume.visible = false; }, "series");
-      else openChartSettings("symbol");
+      openChartSettings("symbol");
       return;
     }
     if (lg === "toggle") toggleIndicator(id);
