@@ -665,6 +665,63 @@ function createPane(root, { side, owner, settings, info = true }) {
   el["legend"].addEventListener("click", onLegendClick);
   el["pane-legends"].addEventListener("click", onLegendClick);
 
+  // Drag an indicator pane's legend to move the pane up or down: the panes swap live as the
+  // pointer passes the middle of a neighbour, and the order is saved when it's let go.
+  {
+    const layer = el["pane-legends"];
+    let held = null; // { node, key, y, moved, original }
+    const firstSlot = () => (paneKeys.includes("volume") ? 2 : 1); // volume stays under the price
+    const swap = (from, to) => {
+      chart.movePane(from, to);
+      paneKeys.splice(to, 0, ...paneKeys.splice(from, 1));
+      layoutOverlays();
+    };
+    layer.addEventListener("pointerdown", (event) => {
+      const node = event.target.closest(".pane-legend");
+      if (!node || node.dataset.pane === "volume" || event.button || event.target.closest("button")) return;
+      held = { node, key: node.dataset.pane, y: event.clientY, moved: false, original: [...paneKeys] };
+      node.setPointerCapture(event.pointerId);
+    });
+    layer.addEventListener("pointermove", (event) => {
+      if (!held) return;
+      if (!held.moved) {
+        if (Math.abs(event.clientY - held.y) < 6) return;
+        held.moved = true;
+        held.node.classList.add("held");
+      }
+      const y = event.clientY - layer.getBoundingClientRect().top;
+      const boxes = paneBoxes();
+      const middle = (n) => boxes[n].top + boxes[n].height / 2;
+      const n = paneKeys.indexOf(held.key);
+      if (n + 1 < paneKeys.length && y > middle(n + 1)) swap(n, n + 1);
+      else if (n > firstSlot() && y < middle(n - 1)) swap(n, n - 1);
+    });
+    const release = (event) => {
+      if (!held) return;
+      const { node, moved, original } = held;
+      held = null;
+      node.classList.remove("held");
+      if (!moved) return;
+      // A drag that ends isn't a click: swallow the click the release would send.
+      const swallow = (click) => { click.stopPropagation(); click.preventDefault(); };
+      window.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 400);
+      if (event.type === "pointercancel") {
+        original.forEach((key, i) => { const at = paneKeys.indexOf(key); if (at !== i) swap(at, i); });
+        return;
+      }
+      // Settings keep indicators in one list: the moved panes take the places their indicators held.
+      const ids = paneKeys.filter((key) => key !== "price" && key !== "volume");
+      const slots = S.indicators.map((ind, i) => (ids.includes(ind.id) ? i : -1)).filter((i) => i >= 0);
+      const ordered = ids.map((id) => S.indicators.find((ind) => ind.id === id));
+      slots.forEach((slot, k) => { S.indicators[slot] = ordered[k]; });
+      builtKey = drawnKey(currentRequest.interval);
+      settings.persist();
+    };
+    layer.addEventListener("pointerup", release);
+    layer.addEventListener("pointercancel", release);
+  }
+
   // ---------- pane overlays: legends and margin handles ----------
   // TC2000-style margin handles: two small triangles on each pane's price axis mark where the
   // highest and lowest bars sit. Drag them to give the chart more or less room above and below.

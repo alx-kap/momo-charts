@@ -926,6 +926,13 @@ export class Chart {
         chart._changed();
       },
       panes: () => chart.panes_.map((pane) => pane.api),
+      // Put the pane at `from` where `to` is: the order of the panes below the price pane.
+      movePane(from, to) {
+        const n = chart.panes_.length;
+        if (from < 1 || to < 1 || from >= n || to >= n || from === to) return;
+        chart.panes_.splice(to, 0, ...chart.panes_.splice(from, 1));
+        chart._changed();
+      },
       removePane(index) {
         if (index <= 0 || index >= chart.panes_.length) return;
         chart.panes_.splice(index, 1);
