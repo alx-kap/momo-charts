@@ -289,8 +289,8 @@ function watchShown() {
 }
 
 // A row from the last close, brought up to today's trading by a live quote.
-const buzzes = new Map(); // ticker -> Volume Buzz
-function liveRow(row, quote) {
+export const buzzes = new Map(); // ticker -> Volume Buzz
+export function liveRow(row, quote) {
   const base = quote.prev_close;
   const volume = quote.volume ?? row.vol;
   const ext = extendedQuote(quote);

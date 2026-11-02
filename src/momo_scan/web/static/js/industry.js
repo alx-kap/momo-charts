@@ -1,9 +1,12 @@
 import { $, api, escapeHtml, store, ticker } from "./util.js";
-import { actions } from "./state.js";
+import { actions, state } from "./state.js";
 import { FLAG_SVG, flagCell, toggleFlag } from "./watchlists.js";
 import { bindColumns, gripHtml, moved } from "./columns.js";
 import { columnItems, openMenu, wantsMenu } from "./contextmenu.js";
-import { COLUMNS } from "./screener.js";
+import { COLUMNS, liveRow } from "./screener.js";
+import {
+  buzzLabel, buzzSession, flashCell, onLiveBuzz, onLiveQuotes, onSessionChange, watchBuzz, watchLive,
+} from "./live.js";
 
 // Industry group list: a floating window with every stock in the chart's industry. Columns work
 // like the screener's (sort, resize, reorder, choose); the layout, the sort (the default sort
@@ -11,8 +14,11 @@ import { COLUMNS } from "./screener.js";
 const DEFAULT_SHOWN = ["price", "chg", "adr", "dvol", "m1"];
 const FLAG_WIDTH = 24;
 const SYMBOL_WIDTH = 66;
-// Live-only columns and the industry name itself (the same on every row) aren't offered.
-const OFFERED = Object.keys(COLUMNS).filter((key) => !COLUMNS[key].unsorted && key !== "industry");
+// The industry name itself (the same on every row) isn't offered; neither are the live columns
+// (Ext, Buzz...) to accounts without live prices.
+const OFFERED = Object.keys(COLUMNS).filter((key) => key !== "industry");
+const live = () => Boolean(state.me && state.me.live);
+const offered = (key) => OFFERED.includes(key) && (live() || !COLUMNS[key].unsorted);
 
 let industry = null;
 let rows = [];
@@ -23,18 +29,26 @@ let layout = store.get("industryColumns", {}); // { order, hidden, widths }
 let place = store.get("industryWindow", null);
 
 const order = () => {
-  const saved = (layout.order || []).filter((key) => OFFERED.includes(key));
-  return [...saved, ...OFFERED.filter((key) => !saved.includes(key))];
+  const saved = (layout.order || []).filter(offered);
+  return [...saved, ...OFFERED.filter((key) => offered(key) && !saved.includes(key))];
 };
-const hidden = () => layout.hidden || OFFERED.filter((key) => !DEFAULT_SHOWN.includes(key));
+// A saved layout hides what it hasn't met: the live columns came after the first layouts.
+const known = () => layout.known || OFFERED.filter((key) => !COLUMNS[key].unsorted);
+const hidden = () => (layout.hidden
+  ? [...layout.hidden, ...OFFERED.filter((key) => !known().includes(key))]
+  : OFFERED.filter((key) => !DEFAULT_SHOWN.includes(key)));
 const shown = () => order().filter((key) => !hidden().includes(key));
 const widthOf = (key) => (layout.widths && layout.widths[key]) || COLUMNS[key].width;
 const gridOf = () => `${FLAG_WIDTH}px ${SYMBOL_WIDTH}px ${shown().map((key) => `${widthOf(key)}px`).join(" ")}`;
-const saveLayout = () => store.set("industryColumns", layout);
+const saveLayout = () => { layout.known = OFFERED; store.set("industryColumns", layout); };
 const isText = (key) => key === "symbol" || Boolean(COLUMNS[key]?.text);
 
 export const industryOpen = () => !$("industry").hidden;
-export const closeIndustry = () => { $("industry").hidden = true; };
+export const closeIndustry = () => {
+  $("industry").hidden = true;
+  watchLive("industry", []);
+  watchBuzz("industry", []);
+};
 
 function applyPlace() {
   const box = $("industry");
@@ -62,7 +76,8 @@ function renderHeader() {
     `<span data-sort="symbol" class="${sort.key === "symbol" ? "sorted" : ""}">Symbol${arrow("symbol")}</span>` +
     shown().map((key) => {
       const col = COLUMNS[key];
-      return `<span data-sort="${key}" data-col="${key}" draggable="true" class="${col.text ? "l" : ""}${sort.key === key ? " sorted" : ""}"${col.title ? ` title="${escapeHtml(col.title)}"` : ""}>${col.label}${arrow(key)}${gripHtml(false)}</span>`;
+      const label = key === "buzz" ? buzzLabel({ session: buzzSession() }) : col.label;
+      return `<span data-sort="${key}" data-col="${key}" draggable="true" class="${col.text ? "l" : ""}${sort.key === key ? " sorted" : ""}"${col.title ? ` title="${escapeHtml(col.title)}"` : ""}>${label}${arrow(key)}${gripHtml(false)}</span>`;
     }).join("");
   $("industry").style.setProperty("--sc-grid", gridOf());
 }
@@ -71,12 +86,72 @@ function lineHtml(row) {
   const mark = row.symbol === activeSymbol ? " active" : "";
   return `<div class="sc-row sc-line${mark}" data-symbol="${escapeHtml(row.symbol)}" title="${escapeHtml(row.name)}">` +
     flagCell(row.symbol) + `<span class="sym">${escapeHtml(ticker(row.symbol))}</span>` +
-    shown().map((key) => `<span class="${COLUMNS[key].text ? "l" : ""}">${COLUMNS[key].html(row, key)}</span>`).join("") + `</div>`;
+    shown().map((key) => `<span class="${COLUMNS[key].text ? "l" : ""}"${COLUMNS[key].live ? ` data-live="${key}"` : ""}>${COLUMNS[key].html(row, key)}</span>`).join("") + `</div>`;
 }
 
 function renderBody() {
   $("in-body").innerHTML = rows.length ? sorted().map(lineHtml).join("") : `<div class="sc-empty">No stocks found.</div>`;
+  watchShown();
 }
+
+// ---------- live prices ----------
+// Rows in view (and a screenful either side) are watched, so a long group doesn't crowd out
+// the chart and watchlists. Sorting stays on the last close until the list is next drawn.
+const SPARE_ROWS = 30;
+let watchFrame = 0;
+
+function watchShown() {
+  if (!industryOpen()) return;
+  const scroller = $("in-scroll");
+  const lines = [...$("in-body").querySelectorAll(".sc-line")];
+  const height = lines[0] ? lines[0].offsetHeight || 22 : 22;
+  const first = Math.max(0, Math.floor(scroller.scrollTop / height) - SPARE_ROWS);
+  const last = Math.ceil((scroller.scrollTop + scroller.clientHeight) / height) + SPARE_ROWS;
+  const symbols = lines.slice(first, last).map((line) => line.dataset.symbol);
+  watchLive("industry", symbols);
+  watchBuzz("industry", shown().some((key) => key === "buzz" || key === "ext_vol") ? symbols : []);
+}
+
+const lineMap = () => new Map([...$("in-body").querySelectorAll(".sc-line")].map((line) => [ticker(line.dataset.symbol), line]));
+
+onLiveQuotes((quotes) => {
+  if (!industryOpen() || !rows.length) return;
+  const lines = lineMap();
+  rows.forEach((row, i) => {
+    const quote = quotes.get(ticker(row.symbol));
+    if (!quote || quote.day < row.date) return;
+    const next = liveRow(row, quote);
+    const direction = Math.sign(next.price - row.price);
+    rows[i] = next;
+    const line = lines.get(ticker(row.symbol));
+    for (const cell of line ? line.querySelectorAll("[data-live]") : []) {
+      const key = cell.dataset.live;
+      flashCell(cell, COLUMNS[key].html(next, key), COLUMNS[key].price ? direction : 0);
+    }
+  });
+});
+
+onLiveBuzz((updates) => {
+  if (!industryOpen() || !rows.length) return;
+  const lines = lineMap();
+  rows.forEach((row, i) => {
+    const buzz = updates.get(ticker(row.symbol));
+    if (!buzz) return;
+    rows[i] = { ...row, buzz, ext_vol: row.quote ? liveRow(row, row.quote).ext_vol : row.ext_vol };
+    const line = lines.get(ticker(row.symbol));
+    for (const cell of line ? line.querySelectorAll('[data-live="buzz"], [data-live="ext_vol"]') : []) {
+      flashCell(cell, COLUMNS[cell.dataset.live].html(rows[i], cell.dataset.live));
+    }
+  });
+});
+
+// The session changed: the Buzz header follows it, and Ext columns fill or empty.
+onSessionChange(() => {
+  if (!industryOpen()) return;
+  rows = rows.map((row) => (row.quote ? liveRow(row, row.quote) : row));
+  renderHeader();
+  renderBody();
+});
 
 // Mark the chart's own stock so you can see where it stands in its group.
 export function markIndustrySymbol(symbol) {
@@ -241,6 +316,9 @@ export function bindIndustry() {
     const line = event.target.closest(".sc-line");
     if (line) actions.openSymbol(line.dataset.symbol);
   });
+  $("in-scroll").addEventListener("scroll", () => {
+    if (!watchFrame) watchFrame = requestAnimationFrame(() => { watchFrame = 0; watchShown(); });
+  }, { passive: true });
   $("industry").addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeIndustry();
   });
