@@ -12,7 +12,6 @@ const close = () => send("close");
 const ICONS = {
   duplicate: '<rect x="6" y="6" width="9" height="9" rx="1.6"/><path d="M12 3.5H4.6A1.1 1.1 0 0 0 3.5 4.6V12"/>',
   reload: '<path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.6 2.6v2.9h-2.9"/>',
-  link: '<path d="M7.6 10.4a2.9 2.9 0 0 0 4.1 0l2.4-2.4a2.9 2.9 0 0 0-4.1-4.1l-.9.9"/><path d="M10.4 7.6a2.9 2.9 0 0 0-4.1 0L3.9 10a2.9 2.9 0 0 0 4.1 4.1l.9-.9"/>',
   pin: '<path d="M6 2.8h6M7 2.8v4.4L4.8 10h8.4L11 7.2V2.8M9 10v5.2"/>',
   detach: '<path d="M8 3.5H4.6a1.1 1.1 0 0 0-1.1 1.1v8.8a1.1 1.1 0 0 0 1.1 1.1h8.8a1.1 1.1 0 0 0 1.1-1.1V10"/><path d="M10.5 3.5h4v4M14.5 3.5 8.5 9.5"/>',
   title: '<path d="M3.5 5V3.5h11V5M9 3.5v11M7 14.5h4"/>',
@@ -47,7 +46,6 @@ function render() {
   panel.replaceChildren(
     item({ action: "duplicate", label: "Duplicate tab", key: k("U"), iconName: "duplicate" }),
     item({ action: "reload", label: "Reload tab", key: k("R"), iconName: "reload" }),
-    item({ action: "copy", label: "Copy link", iconName: "link", disabled: state.offline }),
     item({ action: "pin", label: state.pinned ? "Unpin tab" : "Pin tab", iconName: "pin" }),
     item({ action: "detach", label: "Detach tab", iconName: "detach", disabled: !state.canDetach }),
     sep(),

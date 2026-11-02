@@ -4,7 +4,7 @@
 // over the whole window (ui/menu.html), which also holds the tab's link colour and switches.
 
 const path = require("node:path");
-const { BrowserWindow, Menu, WebContentsView, app, clipboard, shell } = require("electron");
+const { BrowserWindow, Menu, WebContentsView, app, shell } = require("electron");
 
 const STRIP = 40; // tab strip height, matching momo's top bar
 const BACKGROUND = "#000000"; // momo's --bg: no white flash while a page loads
@@ -356,7 +356,6 @@ class MomoWindow {
     if (!keep) this.closeMenu();
     if (action === "duplicate") this.duplicate(tab.id);
     else if (action === "reload") tab.offline ? this.load(tab) : tab.view.webContents.reload();
-    else if (action === "copy" && this.ctl.server()) clipboard.writeText(this.ctl.server() + this.address(tab));
     else if (action === "pin") this.setPinned(tab.id, !tab.pinned);
     else if (action === "detach") this.detach(tab.id);
     else if (action === "title") this.setTitle(tab.id, data.title);

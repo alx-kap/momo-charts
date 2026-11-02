@@ -9,8 +9,8 @@ version; this file is for the app around it.
 ## Unreleased
 
 ### What's new
-- Right-click a tab for TradingView Desktop's tab menu: Duplicate tab (⌘U), Reload tab, Copy
-  link, Pin tab, Detach tab (into its own window), Customize tab title, Close, Close other
+- Right-click a tab for TradingView Desktop's tab menu: Duplicate tab (⌘U), Reload tab, Pin
+  tab, Detach tab (into its own window), Customize tab title, Close, Close other
   tabs, Close tabs to the right.
 - Tab syncing lives in that menu too: pick a colour, and tabs of one colour follow each other's
   symbol and, with their switches on, interval, scrolling and dates in view. Linked tabs show
