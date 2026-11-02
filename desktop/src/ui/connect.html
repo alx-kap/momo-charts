@@ -11,23 +11,36 @@
 <main>
   <section id="setup" hidden>
     <img class="mark" src="../../build/icon.svg" alt="momo">
-    <h1>Connect to momo</h1>
-    <p>The address you open momo at in a browser.</p>
+    <h1>Set up momo</h1>
+    <p>Where momo runs. You can change it later: momo → Server…</p>
     <form id="form">
-      <input id="address" spellcheck="false" autocomplete="off" placeholder="http://127.0.0.1:8790" aria-label="Server address">
+      <div class="choices" role="radiogroup">
+        <button type="button" class="choice" data-mode="local" role="radio">
+          <b>On this computer</b><span>momo runs here. Charts fill from your Schwab account.</span>
+        </button>
+        <button type="button" class="choice" data-mode="server" role="radio">
+          <b>Connect to a server</b><span>A momo you already run, at the address you open in a browser.</span>
+        </button>
+      </div>
+      <input id="address" spellcheck="false" autocomplete="off" placeholder="http://127.0.0.1:8790" aria-label="Server address" hidden>
       <div class="row">
         <button id="cancel" type="button" class="quiet" hidden>Cancel</button>
-        <button id="connect" type="submit" class="primary">Connect</button>
+        <button id="connect" type="submit" class="primary">Continue</button>
       </div>
       <p id="error" class="error" role="alert"></p>
     </form>
   </section>
+  <section id="starting" hidden>
+    <img class="mark" src="../../build/icon.svg" alt="momo">
+    <h1>Starting momo</h1>
+    <p class="status"><i class="pulse"></i><span>Getting momo ready on this computer…</span></p>
+  </section>
   <section id="offline" hidden>
     <img class="mark" src="../../build/icon.svg" alt="momo">
     <h1>Can't reach momo</h1>
-    <p><span id="server" class="address"></span> isn't answering. momo reconnects by itself once it's back.</p>
+    <p id="why"><span id="server" class="address"></span> isn't answering. momo reconnects by itself once it's back.</p>
     <p class="status"><i class="pulse"></i><span id="status">Trying again…</span></p>
-    <div class="row"><button id="change" type="button" class="quiet">Change server</button></div>
+    <div class="row"><button id="change" type="button" class="quiet">Change setup</button></div>
   </section>
 </main>
 <script src="connect.js"></script>

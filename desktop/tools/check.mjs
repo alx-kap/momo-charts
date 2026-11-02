@@ -119,6 +119,7 @@ try {
     await connect.waitForSelector("#setup:not([hidden])");
     await shot(app, "1-connect");
     ok("first run shows the connect page", true, `${Date.now() - started} ms to the page`);
+    await connect.click('[data-mode="server"]');
     await connect.fill("#address", "127.0.0.1:1");
     await connect.click("#connect");
     await connect.waitForFunction(() => document.getElementById("error").textContent.length > 0);
@@ -223,6 +224,35 @@ try {
     ok("Detach tab moves it into a window of its own", windows === 2 && (await strip.$$eval(".tab", (each) => each.length)) === 2, `${windows} windows`);
     await shot(app, "4-restored");
     await app.close();
+  }
+
+  // 6. On this computer: the app runs its own momo (needs runtime/, `npm run runtime`).
+  if (fs.existsSync(path.join(ROOT, "runtime"))) {
+    const here = fs.mkdtempSync(path.join(os.tmpdir(), "momo-desktop-"));
+    const { app } = await launch(here);
+    const connect = await pageOf(app, (url) => url.includes("connect.html"));
+    await connect.waitForSelector("#setup:not([hidden])");
+    const picked = await connect.getAttribute('[data-mode="local"]', "aria-checked");
+    const asked = Date.now();
+    await connect.click("#connect");
+    const page = await pageOf(app, (url) => /^http:\/\/127\.0\.0\.1:\d+\//.test(url) && !url.startsWith(SERVER), 70000);
+    await page.waitForFunction(() => document.title.includes("momo"), null, { timeout: 30000 });
+    ok("on this computer starts momo in the app", picked === "true", `${Date.now() - asked} ms to momo at ${new URL(page.url()).origin}`);
+    await page.waitForSelector("#cs:not([hidden])", { timeout: 15000 });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    ok("a first run opens Settings for Schwab's keys", true);
+    await shot(app, "6-local");
+    const { localPort, mode } = JSON.parse(fs.readFileSync(path.join(here, "settings.json"), "utf8"));
+    await app.close();
+    const relaunched = await launch(here);
+    const again = await pageOf(relaunched.app, (url) => url.startsWith(`http://127.0.0.1:${localPort}/`), 70000);
+    await again.waitForFunction(() => document.title.includes("momo"), null, { timeout: 30000 });
+    ok("a relaunch starts it again on the same port", mode === "local", `${Date.now() - relaunched.started} ms, port ${localPort}`);
+    await relaunched.app.close();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const stopped = await fetch(`http://127.0.0.1:${localPort}/api/health`).then(() => false, () => true);
+    ok("quitting stops it", stopped);
+    fs.rmSync(here, { recursive: true, force: true });
   }
 
   // 4. The server doesn't answer; 5. a newer version is out.

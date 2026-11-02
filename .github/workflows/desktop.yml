@@ -44,9 +44,11 @@ jobs:
         include:
           - os: macos-latest
             args: --mac --arm64 --x64
+            runtime: node tools/runtime.mjs --os mac --arch arm64 && node tools/runtime.mjs --os mac --arch x64
             files: desktop/dist/*.dmg
           - os: windows-latest
             args: --win --x64
+            runtime: node tools/runtime.mjs --os win --arch x64
             files: desktop/dist/*.exe
     runs-on: ${{ matrix.os }}
     # A build takes 2–8 minutes once it has a machine. GitHub's own wait for a free Mac machine
@@ -62,7 +64,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
+      - uses: astral-sh/setup-uv@v6
       - run: npm ci
+      # Local mode's Python, one per platform the build makes (tools/runtime.mjs).
+      - run: ${{ matrix.runtime }}
       - run: npx electron-builder ${{ matrix.args }} --publish never
       - uses: actions/upload-artifact@v4
         with:
@@ -96,7 +101,7 @@ jobs:
           - **Mac**: open momo once, then System Settings → Privacy & Security → **Open Anyway**.
           - **Windows**: on the SmartScreen warning, click **More info** → **Run anyway**.
 
-          momo's desktop app shows a momo server in native tabs. Enter the address you open momo at in a browser.
+          On first launch, pick **On this computer** (momo runs in the app; charts fill from your Schwab account) or **Connect to a server** (the address you open momo at in a browser).
           NOTES
           sed -i "s/VERSION/$VERSION/g" notes.md
           gh release create "desktop-v$VERSION" out/* --repo "$GITHUB_REPOSITORY" \

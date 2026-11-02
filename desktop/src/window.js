@@ -123,9 +123,14 @@ class MomoWindow {
   load(tab, { setup = false } = {}) {
     const server = this.ctl.server();
     const contents = tab.view.webContents;
-    if (!server || setup) {
+    const mode = this.ctl.mode();
+    if (!mode || setup) {
       tab.offline = true;
       contents.loadFile(path.join(UI, "connect.html"), { query: { mode: "setup" } });
+    } else if (!server) {
+      // Local mode: momo is starting, or couldn't.
+      tab.offline = true;
+      contents.loadFile(path.join(UI, "connect.html"), { query: { mode: this.ctl.starting() ? "starting" : "offline", server: "" } });
     } else {
       tab.offline = false;
       contents.loadURL(server + tab.path);
@@ -375,7 +380,7 @@ class MomoWindow {
     if (this.win.isDestroyed() || this.win.webContents.isLoading()) return;
     this.win.webContents.send("tabs", {
       tabs: this.tabs.map(({ id, title, custom, pinned, loading, offline, link }) => ({
-        id, title: offline ? (this.ctl.server() ? "Offline" : "Connect") : custom || title, loading, offline,
+        id, title: offline ? (this.ctl.starting() ? "Starting momo" : this.ctl.mode() ? "Offline" : "Set up") : custom || title, loading, offline,
         pinned, link: offline ? null : link,
       })),
       active: this.active,

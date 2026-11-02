@@ -10,7 +10,8 @@
     "start": "electron .",
     "dev": "git pull --ff-only && npm install --no-audit --no-fund && electron .",
     "check": "node tools/check.mjs",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "runtime": "node tools/runtime.mjs"
   },
   "devDependencies": {
     "electron": "45.2.1",
@@ -25,6 +26,12 @@
       "build/icon.svg",
       "build/icon.png",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime/${os}-${arch}",
+        "to": "runtime"
+      }
     ],
     "directories": {
       "output": "dist",

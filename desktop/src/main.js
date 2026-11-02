@@ -1,5 +1,6 @@
 // momo's desktop app: the same momo server and web app as the browser, in native windows with
-// tabs. Plan: docs/desktop.md.
+// tabs. It shows a momo server you run elsewhere ("server" mode) or runs one itself on this
+// computer ("local" mode, local.js). Plan: docs/desktop.md.
 //
 // Environment, for checks and development:
 //   MOMO_DESKTOP_PROFILE   a data folder instead of the user's (settings, open tabs)
@@ -12,6 +13,7 @@
 
 const path = require("node:path");
 const { app, dialog, ipcMain, session, shell } = require("electron");
+const local = require("./local");
 const { buildMenu } = require("./menu");
 const server = require("./server");
 const store = require("./store");
@@ -24,15 +26,44 @@ else if (!app.isPackaged) app.setPath("userData", path.join(app.getPath("appData
 if (!app.requestSingleInstanceLock()) app.exit(0);
 
 const ctl = {
-  settings: store.read("settings.json", { server: null }),
+  settings: store.read("settings.json", { mode: null, server: null, localPort: 0 }),
   windows: new Set(),
   focused: null,
   recent: [], // closed tabs' addresses, for Reopen Closed Tab
   quitting: false,
   saveTimer: null,
 
+  // "server", "local", or null before setup (an address saved before local mode was "server").
+  mode() {
+    return this.settings.mode || (this.settings.server ? "server" : null);
+  },
+  // The address tabs open; null while the local server starts, or when it couldn't.
   server() {
-    return this.settings.server;
+    return this.mode() === "local" ? local.origin() : this.settings.server;
+  },
+  starting() {
+    return this.mode() === "local" && local.starting();
+  },
+  saveSettings() {
+    store.write("settings.json", this.settings);
+  },
+
+  // Start momo on this computer; tabs show "Starting momo…" until it answers.
+  async startLocal() {
+    const started = this.local();
+    this.reconnect();
+    try {
+      await started;
+    } catch {
+      // The tabs' offline page says why (local.failure()) and tries again.
+    }
+    this.reconnect();
+  },
+  local() {
+    return local.start({ port: this.settings.localPort, onPort: (port) => {
+      this.settings.localPort = port;
+      this.saveSettings();
+    } });
   },
 
   open(saved) {
@@ -118,17 +149,38 @@ const ctl = {
 };
 
 // The connect page (ui/connect.html): set the server, or wait for it to answer again.
-ipcMain.handle("connect:info", () => ({ server: ctl.server(), version: app.getVersion() }));
+ipcMain.handle("connect:info", () => ({
+  mode: ctl.mode(), server: ctl.settings.server, local: local.available(), failure: local.failure(),
+  version: app.getVersion(),
+}));
 ipcMain.handle("connect:set", async (_event, text) => {
   const origin = server.normalize(text);
   if (!origin) return { error: "That isn't a web address." };
   if (!(await server.reachable(origin))) return { error: `No momo server answers at ${origin}.` };
-  ctl.settings.server = origin;
-  store.write("settings.json", ctl.settings);
+  local.stop();
+  Object.assign(ctl.settings, { mode: "server", server: origin });
+  ctl.saveSettings();
   ctl.reconnect();
   return { ok: true };
 });
+ipcMain.handle("connect:local", () => {
+  if (!local.available()) return { error: "This build of momo can't run on this computer." };
+  ctl.settings.mode = "local";
+  ctl.saveSettings();
+  ctl.startLocal();
+  return { ok: true };
+});
+// The offline page's retry: a local server that stopped starts again.
 ipcMain.handle("connect:retry", async () => {
+  if (ctl.mode() === "local" && !local.origin()) {
+    try {
+      await ctl.local();
+    } catch {
+      return false;
+    }
+    ctl.reconnect();
+    return true;
+  }
   const ok = Boolean(ctl.server()) && (await server.reachable(ctl.server()));
   if (ok) ctl.reconnect();
   return ok;
@@ -168,6 +220,7 @@ app.whenReady().then(() => {
   updates.onChange(() => { for (const window of ctl.windows) window.render(); });
   if (app.isPackaged || process.env.MOMO_DESKTOP_RELEASES) updates.start();
   ctl.restore();
+  if (ctl.mode() === "local") ctl.startLocal();
 });
 
 app.on("second-instance", () => {
@@ -178,4 +231,5 @@ app.on("second-instance", () => {
 });
 app.on("activate", () => { if (!ctl.windows.size) ctl.restore(); });
 app.on("before-quit", () => { ctl.saveNow(); ctl.quitting = true; });
+app.on("quit", () => local.stop());
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

@@ -1,0 +1,9 @@
+# momo on this computer (the desktop app's local mode). momo fills its own daily bars from
+# Schwab once you add your Schwab app's keys in Settings → Market data.
+[provider]
+database = "data/bars.db"
+fill = "schwab"
+minimum_latest_coverage = 0.0
+
+[storage]
+database = "data/momo.db"
