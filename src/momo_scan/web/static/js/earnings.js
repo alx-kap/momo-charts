@@ -141,13 +141,24 @@ export function futureTimes(bars, interval, asof, until) {
   return [...result];
 }
 
+// The first bar at or after `time` (bars ascend), by binary search: intraday charts hold
+// thousands of bars and the markers are placed on every redraw.
+function firstFrom(bars, time) {
+  let a = 0, b = bars.length;
+  while (a < b) { const m = (a + b) >> 1; if (bars[m].time < time) a = m + 1; else b = m; }
+  return a;
+}
+
 export function eventBar(event, bars, interval) {
   const day = event.reaction?.reaction_date || (event.timing === "after_close" ? nextSession(event.date) : event.date);
   if (typeof bars[0]?.time === "number") {
-    return bars.find((b) => dayOf(b.time) === day && b.time % 86400 >= 9.5 * 3600)?.time ?? null;
+    const open = Date.parse(`${day}T09:30:00Z`) / 1000;
+    const bar = bars[firstFrom(bars, open)];
+    return bar && dayOf(bar.time) === day ? bar.time : null;
   }
-  if (interval === "1D") return bars.find((b) => b.time >= day)?.time ?? null;
-  return bars.findLast((b) => b.time <= day)?.time ?? null;
+  if (interval === "1D") return bars[firstFrom(bars, day)]?.time ?? null;
+  const n = firstFrom(bars, day);
+  return (bars[n]?.time === day ? bars[n] : bars[n - 1])?.time ?? null;
 }
 
 // Growth against the same quarter a year earlier, green up and red down.
@@ -175,6 +186,7 @@ export function createEarnings(root, chart, context) {
   const tip = Object.assign(root.appendChild(document.createElement("div")), { className: "earnings-tip", hidden: true, id: `${root.id}-earnings-tip` });
   tip.setAttribute("role", "tooltip");
   let data = null, token = 0, record = null, calendarKey = "", events = [];
+  let placed = { key: null, times: [] }; // each event's bar time, kept while bars and data hold
   const allowed = () => context().allowed;
 
   function clear() {
@@ -218,10 +230,15 @@ export function createEarnings(root, chart, context) {
     if (next) events.push(next);
     layer.style.top = `${ctx.box.top + ctx.box.height - 22}px`;
     layer.style.width = `${ctx.plotWidth}px`;
+    const placeKey = [data, ctx.interval, ctx.bars.length, ctx.bars[0].time, ctx.bars.at(-1).time, key];
+    if (placed.key?.some((part, n) => part !== placeKey[n]) ?? true) {
+      const ahead = next ? [...ctx.bars, ...future.map((time) => ({ time }))] : ctx.bars;
+      placed = { key: placeKey, times: events.map((event) => (event.date > data.asof
+        ? eventBar({ ...event, reaction: null, timing: "unknown" }, ahead, ctx.interval)
+        : eventBar(event, ctx.bars, ctx.interval))) };
+    }
     layer.innerHTML = events.map((event, i) => {
-      const time = event.date > data.asof
-        ? eventBar({ ...event, reaction: null, timing: "unknown" }, [...ctx.bars, ...future.map((time) => ({ time }))], ctx.interval)
-        : eventBar(event, ctx.bars, ctx.interval);
+      const time = placed.times[i];
       const x = time == null ? null : chart.timeScale().timeToCoordinate(time);
       if (x == null || x < 9 || x > ctx.plotWidth - 9) return "";
       const change = event.reaction?.day_pct;
