@@ -1792,6 +1792,45 @@ b.short { color: var(--pass); }
   font: inherit; font-size: 13px; padding: 3px 8px; height: 30px; width: 260px;
 }
 
+/* The Schwab setup guide: numbered steps, each ticked once done. */
+.sg { list-style: none; margin: 4px 0 8px; padding: 0; }
+.sg-step { display: grid; grid-template-columns: 24px 1fr; gap: 12px; position: relative; padding-bottom: 18px; }
+.sg-step:not(:last-child)::before {
+  content: ""; position: absolute; left: 11.5px; top: 28px; bottom: 4px; width: 1px; background: var(--line-strong);
+}
+.sg-n {
+  width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-style: normal;
+  font-size: 12px; font-weight: 600; border: 1px solid var(--line-strong); color: var(--muted);
+}
+.sg-step.now .sg-n { border-color: var(--accent); color: var(--accent); }
+.sg-step.done .sg-n { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sg-step > div > b { display: block; line-height: 24px; font-size: 13px; font-weight: 600; color: var(--text); }
+.sg-step.done > div > b, .sg-step.later > div > b { color: var(--muted); font-weight: 500; }
+.sg-step.later .sg-body { opacity: 0.55; }
+.sg-body { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.sg-body p { margin: 2px 0 10px; }
+.sg-body b { color: var(--text); font-weight: 500; }
+.sg-list { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0 0 10px; align-items: center; }
+.sg-list dt { color: var(--muted); }
+.sg-list dd { margin: 0; color: var(--text); }
+.sg-list em { font-style: normal; color: var(--muted); }
+.sg-copy { display: flex; gap: 6px; }
+.sg-copy input.cs-key { width: 200px !important; }
+.sg-field { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sg-field span { color: var(--text); }
+.sg-field input.cs-key { width: 100% !important; box-sizing: border-box; }
+a.sg-button {
+  display: inline-block; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--line-strong);
+  color: var(--text); text-decoration: none; font-size: 13px;
+}
+a.sg-button:hover { background: var(--hover, rgba(255,255,255,.05)); }
+#cs .sg-primary { background: var(--accent); border-color: var(--accent); color: #fff; margin-top: 2px; }
+#cs .sg-primary:disabled { opacity: 0.45; cursor: default; }
+#cs .sg-change {
+  margin-left: 10px; padding: 0 6px; height: 20px; font-size: 12px; font-weight: 400;
+  background: none; border: none; color: var(--accent);
+}
+
 /* ---------- right-click menus ---------- */
 .ctx-menu {
   position: fixed; z-index: 60; min-width: 200px; padding: 6px; font-size: 13px;

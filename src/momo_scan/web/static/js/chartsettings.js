@@ -231,7 +231,7 @@ function symbolTab() {
 function liveTab() {
   const info = marketSetup();
   const setup = liveSetup();
-  let html = info && info.fill === "schwab" && !info.keys ? keysForm()
+  let html = info && info.fill === "schwab" && !info.signed_in ? schwabGuide(info)
     : setup ? `<div class="cs-live-line">${escapeHtml(setup.line)}</div>` +
       (setup.button ? `<button id="cs-live-sign-in">${setup.button}</button>` : "")
     : `<div class="cs-live-line">No live feed is set up.</div>`;
@@ -239,23 +239,55 @@ function liveTab() {
   return html;
 }
 
-// First run, where momo fills its own bars: the keys of the owner's Schwab developer app.
+// First run, where momo fills its own bars: a guide through Schwab's developer site to the
+// keys of the owner's own Schwab app, then the sign-in. Steps 1–3 can't be seen from here, so
+// they count as done once the keys are saved.
 const keysDraft = { client_id: "", client_secret: "", callback_url: "https://127.0.0.1:8182" };
-function keysForm() {
+let changingKeys = false; // step 3's "Change": saved keys, asked for again
+function schwabGuide(setup) {
+  const info = { ...setup, keys: setup.keys && !changingKeys };
   const field = (key, label, type = "text") =>
-    row(label, `<input type="${type}" class="cs-key" data-key="${key}" value="${escapeHtml(keysDraft[key])}" autocomplete="off" spellcheck="false">`);
-  return `<div class="cs-live-line">momo gets its prices from your Schwab account. At
-    <a href="https://developer.schwab.com" target="_blank" rel="noopener">developer.schwab.com</a>, create an app
-    with Market Data Production (add Accounts and Trading Production for streaming quotes) and the callback URL
-    below. Schwab approves new apps in a few days; then paste its keys here and sign in.</div>` +
-    field("client_id", "App key") + field("client_secret", "Secret", "password") + field("callback_url", "Callback URL") +
-    `<button id="cs-schwab-save">Save and connect</button>`;
+    `<label class="sg-field"><span>${label}</span><input type="${type}" class="cs-key" data-key="${key}" value="${escapeHtml(keysDraft[key])}" autocomplete="off" spellcheck="false"></label>`;
+  const step = (n, title, body, done) => {
+    const state = done ? "done" : info.keys ? (n === 4 ? "now" : "") : n === 4 ? "later" : "now";
+    const change = done && n === 3 ? '<button type="button" id="cs-schwab-change" class="sg-change">Change</button>' : "";
+    return `<li class="sg-step ${state}"><i class="sg-n">${done ? "✓" : n}</i><div><b>${title}${change}</b>${done ? "" : `<div class="sg-body">${body}</div>`}</div></li>`;
+  };
+  return `<div class="cs-live-line">momo gets its prices from your own Schwab account, through a free Schwab
+    developer app. Setting one up takes a few minutes, then a wait while Schwab approves it; come back
+    here once it has.</div><ol class="sg">` +
+    step(1, "Make a Schwab developer account",
+      `<p>Sign up at Schwab's developer site. It's free and separate from your brokerage login; you need a
+      Schwab brokerage account for the last step.</p>
+      <a class="sg-button" href="https://developer.schwab.com" target="_blank" rel="noopener">Open developer.schwab.com ↗</a>`,
+      info.keys) +
+    step(2, "Create an app",
+      `<p>In the dashboard, <b>Apps → Create App</b>, and fill it in:</p>
+      <dl class="sg-list">
+        <dt>API products</dt><dd>Accounts and Trading Production <em>and</em> Market Data Production</dd>
+        <dt>App name</dt><dd>Anything, like “momo”</dd>
+        <dt>Callback URL</dt><dd class="sg-copy"><input class="cs-key" data-key="callback_url" value="${escapeHtml(keysDraft.callback_url)}" autocomplete="off" spellcheck="false"><button type="button" id="cs-schwab-copy">Copy</button></dd>
+      </dl>
+      <p>Schwab reviews new apps. Its status reads <b>Approved – Pending</b> at first and <b>Ready For Use</b>
+      once you can go on, usually within a few days.</p>`,
+      info.keys) +
+    step(3, "Paste the app's keys",
+      `<p>Open your app on Schwab's dashboard and copy its <b>App Key</b> and <b>Secret</b> here.</p>` +
+      field("client_id", "App Key") + field("client_secret", "Secret", "password") +
+      `<button id="cs-schwab-save" class="sg-primary">Save keys</button>`,
+      info.keys) +
+    step(4, "Sign in to Schwab",
+      `<p>Sign in with your brokerage login and approve momo. A sign-in lasts 7 days; momo reminds you before
+      it runs out.</p><button id="cs-live-sign-in" class="sg-primary"${info.keys ? "" : " disabled"}>Sign in to Schwab…</button>`,
+      false) +
+    "</ol>";
 }
 
 async function saveKeys() {
   try {
     await saveSchwabKeys(keysDraft);
     keysDraft.client_secret = "";
+    changingKeys = false;
     toast("Keys saved. Sign in to Schwab next.", 2400);
   } catch (error) {
     toast(`Couldn't save the keys: ${error.message}`, 4000);
@@ -544,6 +576,10 @@ export function bindChartSettings() {
     }
     else if (button.dataset.alertPlay !== undefined) playAlertSound(alertPrefs.sound, alertPrefs.volume);
     else if (button.id === "cs-schwab-save") saveKeys();
+    else if (button.id === "cs-schwab-change") { changingKeys = true; renderDialog(); }
+    else if (button.id === "cs-schwab-copy") {
+      navigator.clipboard.writeText(keysDraft.callback_url).then(() => toast("Callback URL copied", 1600), () => {});
+    }
     else if (button.id === "cs-live-sign-in") {
       closeChartSettings();
       openSignIn();
