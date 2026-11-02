@@ -1,4 +1,4 @@
-import { $, ALT, api, escapeHtml, fmtPrice, store, ticker, toast } from "./util.js";
+import { $, api, escapeHtml, fmtPrice, store, ticker, toast } from "./util.js";
 import { activePane, onChartActivate, onChartLoad, onChartRender, scheduleCallouts } from "./chart.js";
 import { floatingCard, FLOAT_GRIP } from "./dialog.js";
 import { swatch } from "./colorpicker.js";
@@ -456,7 +456,7 @@ function renderToolbar() {
     `<select data-k="dash" title="Style">${[[0, "Solid"], [2, "Dashed"], [1, "Dotted"]].map(([v, l]) => `<option value="${v}" ${item.dash === v ? "selected" : ""}>${l}</option>`).join("")}</select>` : "") +
     (item.type === "trend" ? `<label title="Extend right into a ray"><input type="checkbox" data-k="extend" ${item.extend ? "checked" : ""}> Ray</label>` : "") +
     (item.type === "text" && item.boxW ? `<button data-k="autowidth" title="Stop wrapping: one line per line you type">Auto width</button>` : "") +
-    (alertable(item) ? `<button class="icon${alertHooks.has(item.id) ? " active" : ""}" data-k="alert" title="${alertHooks.has(item.id) ? "Edit its alert" : `Add an alert on this line (${ALT}A)`}" aria-label="Alert"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5V8a4.5 4.5 0 0 1 9 0v4.5l1.2 1.5H3.3zM7.5 15.5a1.6 1.6 0 0 0 3 0"/></svg></button>` : "") +
+    (alertable(item) ? `<button class="icon${alertHooks.has(item.id) ? " active" : ""}" data-k="alert" title="${alertHooks.has(item.id) ? "Edit its alert" : "Add an alert on this line (⌥A)"}" aria-label="Alert"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5V8a4.5 4.5 0 0 1 9 0v4.5l1.2 1.5H3.3zM7.5 15.5a1.6 1.6 0 0 0 3 0"/></svg></button>` : "") +
     `<button class="icon" data-k="delete" title="Remove (Delete)" aria-label="Remove drawing"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h12M7 5V3h4v2M4.5 5l.8 10h7.4l.8-10M7.5 8v4.5M10.5 8v4.5"/></svg></button>`;
 }
 

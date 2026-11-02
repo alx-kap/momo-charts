@@ -1,10 +1,5 @@
 export const $ = (id) => document.getElementById(id);
 
-// The modifier momo's chart keys are shown with (⌥T, ⌥W…). In the desktop app on a Mac, ⌘ does
-// the same (desktop.js), and ⌘ is what the labels show; ⌥ still works.
-export const commandKeys = window.momoDesktop?.platform === "darwin";
-export const ALT = commandKeys ? "⌘" : "⌥";
-
 export const store = {
   get: (key, fallback) => {
     try { const v = localStorage.getItem("momo." + key); return v === null ? fallback : JSON.parse(v); }

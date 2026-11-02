@@ -1,7 +1,7 @@
 {
   "name": "momo-desktop",
   "productName": "momo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "momo's desktop app: the same server and web app, in a native window with tabs.",
   "license": "Apache-2.0",
   "main": "src/main.js",

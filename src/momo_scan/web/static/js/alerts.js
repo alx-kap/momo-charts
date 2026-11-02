@@ -1,4 +1,4 @@
-import { $, ALT, api, escapeHtml, fmtPrice, ticker, toast } from "./util.js";
+import { $, api, escapeHtml, fmtPrice, ticker, toast } from "./util.js";
 import { openMenu, wantsMenu } from "./contextmenu.js";
 import { FLOAT_GRIP, floatingCard } from "./dialog.js";
 import { pickOption } from "./picker.js";
@@ -482,7 +482,7 @@ function render() {
   const done = alerts.filter((alert) => alert.status === "triggered");
   $("alerts-count").textContent = live.length ? ` · ${live.length}` : "";
   if (!allowed()) { box.innerHTML = '<div class="hw-empty">Price alerts come with live prices.</div>'; return; }
-  box.innerHTML = (!alerts.length ? `<div class="hw-empty">No alerts. <kbd>${ALT}A</kbd> sets one at the crosshair, or on a selected horizontal line.</div>` : "") +
+  box.innerHTML = (!alerts.length ? '<div class="hw-empty">No alerts. <kbd>⌥A</kbd> sets one at the crosshair, or on a selected horizontal line.</div>' : "") +
     (live.length ? `<div class="hw-sec al-sec"><span>Active</span><em>${live.length}</em></div>${live.map(row).join("")}` : "") +
     (done.length ? `<div class="hw-sec al-sec"><span>Fired</span><em>${done.length}</em><button class="hw-x al-clear" data-k="clear" title="Remove every fired alert">Clear</button></div>${done.map(row).join("")}` : "");
 }

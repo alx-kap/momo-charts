@@ -1,4 +1,4 @@
-import { $, ALT, escapeHtml, ticker } from "./util.js";
+import { $, escapeHtml, ticker } from "./util.js";
 import { actions, state } from "./state.js";
 import { addIndicator, openChartSettings } from "./chartsettings.js";
 import { INDICATORS } from "./indicators.js";
@@ -34,17 +34,17 @@ function commands() {
       group: "Commands", label: `Add indicator: ${def.name}`, hint: "ƒx",
       run: () => addIndicator(type),
     })),
-    { group: "Commands", label: "Trend line", hint: `${ALT}T`, run: () => actions.setTool("trend") },
-    { group: "Commands", label: "Horizontal line", hint: `${ALT}H`, run: () => actions.setTool("hline") },
-    { group: "Commands", label: "Horizontal ray", hint: `${ALT}J`, run: () => actions.setTool("hray") },
+    { group: "Commands", label: "Trend line", hint: "⌥T", run: () => actions.setTool("trend") },
+    { group: "Commands", label: "Horizontal line", hint: "⌥H", run: () => actions.setTool("hline") },
+    { group: "Commands", label: "Horizontal ray", hint: "⌥J", run: () => actions.setTool("hray") },
     { group: "Commands", label: "Ray", run: () => actions.setTool("ray") },
     { group: "Commands", label: "Arrow", run: () => actions.setTool("arrow") },
     { group: "Commands", label: "Vertical line", run: () => actions.setTool("vline") },
     { group: "Commands", label: "Rectangle", run: () => actions.setTool("rect") },
     { group: "Commands", label: "Bar Replay: replay the chart from a past bar", hint: "⇧↓", run: () => actions.startReplay() },
-    ...(state.me.live ? [{ group: "Commands", label: "Price alert on this chart", hint: `${ALT}A`, run: () => actions.newAlert() }] : []),
+    ...(state.me.live ? [{ group: "Commands", label: "Price alert on this chart", hint: "⌥A", run: () => actions.newAlert() }] : []),
     { group: "Commands", label: "Remove all drawings on this chart", hint: "drawings", run: () => actions.removeAllDrawings() },
-    { group: "Commands", label: "Add this symbol to the watchlist", hint: `${ALT}W`, run: () => actions.addCurrentToWatchlist() },
+    { group: "Commands", label: "Add this symbol to the watchlist", hint: "⌥W", run: () => actions.addCurrentToWatchlist() },
     { group: "Commands", label: "Flag or unflag this symbol", hint: "⇧F", run: () => actions.flagCurrent() },
     ...[["1m", "1-minute"], ["5m", "5-minute"], ["15m", "15-minute"], ["30m", "30-minute"], ["1h", "Hourly"]].map(([interval, label]) =>
       ({ group: "Commands", label: `${label} chart`, hint: interval, run: () => actions.setInterval(interval) })),

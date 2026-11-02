@@ -1,9 +1,6 @@
 // The app menu. On a Mac it's the menu bar; on Windows and Linux it stays hidden (Alt is
 // momo's) and only lends its keys. A key momo handles itself (⌘Z on a chart, ⌘K) reaches the
 // page first; the menu only gets the ones momo leaves alone.
-//
-// Tabs and windows answer to Ctrl everywhere (⌃T, ⌃W, ⌃1–9 on a Mac): on a Mac ⌘ belongs to
-// momo's chart keys (⌘T trend line, ⌘W add to watchlist…), where a PC keyboard has Alt.
 
 const { Menu, shell } = require("electron");
 
@@ -12,7 +9,7 @@ const MAC = process.platform === "darwin";
 function buildMenu(ctl) {
   const window = () => ctl.focused;
   const tabKeys = Array.from({ length: 9 }, (_, i) => ({
-    label: i === 8 ? "Last Tab" : `Tab ${i + 1}`, accelerator: `Ctrl+${i + 1}`,
+    label: i === 8 ? "Last Tab" : `Tab ${i + 1}`, accelerator: `CmdOrCtrl+${i + 1}`,
     visible: false, acceleratorWorksWhenHidden: true, click: () => window()?.select(i + 1),
   }));
   const settings = {
@@ -36,12 +33,12 @@ function buildMenu(ctl) {
     {
       label: "File",
       submenu: [
-        { label: "New Tab", accelerator: "Ctrl+T", click: () => (window() ? window().addTab("/", { after: window().current() }) : ctl.newWindow()) },
-        { label: "New Window", accelerator: "Ctrl+N", click: () => ctl.newWindow() },
-        { label: "Reopen Closed Tab", accelerator: "Ctrl+Shift+T", click: () => ctl.reopen() },
+        { label: "New Tab", accelerator: "CmdOrCtrl+T", click: () => (window() ? window().addTab("/", { after: window().current() }) : ctl.newWindow()) },
+        { label: "New Window", accelerator: "CmdOrCtrl+N", click: () => ctl.newWindow() },
+        { label: "Reopen Closed Tab", accelerator: "CmdOrCtrl+Shift+T", click: () => ctl.reopen() },
         { type: "separator" },
-        { label: "Close Tab", accelerator: "Ctrl+W", click: () => { const w = window(); if (w) w.close(w.active); } },
-        { label: "Close Window", accelerator: "Ctrl+Shift+W", click: () => window()?.win.close() },
+        { label: "Close Tab", accelerator: "CmdOrCtrl+W", click: () => { const w = window(); if (w) w.close(w.active); } },
+        { label: "Close Window", accelerator: "CmdOrCtrl+Shift+W", click: () => window()?.win.close() },
         ...(MAC ? [] : [{ type: "separator" }, settings, serverItem, updatesItem, { type: "separator" }, { role: "quit" }]),
       ],
     },
@@ -55,7 +52,7 @@ function buildMenu(ctl) {
     {
       label: "View",
       submenu: [
-        { label: "Reload", accelerator: "Ctrl+R", click: () => window()?.current()?.view.webContents.reload() },
+        { label: "Reload", accelerator: "CmdOrCtrl+R", click: () => window()?.current()?.view.webContents.reload() },
         { type: "separator" },
         { label: "Actual Size", accelerator: "CmdOrCtrl+0", click: () => zoom(window(), 0) },
         { label: "Zoom In", accelerator: "CmdOrCtrl+=", click: () => zoom(window(), 0.5) },
@@ -71,6 +68,10 @@ function buildMenu(ctl) {
         { role: "minimize" }, { role: "zoom" }, { type: "separator" },
         { label: "Show Next Tab", accelerator: "Ctrl+Tab", click: () => window()?.step(1) },
         { label: "Show Previous Tab", accelerator: "Ctrl+Shift+Tab", click: () => window()?.step(-1) },
+        ...(MAC ? [
+          { label: "Next Tab", accelerator: "Cmd+Shift+]", visible: false, acceleratorWorksWhenHidden: true, click: () => window()?.step(1) },
+          { label: "Previous Tab", accelerator: "Cmd+Shift+[", visible: false, acceleratorWorksWhenHidden: true, click: () => window()?.step(-1) },
+        ] : []),
         ...tabKeys,
         ...(MAC ? [{ type: "separator" }, { role: "front" }] : []),
       ],

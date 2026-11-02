@@ -1,4 +1,4 @@
-import { $, ALT, store, toast } from "./util.js";
+import { $, store, toast } from "./util.js";
 import {
   deleteSelected, drawingsHidden, drawingTool, duplicateSelected, onDrawingTool, pickImage, redo, removeAllDrawings, setTool,
   toggleDrawingsHidden, undo,
@@ -20,11 +20,11 @@ const EYE_OFF = icon('<path d="M1.5 9s2.8-5 7.5-5 7.5 5 7.5 5-2.8 5-7.5 5-7.5-5-
 const TOOLS = [
   ["cursor", "Cursor (Esc)", icon('<path d="M4.5 2.5v11.2l3-2.9 2.1 4.6 2-.9-2.1-4.5h4.2z"/>')],
   "-",
-  ["trend", `Trend line (${ALT}T) · hold Shift to keep it level`, icon(`<path d="M3 15 15 3"/>${dot(3, 15)}${dot(15, 3)}`)],
+  ["trend", "Trend line (⌥T) · hold Shift to keep it level", icon(`<path d="M3 15 15 3"/>${dot(3, 15)}${dot(15, 3)}`)],
   ["ray", "Ray: a trend line carried on to the edge", icon(`<path d="M3 15 16.5 1.5"/>${dot(3, 15)}${dot(9, 9)}`)],
   ["arrow", "Arrow", icon('<path d="M3 15 14.5 3.5M8.5 3.5h6v6"/>')],
-  ["hline", `Horizontal line (${ALT}H)`, icon(`<path d="M1 9h16"/>${dot(9, 9)}`)],
-  ["hray", `Horizontal ray (${ALT}J)`, icon(`<path d="M4 9h13"/>${dot(4, 9)}`)],
+  ["hline", "Horizontal line (⌥H)", icon(`<path d="M1 9h16"/>${dot(9, 9)}`)],
+  ["hray", "Horizontal ray (⌥J)", icon(`<path d="M4 9h13"/>${dot(4, 9)}`)],
   ["vline", "Vertical line", icon(`<path d="M9 1v16"/>${dot(9, 9)}`)],
   ["rect", "Rectangle", icon('<rect x="2.5" y="4" width="13" height="10" rx="1"/>')],
   "-",
