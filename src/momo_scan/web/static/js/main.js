@@ -1,4 +1,4 @@
-import { $, api, store, ticker, toast, typing } from "./util.js";
+import { $, api, commandKeys, store, ticker, toast, typing } from "./util.js";
 import { actions, state } from "./state.js";
 import {
   activateChart, activePane, applyLevels, chartMessage, chartPane, onChartActivate, onChartLoad, onFundamentalsLoad, resetView, rightPane,
@@ -474,6 +474,13 @@ document.addEventListener("keydown", (event) => {
   }
   if (symbolSearchOpen() || intervalBoxOpen() || paletteOpen()) return;
   if (overlayKey(event)) { event.preventDefault(); return; }
+
+  // In the desktop app on a Mac, ⌘ does what ⌥ does for momo's chart keys; tabs use ⌃ there.
+  if (commandKeys && event.metaKey && !event.ctrlKey && !event.altKey && ALT_KEYS[event.code]) {
+    event.preventDefault();
+    if (!(practicing() && event.code === "KeyW")) ALT_KEYS[event.code](event);
+    return;
+  }
 
   if (mod && !event.altKey && event.code === "KeyZ") {
     event.preventDefault();

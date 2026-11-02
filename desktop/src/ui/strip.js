@@ -11,6 +11,7 @@ let dragging = null;
 
 document.body.classList.add(window.shell.platform);
 newButton.addEventListener("click", () => window.shell.strip("new"));
+newButton.title = `New tab (${window.shell.platform === "darwin" ? "⌃T" : "Ctrl+T"})`;
 document.getElementById("update").addEventListener("click", () => window.shell.strip("update"));
 
 function make(id) {

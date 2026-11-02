@@ -1,4 +1,4 @@
-import { $, api, escapeHtml, store, toast } from "./util.js";
+import { $, ALT, api, escapeHtml, store, toast } from "./util.js";
 import { INDICATORS, TIMEFRAMES, newIndicator } from "./indicators.js";
 import { swatch } from "./colorpicker.js";
 import { liveSetup, marketSetup, onLiveStatus, openSignIn, saveSchwabKeys } from "./live.js";
@@ -321,8 +321,8 @@ const pct = (path) => `<input type="number" data-pct="${path}" value="${Math.rou
 function scalesTab() {
   const panes = [["price", "Price"], ...(chartSettings.volume.visible ? [["volume", "Volume"]] : [])];
   return heading("Price scale") +
-    row("Logarithmic<em>⌥L</em>", check("scale.log")) +
-    row("Invert<em>⌥I</em>", check("scale.invert")) +
+    row(`Logarithmic<em>${ALT}L</em>`, check("scale.log")) +
+    row(`Invert<em>${ALT}I</em>`, check("scale.invert")) +
     row("Space right of the last bar", number("scale.rightOffset", { min: 0, max: 200 }), "<em>bars</em>") +
     heading("Margins") +
     row("Margin handles<small>Triangles on the price axis to drag the margins.</small>", check("scale.handles")) +

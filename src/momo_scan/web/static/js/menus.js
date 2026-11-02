@@ -1,4 +1,4 @@
-import { fmtPrice, toast, ticker } from "./util.js";
+import { ALT, fmtPrice, toast, ticker } from "./util.js";
 import { actions, state } from "./state.js";
 import { openMenu, svgIcon, wantsMenu } from "./contextmenu.js";
 import { chartPane } from "./chart.js";
@@ -86,12 +86,12 @@ function chartItems(event, pane) {
       },
     },
     "-",
-    { label: "Reset chart view", icon: ICONS.reset, hint: "⌥R", run: () => pane.resetView() },
-    { label: "Log scale", checked: scale.log, keep: true, hint: "⌥L", run: () => changeSettings((s) => { s.scale.log = !s.scale.log; }) },
-    { label: "Invert scale", checked: scale.invert, keep: true, hint: "⌥I", run: () => changeSettings((s) => { s.scale.invert = !s.scale.invert; }) },
+    { label: "Reset chart view", icon: ICONS.reset, hint: `${ALT}R`, run: () => pane.resetView() },
+    { label: "Log scale", checked: scale.log, keep: true, hint: `${ALT}L`, run: () => changeSettings((s) => { s.scale.log = !s.scale.log; }) },
+    { label: "Invert scale", checked: scale.invert, keep: true, hint: `${ALT}I`, run: () => changeSettings((s) => { s.scale.invert = !s.scale.invert; }) },
     "-",
-    { label: "Copy chart image", icon: ICONS.image, hint: "⌥S", run: () => actions.copyChart() },
-    { label: "Save chart image", icon: ICONS.image, hint: "⇧⌥S", run: () => actions.saveChart() },
+    { label: "Copy chart image", icon: ICONS.image, hint: `${ALT}S`, run: () => actions.copyChart() },
+    { label: "Save chart image", icon: ICONS.image, hint: `⇧${ALT}S`, run: () => actions.saveChart() },
     "-",
     { label: "Settings…", icon: ICONS.gear, run: () => openChartSettings() },
   ];

@@ -27,7 +27,7 @@ class MomoWindow {
       minWidth: 900, minHeight: 560, show: false, title: "momo", backgroundColor: BACKGROUND,
       icon: MAC ? undefined : path.join(__dirname, "../build/icon.png"),
       titleBarStyle: MAC ? "hiddenInset" : "hidden",
-      trafficLightPosition: { x: 14, y: 13 },
+      trafficLightPosition: { x: 14, y: 16 }, // centred on the tabs
       // Windows and Linux draw their own minimise / maximise / close over the strip's right end.
       titleBarOverlay: MAC ? undefined : { color: BACKGROUND, symbolColor: "#7d8290", height: STRIP },
       webPreferences: { preload: path.join(__dirname, "preload-local.js"), sandbox: true },
