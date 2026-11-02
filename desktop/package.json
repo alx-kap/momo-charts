@@ -32,10 +32,12 @@
     "mac": {
       "category": "public.app-category.finance",
       "target": [
-        "dmg",
-        "zip"
+        "dmg"
       ],
-      "darkModeSupport": true
+      "darkModeSupport": true,
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "identity": "-",
+      "hardenedRuntime": false
     },
     "win": {
       "target": [
@@ -44,13 +46,17 @@
     },
     "nsis": {
       "oneClick": true,
-      "perMachine": false
+      "perMachine": false,
+      "artifactName": "${productName}-${version}-setup.${ext}"
     },
     "linux": {
       "target": [
         "AppImage"
       ],
       "category": "Finance"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     }
   }
 }

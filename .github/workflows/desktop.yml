@@ -1,0 +1,88 @@
+# Builds the desktop app (desktop/) for Mac and Windows and publishes it as a GitHub release
+# tagged desktop-v<version>, once for each version in desktop/package.json: raising the
+# version is what releases it. The app's update pill looks for these tags. Unsigned for now.
+
+name: Desktop app
+
+on:
+  push:
+    branches: [main]
+    paths: ["desktop/**", ".github/workflows/desktop.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      new: ${{ steps.version.outputs.new }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./desktop/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "desktop-v$version" > /dev/null 2>&1; then new=false; else new=true; fi
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    if: needs.version.outputs.new == 'true'
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            args: --mac --arm64 --x64
+            files: desktop/dist/*.dmg
+          - os: windows-latest
+            args: --win --x64
+            files: desktop/dist/*.exe
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npx electron-builder ${{ matrix.args }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cat > notes.md <<'NOTES'
+          **Mac**: `momo-VERSION-arm64.dmg` for Apple silicon (M1 and later), `momo-VERSION-x64.dmg` for Intel. Drag momo to Applications.
+          **Windows**: `momo-VERSION-setup.exe`.
+
+          These builds aren't signed yet, so the first launch needs one extra step:
+          - **Mac**: open momo once, then System Settings → Privacy & Security → **Open Anyway**.
+          - **Windows**: on the SmartScreen warning, click **More info** → **Run anyway**.
+
+          momo's desktop app shows a momo server in native tabs. Enter the address you open momo at in a browser.
+          NOTES
+          sed -i "s/VERSION/$VERSION/g" notes.md
+          gh release create "desktop-v$VERSION" out/* --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --title "momo desktop $VERSION" --notes-file notes.md
