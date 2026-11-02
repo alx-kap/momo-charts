@@ -1,0 +1,81 @@
+/* The tab strip: the window's title bar. Empty space drags the window; the active tab is
+   momo's top-bar colour and runs into it, so tab and page read as one surface. */
+body {
+  display: flex; align-items: flex-end; height: 40px; box-sizing: border-box; overflow: hidden;
+  padding: 0 10px 0 8px; font-size: 12px; -webkit-app-region: drag;
+  box-shadow: inset 0 -1px var(--line);
+}
+/* Room for the traffic lights on a Mac, and for the window buttons on Windows and Linux. */
+body.darwin { padding-left: 80px; }
+body.darwin.fullscreen { padding-left: 10px; }
+body:not(.darwin) {
+  padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 8px);
+}
+
+/* The tabs fill the strip and shrink together when there are many; + follows the last one. */
+#tabs { flex: 1 1 0; display: flex; align-items: flex-end; min-width: 0; height: 100%; margin-right: 12px; }
+
+.tab {
+  position: relative; flex: 0 1 200px; min-width: 56px; height: 32px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 7px; padding: 0 6px 0 12px;
+  border-radius: 8px 8px 0 0; color: var(--muted); -webkit-app-region: no-drag;
+  transition: background var(--fast), color var(--fast);
+}
+.tab:hover { background: rgba(255, 255, 255, 0.035); color: #b4b8c2; }
+.tab.active {
+  background: var(--panel); color: var(--text); z-index: 1;
+  box-shadow: inset 1px 0 var(--line), inset -1px 0 var(--line), inset 0 1px var(--line);
+}
+/* A hairline between neighbouring tabs, hidden beside the active or hovered one. */
+.tab + .tab::before {
+  content: ""; position: absolute; left: 0; top: 9px; width: 1px; height: 14px;
+  background: var(--line); transition: opacity var(--fast);
+}
+.tab.active::before, .tab.active + .tab::before, .tab:hover::before, .tab:hover + .tab::before,
+.tab.dragging::before, .tab.dragging + .tab::before { opacity: 0; }
+
+.tab .title {
+  flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-weight: 500; letter-spacing: 0.01em;
+}
+.tab.offline .title { color: var(--faint); }
+
+/* A loading ring, shown only when a load takes long enough to notice. */
+.tab .ring {
+  display: none; flex: none; width: 9px; height: 9px; border-radius: 50%;
+  border: 1.5px solid var(--line-strong); border-top-color: var(--muted); opacity: 0;
+}
+.tab.loading .ring { display: block; animation: spin 0.8s linear infinite, appear 0.15s 0.3s forwards; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes appear { to { opacity: 1; } }
+
+.tab .close {
+  flex: none; width: 18px; height: 18px; padding: 0; border: none; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--muted); opacity: 0; transition: opacity var(--fast), background var(--fast);
+}
+.tab:hover .close, .tab.active .close { opacity: 1; }
+.tab .close:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.tab .close:active { background: rgba(255, 255, 255, 0.12); }
+
+.tab.opening { animation: open 0.16s cubic-bezier(.2, .7, .3, 1); }
+@keyframes open { from { max-width: 0; opacity: 0; } to { max-width: 200px; opacity: 1; } }
+.tab.dragging { z-index: 2; transition: none; }
+.tab.settling { transition: transform 0.14s cubic-bezier(.2, .7, .3, 1); }
+
+button.icon {
+  flex: none; width: 28px; height: 28px; margin: 0 0 2px 4px; padding: 0; border: none; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--muted); -webkit-app-region: no-drag;
+  transition: background var(--fast), color var(--fast);
+}
+button.icon:hover { background: var(--hover); color: var(--text); }
+button.icon:active { background: rgba(255, 255, 255, 0.08); }
+
+#update {
+  flex: none; align-self: center; height: 22px; padding: 0 10px; border: none; border-radius: 11px;
+  background: rgba(61, 116, 255, 0.16); color: #9bb8ff; font-size: 11.5px; font-weight: 600;
+  -webkit-app-region: no-drag; animation: appear 0.3s forwards; opacity: 0;
+  transition: background var(--fast);
+}
+#update:hover { background: rgba(61, 116, 255, 0.26); }

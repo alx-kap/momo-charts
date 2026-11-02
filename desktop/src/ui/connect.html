@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+<title>Connect</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="connect.css">
+</head>
+<body>
+<main>
+  <section id="setup" hidden>
+    <img class="mark" src="../../build/icon.svg" alt="momo">
+    <h1>Connect to momo</h1>
+    <p>The address you open momo at in a browser.</p>
+    <form id="form">
+      <input id="address" spellcheck="false" autocomplete="off" placeholder="http://127.0.0.1:8790" aria-label="Server address">
+      <div class="row">
+        <button id="cancel" type="button" class="quiet" hidden>Cancel</button>
+        <button id="connect" type="submit" class="primary">Connect</button>
+      </div>
+      <p id="error" class="error" role="alert"></p>
+    </form>
+  </section>
+  <section id="offline" hidden>
+    <img class="mark" src="../../build/icon.svg" alt="momo">
+    <h1>Can't reach momo</h1>
+    <p><span id="server" class="address"></span> isn't answering. momo reconnects by itself once it's back.</p>
+    <p class="status"><i class="pulse"></i><span id="status">Trying again…</span></p>
+    <div class="row"><button id="change" type="button" class="quiet">Change server</button></div>
+  </section>
+</main>
+<script src="connect.js"></script>
+</body>
+</html>

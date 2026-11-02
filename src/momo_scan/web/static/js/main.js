@@ -29,6 +29,7 @@ import { bindTooltips } from "./tooltip.js";
 import { applyRails, bindRails, showScreener } from "./rails.js";
 import { bindReplay, exitReplay, replayDay, replayKey, replayOptions, startReplay } from "./replay.js";
 import { bindAlerts, loadAlerts, newAlert } from "./alerts.js";
+import { bindDesktop } from "./desktop.js";
 import {
   bindSymbolSearch, closeSymbolSearch, intervalBoxOpen, openIntervalBox, openSymbolSearch, rememberSymbol,
   symbolSearchOpen,
@@ -94,6 +95,7 @@ function renderModes(mode) {
     if (chartPane("right")) chartPane("right").clear();
   }
   renderSplit();
+  syncAddress(mode);
   if (mode !== "chart") { closeScreener(); closeThemes(); closeIndustry(); }
   applyRails();
   document.querySelectorAll("#modes button").forEach((button) => button.classList.toggle("active", button.dataset.mode === mode));
@@ -226,6 +228,19 @@ function saveCharts() {
   layout.right = { symbol: charts.right.symbol, interval: charts.right.interval };
   layout.active = activePane().side;
   store.set("layout", layout);
+  syncAddress();
+}
+
+// The page's title and address carry the chart, so a reload, a bookmark or a desktop tab opens
+// where it was. Other modes show only their name: Practice charts are blind.
+function syncAddress(mode = state.mode) {
+  if (mode !== "chart") {
+    document.title = `${{ review: "Daily review", practice: "Practice" }[mode] || "momo"} · momo`;
+    return;
+  }
+  document.title = `${ticker(state.home.symbol)} · momo`;
+  const query = `?symbol=${encodeURIComponent(state.home.symbol)}&interval=${encodeURIComponent(state.interval)}`;
+  if (location.search !== query) history.replaceState(null, "", query);
 }
 
 function showOther({ side, record }) {
@@ -575,6 +590,7 @@ bindHelp();
 bindMenus();
 bindSidebar();
 bindSymbolSearch();
+bindDesktop({ settings: () => openChartSettings("symbol"), help: openHelp });
 syncChartSettings();
 syncWatchlists();
 

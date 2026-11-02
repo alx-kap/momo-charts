@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- momo's app icon: three rising candles on a dark tile, on Apple's 1024 grid (824 tile). -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1e25"/>
+      <stop offset="1" stop-color="#08090b"/>
+    </linearGradient>
+    <linearGradient id="lead" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7aa2ff"/>
+      <stop offset="1" stop-color="#3d74ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)" filter="url(#shadow)"/>
+  <rect x="101.5" y="101.5" width="821" height="821" rx="183.5" fill="none" stroke="#ffffff" stroke-opacity="0.09" stroke-width="3"/>
+  <g stroke-linecap="round">
+    <line x1="332" y1="512" x2="332" y2="772" stroke="#4f5460" stroke-width="18"/>
+    <rect x="272" y="560" width="120" height="164" rx="16" fill="#4f5460"/>
+    <line x1="512" y1="392" x2="512" y2="672" stroke="#8a8f9c" stroke-width="18"/>
+    <rect x="452" y="436" width="120" height="188" rx="16" fill="#8a8f9c"/>
+    <line x1="692" y1="232" x2="692" y2="600" stroke="#5f8cff" stroke-width="18"/>
+    <rect x="632" y="282" width="120" height="270" rx="16" fill="url(#lead)"/>
+  </g>
+</svg>

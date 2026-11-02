@@ -1,0 +1,36 @@
+/* The connect page: which momo server to show, and a calm wait when it doesn't answer. */
+body { display: flex; align-items: center; justify-content: center; background: var(--panel); }
+main { width: 340px; margin-top: -6vh; }
+section { animation: rise 0.24s cubic-bezier(.2, .7, .3, 1); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+
+.mark { display: block; width: 64px; height: 64px; margin: 0 0 14px -8px; -webkit-user-drag: none; }
+h1 { margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0 0 18px; color: var(--muted); }
+.address { color: var(--text); user-select: text; }
+
+input {
+  width: 100%; box-sizing: border-box; height: 34px; padding: 0 11px;
+  border: 1px solid var(--line-strong); border-radius: 7px; background: var(--bg);
+  color: var(--text); font: inherit; outline: none; transition: border-color var(--fast);
+}
+input::placeholder { color: var(--faint); }
+input:focus { border-color: var(--accent); }
+
+.row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.row button {
+  height: 30px; padding: 0 14px; border-radius: 7px; border: 1px solid transparent;
+  font-weight: 500; transition: background var(--fast), border-color var(--fast), opacity var(--fast);
+}
+.row .primary { background: var(--accent); color: #fff; }
+.row .primary:hover { background: #4f82ff; }
+.row .primary:disabled { opacity: 0.6; }
+.row .quiet { background: transparent; border-color: var(--line-strong); color: var(--text); }
+.row .quiet:hover { background: var(--hover); }
+button:active { transform: scale(0.98); }
+
+#offline .row { justify-content: flex-start; margin-top: 20px; }
+.error { min-height: 18px; margin: 10px 0 0; color: #f0686d; }
+.status { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; }
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }

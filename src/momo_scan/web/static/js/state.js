@@ -9,12 +9,17 @@ export const LINE_OPTIONS = [
 ];
 const DEFAULT_LINES = { trigger: true, early: false, overhead: false, lastPrice: false };
 
+// A page's address can name its chart (?symbol=NVDA&interval=1D), so each browser or desktop
+// tab reopens on its own chart; main.js keeps it current.
+const address = new URLSearchParams(location.search);
+const addressInterval = /^\d{1,3}[mhDWM]$/.test(address.get("interval") || "") ? address.get("interval") : null;
+
 export const state = {
   mode: "chart", // "chart" (home), "review" (scan review) or "practice"
   me: { owner: true, name: "" }, // who is signed in via Tailscale; only the owner runs scans
-  interval: store.get("interval", "1D"), // chart timeframe: 1D, 1W, 1M, …
+  interval: addressInterval || store.get("interval", "1D"), // chart timeframe: 1D, 1W, 1M, …
   extended: store.get("extended", false), // intraday charts: pre- and post-market shown
-  home: { symbol: store.get("homeSymbol", "AMEX:SPY") }, // the chart-mode symbol
+  home: { symbol: address.get("symbol") || store.get("homeSymbol", "AMEX:SPY") }, // the chart-mode symbol
   runs: [],
   sections: [],
   runId: null,
