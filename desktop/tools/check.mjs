@@ -141,13 +141,17 @@ try {
     let tabs = await stripTitles(strip);
     ok("the strip names each tab's chart", tabs.map((t) => t.title).join(",") === "NVDA,AAPL", JSON.stringify(tabs));
 
-    // Link both tabs red: the strip shows their colour, and a symbol opened in one opens in both.
-    for (const each of [page, second]) {
-      await each.evaluate(() => {
-        document.getElementById("link-button").click();
-        document.querySelector('.link-swatch[data-color="red"]').click();
-        document.body.click();
-      });
+    // Link both tabs red from the tab menu (right-click a tab), as in TradingView Desktop: the
+    // strip shows their colour, and a symbol opened in one opens in both.
+    ok("the chain button gives way to the tab menu", await page.evaluate(() => document.querySelector(".link-wrap").hidden));
+    for (const n of [1, 2]) {
+      await strip.click(`.tab:nth-child(${n})`, { button: "right" });
+      const menu = await pageOf(app, (url) => url.endsWith("menu.html"));
+      await menu.waitForSelector("#panel:not([hidden]) .swatch");
+      await menu.click('.swatch[title="Red"]');
+      await menu.waitForSelector('.swatch.active[title="Red"]');
+      if (n === 2) await menu.locator("#panel").screenshot({ path: path.join(OUT, "6-tab-menu.png") });
+      await menu.keyboard.press("Escape");
     }
     await strip.waitForFunction(() => document.querySelectorAll(".tab.linked").length === 2, null, { timeout: 5000 });
     ok("linked tabs show their colour on the strip", true);
@@ -185,6 +189,32 @@ try {
     ok("tabs come back", tabs.map((t) => t.title).join(",") === "MSFT,MSFT", JSON.stringify(tabs));
     const linked = await strip.$$eval(".tab.linked", (each) => each.length);
     ok("and stay linked", linked === 2, `${linked} linked`);
+
+    // The rest of the tab menu.
+    const menuDo = async (n, label) => {
+      await strip.click(`.tab:nth-child(${n})`, { button: "right" });
+      const menu = await pageOf(app, (url) => url.endsWith("menu.html"));
+      await menu.waitForSelector("#panel:not([hidden]) .item");
+      await menu.click(`.item:has-text("${label}")`);
+      return menu;
+    };
+    await menuDo(1, "Duplicate tab");
+    await strip.waitForFunction(() => document.querySelectorAll(".tab").length === 3);
+    const copied = await strip.waitForFunction(() => document.querySelectorAll(".tab.linked").length === 3, null, { timeout: 15000 })
+      .then(() => true, () => false);
+    ok("Duplicate tab copies the chart and its link", copied);
+    await menuDo(3, "Pin tab");
+    await strip.waitForFunction(() => document.querySelector(".tab:first-child").classList.contains("pinned"));
+    ok("Pin tab moves it first and pins it", true);
+    const editor = await menuDo(2, "Customize tab title");
+    await editor.fill(".edit input", "Leaders");
+    await editor.keyboard.press("Enter");
+    await strip.waitForFunction(() => [...document.querySelectorAll(".tab .title")].some((t) => t.textContent === "Leaders"));
+    ok("Customize tab title renames it", true);
+    await menuDo(3, "Detach tab");
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const windows = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
+    ok("Detach tab moves it into a window of its own", windows === 2 && (await strip.$$eval(".tab", (each) => each.length)) === 2, `${windows} windows`);
     await shot(app, "4-restored");
     await app.close();
   }

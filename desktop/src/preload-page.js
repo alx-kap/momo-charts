@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld("momoDesktop", {
   onCommand: (listener) => ipcRenderer.on("momo:command", (_event, name) => listener(name)),
   // The tab's link colour (a hex colour, or null), shown as a dot on its tab.
   setLink: (color) => ipcRenderer.send("momo:link", typeof color === "string" ? color : null),
+  // The whole link state ({ color, colors, switches }) for the tab menu, and the menu's
+  // changes back ({ color } or { kind, on }).
+  setLinkState: (state) => ipcRenderer.send("momo:link-state", JSON.parse(JSON.stringify(state))),
+  onLink: (listener) => ipcRenderer.on("momo:link", (_event, change) => listener(change)),
 });
 
 if (location.protocol === "file:") {

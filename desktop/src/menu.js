@@ -35,6 +35,7 @@ function buildMenu(ctl) {
       submenu: [
         { label: "New Tab", accelerator: "CmdOrCtrl+T", click: () => (window() ? window().addTab("/", { after: window().current() }) : ctl.newWindow()) },
         { label: "New Window", accelerator: "CmdOrCtrl+N", click: () => ctl.newWindow() },
+        { label: "Duplicate Tab", accelerator: "CmdOrCtrl+U", click: () => { const w = window(); if (w) w.duplicate(w.active); } },
         { label: "Reopen Closed Tab", accelerator: "CmdOrCtrl+Shift+T", click: () => ctl.reopen() },
         { type: "separator" },
         { label: "Close Tab", accelerator: "CmdOrCtrl+W", click: () => { const w = window(); if (w) w.close(w.active); } },

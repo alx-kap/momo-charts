@@ -1,0 +1,76 @@
+/* The tab menu: TradingView Desktop's, in momo's floating-panel look. The page itself is
+   transparent and covers the window, so a click anywhere else closes the menu. */
+html, body { background: transparent; }
+#panel {
+  position: absolute; width: 268px; box-sizing: border-box; padding: 6px;
+  background: rgba(16, 18, 23, 0.97); backdrop-filter: blur(14px);
+  border: 1px solid var(--line-strong); border-radius: 11px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6);
+  font-size: 13px; animation: drop 0.12s cubic-bezier(.2, .7, .3, 1);
+}
+@keyframes drop { from { opacity: 0; transform: translateY(-4px); } }
+
+.item {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 30px; padding: 0 10px 0 8px;
+  border: none; border-radius: 7px; background: transparent; color: var(--text); text-align: left;
+}
+.item:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+.item:active:not(:disabled) { background: rgba(255, 255, 255, 0.09); }
+.item:disabled { color: var(--faint); }
+.item svg { flex: none; width: 17px; height: 17px; color: var(--muted); }
+.item:disabled svg { color: var(--faint); }
+.item.plain { padding-left: 10px; }
+.item .label { flex: 1; }
+.item .key { color: var(--faint); font-size: 12px; letter-spacing: 0.04em; }
+.sep { height: 1px; margin: 5px 4px; background: var(--line); }
+
+.head { margin: 8px 10px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.swatches { display: flex; justify-content: space-between; padding: 0 8px 4px; }
+.swatch {
+  width: 21px; height: 21px; padding: 0; border: none; border-radius: 50%; background: var(--swatch);
+  position: relative; transition: transform var(--fast), box-shadow var(--fast);
+}
+.swatch:hover { transform: scale(1.12); }
+.swatch.active { box-shadow: 0 0 0 2px rgba(16, 18, 23, 1), 0 0 0 3.5px var(--swatch); }
+.swatch.active::after {
+  content: ""; position: absolute; left: 7px; top: 5px; width: 4px; height: 8px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.swatch.light.active::after { border-color: #1a1a1a; }
+
+.row { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 8px 0 10px; }
+.row .label { color: var(--text); }
+.row.off .label { color: var(--faint); }
+.info {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--line-strong); color: var(--muted);
+  font-size: 10px; font-weight: 700; font-style: normal; display: flex; align-items: center; justify-content: center;
+}
+.row .grow { flex: 1; }
+.switch {
+  appearance: none; flex: none; width: 34px; height: 20px; border-radius: 10px; margin: 0; position: relative;
+  background: var(--line-strong); transition: background var(--fast);
+}
+.switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #d6d9e0; transition: transform var(--fast);
+}
+.switch:checked { background: var(--accent); }
+.switch:checked::after { transform: translateX(14px); background: #fff; }
+.switch:disabled { opacity: 0.4; }
+.hint { margin: 2px 10px 6px; font-size: 11.5px; color: var(--muted); }
+
+/* Customize tab title. */
+.edit { padding: 6px 6px 4px; }
+.edit input {
+  width: 100%; box-sizing: border-box; height: 32px; padding: 0 10px; margin: 2px 0 10px;
+  border: 1px solid var(--line-strong); border-radius: 7px; background: var(--bg); color: var(--text);
+  font: inherit; outline: none; user-select: text;
+}
+.edit input:focus { border-color: var(--accent); }
+.edit .buttons { display: flex; justify-content: flex-end; gap: 8px; }
+.edit .buttons button {
+  height: 28px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--line-strong);
+  background: transparent; color: var(--text); font-weight: 500;
+}
+.edit .buttons button:hover { background: var(--hover); }
+.edit .buttons .primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.edit .buttons .primary:hover { background: #4f82ff; }

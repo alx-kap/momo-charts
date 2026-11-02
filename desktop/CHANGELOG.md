@@ -9,8 +9,13 @@ version; this file is for the app around it.
 ## Unreleased
 
 ### What's new
-- Linked tabs show their link colour as a dot on the tab. (Linking itself comes from momo's
-  chain button and works in any version.)
+- Right-click a tab for TradingView Desktop's tab menu: Duplicate tab (⌘U), Reload tab, Copy
+  link, Pin tab, Detach tab (into its own window), Customize tab title, Close, Close other
+  tabs, Close tabs to the right.
+- Tab syncing lives in that menu too: pick a colour, and tabs of one colour follow each other's
+  symbol and, with their switches on, interval, scrolling and dates in view. Linked tabs show
+  their colour as a dot. (Before this version, momo's chain button does the linking.)
+- Pinned tabs and custom titles come back with the rest of your tabs.
 - Running from source (`npm run dev` in `desktop/`) pulls the latest code first, keeps its own
   tabs and settings so it opens beside an installed momo, and marks its tab strip "dev".
 

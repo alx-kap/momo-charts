@@ -39,6 +39,9 @@ body:not(.darwin) {
   font-weight: 500; letter-spacing: 0.01em;
 }
 .tab.offline .title { color: var(--faint); }
+/* A pinned tab: as wide as its name, no close button. */
+.tab.pinned { flex: none; max-width: 120px; padding: 0 12px; }
+.tab.pinned .close { display: none; }
 
 /* A linked tab's colour (momo's link.js), before its title. */
 .tab .link { display: none; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--link); }

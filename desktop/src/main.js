@@ -137,6 +137,17 @@ ipcMain.on("connect:cancel", () => ctl.reconnect());
 ipcMain.on("momo:link", (event, color) => {
   for (const window of ctl.windows) window.setLink(event.sender, color);
 });
+ipcMain.on("momo:link-state", (event, state) => {
+  for (const window of ctl.windows) window.setLinkState(event.sender, state);
+});
+// The tab menu (ui/menu.html), one per window.
+ipcMain.on("menu", (event, message = {}) => {
+  for (const window of ctl.windows) {
+    if (window.menu?.webContents !== event.sender) continue;
+    if (message.action === "close") window.closeMenu();
+    else window.menuAction(message.action, message);
+  }
+});
 ipcMain.on("strip", (event, action, data) => {
   for (const window of ctl.windows) if (window.win.webContents === event.sender) window.strip(action, data);
 });

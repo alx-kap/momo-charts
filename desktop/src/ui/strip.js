@@ -23,6 +23,10 @@ function make(id) {
     + '<path d="M1 1l6 6M7 1L1 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>';
   tab.querySelector(".close").addEventListener("pointerdown", (event) => event.stopPropagation());
   tab.querySelector(".close").addEventListener("click", () => window.shell.strip("close", { id }));
+  tab.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    window.shell.strip("menu", { id, x: event.clientX, y: tab.getBoundingClientRect().bottom + 4 });
+  });
   tab.addEventListener("auxclick", (event) => {
     if (event.button === 1) window.shell.strip("close", { id });
   });
@@ -90,6 +94,7 @@ window.shell.on("tabs", (state) => {
     tab.classList.toggle("loading", info.loading);
     tab.classList.toggle("offline", info.offline);
     tab.classList.toggle("linked", Boolean(info.link));
+    tab.classList.toggle("pinned", Boolean(info.pinned));
     tab.style.setProperty("--link", info.link || "transparent");
     tab.setAttribute("aria-selected", String(info.id === state.active));
     const title = info.title || (info.loading ? "" : "momo");

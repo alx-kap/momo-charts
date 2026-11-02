@@ -4,6 +4,10 @@
 // tabs. Changes travel between this browser's tabs (or the desktop app's) on a
 // BroadcastChannel, never through the server. Only Chart mode sends or follows: Daily review
 // and Practice charts stop at their scan date.
+//
+// In the desktop app the tab's right-click menu holds the colours and switches, as in
+// TradingView Desktop, so the chain button stays hidden; the page reports its state to the app
+// (momoDesktop.setLinkState) and takes the menu's changes (momoDesktop.onLink).
 
 import { $, store, ticker } from "./util.js";
 
@@ -54,12 +58,25 @@ export function bindLink(handlers) {
     swatches.append(swatch);
   }
   for (const box of $("link-menu").querySelectorAll("[data-link]")) {
-    box.addEventListener("change", () => {
-      const groups = store.get("linkGroups", {});
-      groups[color] = { ...switches(), [box.dataset.link]: box.checked };
-      store.set("linkGroups", groups);
+    box.addEventListener("change", () => setSwitch(box.dataset.link, box.checked));
+  }
+  // Another tab changed a colour's switches.
+  window.addEventListener("storage", (event) => { if (event.key === "momo.linkGroups") render(); });
+  const desktop = window.momoDesktop;
+  if (desktop?.onLink) {
+    $("link-button").closest(".link-wrap").hidden = true;
+    desktop.onLink((change) => {
+      if ("color" in change) setColor(COLORS[change.color] ? change.color : null);
+      if (change.kind in DEFAULTS && color) setSwitch(change.kind, Boolean(change.on));
     });
   }
+  render();
+}
+
+function setSwitch(kind, on) {
+  const groups = store.get("linkGroups", {});
+  groups[color] = { ...switches(), [kind]: on };
+  store.set("linkGroups", groups);
   render();
 }
 
@@ -94,6 +111,7 @@ function render() {
   }
   $("link-menu").classList.toggle("unlinked", !color);
   window.momoDesktop?.setLink?.(hex);
+  window.momoDesktop?.setLinkState?.({ color, colors: COLORS, switches: on });
 }
 
 function openMenu() {
