@@ -246,7 +246,7 @@ function renderFavorites() {
   box.hidden = !ids.length;
   box.innerHTML = ids.map((id) => {
     const list = data.lists.find((each) => each.id === id);
-    return `<button type="button" class="fav${id === data.active ? " on" : ""}" data-id="${escapeHtml(id)}" title="${escapeHtml(list.name)} · ${symbolsOf(list).length}">` +
+    return `<button type="button" class="fav${id === data.active ? " on" : ""}" data-id="${escapeHtml(id)}" data-list="${escapeHtml(id)}" title="${escapeHtml(list.name)} · ${symbolsOf(list).length}">` +
       `${id === FLAGGED ? FLAG_SVG : `<span>${escapeHtml(chipLabel(list.name))}</span>`}</button>`;
   }).join("");
 }
@@ -596,13 +596,13 @@ export async function addSectionBefore(entry) {
 }
 
 // Move a symbol from the active list to another.
-export function moveSymbol(entry, listId) {
+export function moveSymbol(entry, listId, keep = false) {
   const from = activeList();
   const to = data.lists.find((item) => item.id === listId);
   if (!to) return;
   const has = symbolsOf(to).some((item) => ticker(item) === ticker(entry));
   if (!has) to.symbols.push(entry);
-  const copy = from.id === FLAGGED; // a flag stays; moving it to a list just adds it there
+  const copy = keep || from.id === FLAGGED; // a flag stays; moving it to a list just adds it there
   if (!copy) from.symbols = from.symbols.filter((item) => item !== entry);
   save();
   renderWatchlists();
@@ -892,75 +892,95 @@ function blockOf(symbols, name) {
   return [start, end];
 }
 
-const DROP_MARKS = ["drop-before", "drop-after", "drop-into", "drop-over"];
+const DROP_MARKS = ["drop-into", "drop-over", "lifted"];
 // Take the drop indicators off (and, at the end of a drag, the dimming of what was dragged).
 function clearDrop(root = $("side-home"), marks = DROP_MARKS) {
   for (const el of root.querySelectorAll(marks.map((name) => `.${name}`).join(", "))) el.classList.remove(...marks);
 }
 
-// Where a drop at this pointer goes: { index, mark(): shows it } or null.
+// While a row or section is held the rows below slide aside to open its landing slot. Rows are
+// measured by layout (offsetTop), not by where a slide has put them, so the target can't flicker.
+let lift = null; // { els: the list's rows and headers, start, end: the held block, before: where it lands }
+const topOf = (el) => el.offsetTop;
+const contentY = (event) => {
+  const rows = $("wl-rows");
+  return event.clientY - rows.getBoundingClientRect().top + rows.scrollTop + rows.offsetTop;
+};
+const blockEnd = (els, start) => {
+  let end = start + 1;
+  if (els[start].classList.contains("hw-sec")) while (end < els.length && !els[end].classList.contains("hw-sec")) end++;
+  return end;
+};
+
+function slide(before) {
+  const { els, start, end } = lift;
+  const t = before ? els.indexOf(before) : els.length;
+  lift.before = before;
+  const room = (end < els.length ? topOf(els[end]) : topOf(els[end - 1]) + els[end - 1].offsetHeight) - topOf(els[start]);
+  els.forEach((el, i) => {
+    const shift = t > end && i >= end && i < t ? -room : t < start && i >= t && i < start ? room : 0;
+    el.style.transform = shift ? `translateY(${shift}px)` : "";
+  });
+}
+
+// Where a drop at this pointer goes: { index, before: the element it lands in front of (null: the
+// end), mark(): extra highlight } or null.
 function dropTarget(event) {
   const list = activeList();
   if (draggedSection != null) return sectionTarget(event, list);
+  const { els } = lift;
+  const y = contentY(event);
   const without = list.symbols.filter((entry) => entry !== dragged);
-  const row = event.target.closest(".hw-row[data-symbol]");
-  if (row) {
-    if (row.dataset.symbol === dragged) return null;
-    const box = row.getBoundingClientRect();
-    const after = event.clientY > box.top + box.height / 2;
-    const at = without.indexOf(row.dataset.symbol) + (after ? 1 : 0);
-    return { index: at, mark: () => row.classList.add(after ? "drop-after" : "drop-before") };
+  const hit = els.find((el) => y < topOf(el) + el.offsetHeight);
+  if (!hit) return { index: without.length, before: null, mark() {} };
+  if (hit.dataset.symbol != null) {
+    if (hit.dataset.symbol === dragged) return null;
+    const after = y > topOf(hit) + hit.offsetHeight / 2;
+    return { index: without.indexOf(hit.dataset.symbol) + (after ? 1 : 0), before: after ? hit.nextElementSibling : hit, mark() {} };
   }
-  const head = event.target.closest(".hw-sec");
-  if (head) {
-    // The header's top half is just above the section (out of it), the rest the top of it.
-    const box = head.getBoundingClientRect();
-    const above = event.clientY < box.top + box.height / 3;
-    const at = without.indexOf(SECTION + head.dataset.section);
-    return { index: above ? at : at + 1, mark: () => head.classList.add(above ? "drop-before" : "drop-into") };
-  }
-  if (event.target.closest("#wl-rows")) {
-    const rows = $("wl-rows").querySelectorAll(".hw-row[data-symbol]");
-    const last = rows[rows.length - 1];
-    return { index: without.length, mark: () => last && last.classList.add("drop-after") };
-  }
-  return null;
+  // A header's top third is just above the section (out of it), the rest the top of it.
+  const above = y < topOf(hit) + hit.offsetHeight / 3;
+  const at = without.indexOf(SECTION + hit.dataset.section);
+  return {
+    index: above ? at : at + 1, before: above ? hit : hit.nextElementSibling,
+    mark: () => !above && hit.classList.add("drop-into"),
+  };
 }
 
-// A section goes before or after another (a header's top or bottom half), or to the end.
+// A section goes before or after another (by where the pointer is in its block), or to the end.
 function sectionTarget(event, list) {
   const [start, end] = blockOf(list.symbols, draggedSection);
   const without = [...list.symbols.slice(0, start), ...list.symbols.slice(end)];
-  const head = event.target.closest(".hw-sec");
-  if (head) {
-    if (head.dataset.section === draggedSection) return null;
-    const box = head.getBoundingClientRect();
-    const after = event.clientY > box.top + box.height / 2;
-    const [from, to] = blockOf(without, head.dataset.section);
-    return {
-      index: after ? to : from,
-      mark: () => {
-        let last = head; // the line goes under the section's last row
-        while (after && last.nextElementSibling && !last.nextElementSibling.classList.contains("hw-sec")) last = last.nextElementSibling;
-        last.classList.add(after ? "drop-after" : "drop-before");
-      },
-    };
-  }
-  if (event.target.closest("#wl-rows")) {
-    const rows = [...$("wl-rows").children];
-    const last = rows[rows.length - 1];
-    return { index: without.length, mark: () => last && last.classList.add("drop-after") };
-  }
-  return null;
+  const { els } = lift;
+  const y = contentY(event);
+  const hit = els.find((el) => y < topOf(el) + el.offsetHeight);
+  const none = { index: without.length, before: null, mark() {} };
+  if (!hit) return none;
+  let at = els.indexOf(hit);
+  while (at >= 0 && !els[at].classList.contains("hw-sec")) at--;
+  const first = els.findIndex((el) => el.classList.contains("hw-sec"));
+  if (at < 0) return { index: blockOf(without, els[first].dataset.section)[0], before: els[first], mark() {} }; // symbols above the first section
+  const head = els[at];
+  if (head.dataset.section === draggedSection) return null;
+  const last = blockEnd(els, at);
+  const after = y > (topOf(head) + topOf(els[last - 1]) + els[last - 1].offsetHeight) / 2;
+  const [from, to] = blockOf(without, head.dataset.section);
+  return { index: after ? to : from, before: after ? els[last] || null : head, mark() {} };
 }
 
 function bindDrag() {
   const rows = $("wl-rows");
   const tray = $("wl-tray");
+  const favs = $("wl-favs");
   const endDrag = () => {
     dragged = null;
     draggedSection = null;
     tray.hidden = true;
+    if (lift) {
+      for (const el of lift.els) el.style.transform = "";
+      lift = null;
+    }
+    rows.classList.remove("sorting");
     clearDrop($("side-home"), [...DROP_MARKS, "dragging"]);
   };
   rows.addEventListener("dragstart", (event) => {
@@ -969,26 +989,40 @@ function bindDrag() {
     if (!row && !head) return;
     if (row) dragged = row.dataset.symbol;
     else draggedSection = head.dataset.section;
-    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.effectAllowed = "copyMove";
     event.dataTransfer.setData("text/plain", row ? ticker(dragged) : head.dataset.section);
-    (row || head).classList.add("dragging");
-    // A symbol can also be dropped on another watchlist.
+    const els = [...rows.children];
+    const start = els.indexOf(row || head);
+    lift = { els, start, end: blockEnd(els, start), before: undefined };
+    // Hide the held rows once the browser has taken its drag picture of them.
+    setTimeout(() => {
+      if (!lift) return;
+      rows.classList.add("sorting");
+      lift.els.slice(lift.start, lift.end).forEach((el) => el.classList.add("lifted"));
+    }, 0);
+    // A symbol can also be dropped on another watchlist: a favorite's circle, or the tray.
     const others = data.lists.filter((list) => list.id !== data.active && list.id !== FLAGGED);
-    tray.hidden = !row || !others.length;
-    tray.innerHTML = `<span>Move to</span>` + others.map((list) =>
+    const loose = others.filter((list) => !favorites().includes(list.id));
+    tray.hidden = !row || !loose.length;
+    tray.style.top = favs.hidden ? "" : `${favs.offsetTop + favs.offsetHeight + 6}px`;
+    tray.innerHTML = `<span>Move to</span>` + loose.map((list) =>
       `<button data-list="${escapeHtml(list.id)}">${escapeHtml(list.name)}</button>`).join("");
   });
+  // Rows sliding under a still pointer make the browser enter a new element: accept it too, or a
+  // release right then would be refused.
+  rows.addEventListener("dragenter", (event) => { if (lift) event.preventDefault(); });
   rows.addEventListener("dragover", (event) => {
-    if (dragged == null && draggedSection == null) return;
+    if (!lift || (dragged == null && draggedSection == null)) return;
     const target = dropTarget(event);
-    clearDrop(rows);
-    if (!target) return;
+    clearDrop(rows, ["drop-into"]);
+    if (!target) return slide(lift.start < lift.els.length ? lift.els[lift.start] : null);
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
+    if (target.before !== lift.before) slide(target.before);
     target.mark();
   });
   rows.addEventListener("drop", (event) => {
-    if (dragged == null && draggedSection == null) return;
+    if (!lift || (dragged == null && draggedSection == null)) return;
     const target = dropTarget(event);
     const entry = dragged;
     const section = draggedSection;
@@ -1015,23 +1049,31 @@ function bindDrag() {
     renderRows();
   });
   rows.addEventListener("dragend", endDrag);
-  // The chips: drop a symbol on one to move it there.
-  tray.addEventListener("dragover", (event) => {
-    const chip = event.target.closest("[data-list]");
-    clearDrop(tray);
-    if (!chip || dragged == null) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    chip.classList.add("drop-over");
-  });
-  tray.addEventListener("drop", (event) => {
-    const chip = event.target.closest("[data-list]");
-    const entry = dragged;
-    endDrag();
-    if (!chip || entry == null) return;
-    event.preventDefault();
-    moveSymbol(entry, chip.dataset.list);
-  });
+  // A list to drop a symbol on: the tray's buttons and the favorites' circles. ⌥ copies.
+  const dropOn = (zone, selector) => {
+    zone.addEventListener("dragenter", (event) => { if (dragged != null && event.target.closest(selector)) event.preventDefault(); });
+    zone.addEventListener("dragover", (event) => {
+      const chip = event.target.closest(selector);
+      clearDrop(zone, ["drop-over"]);
+      if (!chip || dragged == null || chip.dataset.list === data.active || chip.dataset.list === FLAGGED) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = event.altKey ? "copy" : "move";
+      chip.classList.add("drop-over");
+    });
+    zone.addEventListener("dragleave", (event) => {
+      if (!zone.contains(event.relatedTarget)) clearDrop(zone, ["drop-over"]);
+    });
+    zone.addEventListener("drop", (event) => {
+      const chip = event.target.closest(selector);
+      const entry = dragged;
+      endDrag();
+      if (!chip || entry == null || chip.dataset.list === data.active || chip.dataset.list === FLAGGED) return;
+      event.preventDefault();
+      moveSymbol(entry, chip.dataset.list, event.altKey);
+    });
+  };
+  dropOn(tray, "[data-list]");
+  dropOn(favs, ".fav");
 }
 
 export function bindWatchlists() {

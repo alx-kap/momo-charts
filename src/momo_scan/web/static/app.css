@@ -1073,11 +1073,10 @@ button.mini.active { border-color: rgba(61, 116, 255, .55); color: #fff; backgro
 .compact-sidebar #details { padding-left: 10px; padding-right: 10px; }
 .hw-row:hover { background: var(--hover); }
 .hw-row.dragging { opacity: .4; }
-.hw-row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
-.hw-row.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
 .hw-sec.dragging { opacity: .4; }
-.hw-sec.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
-.hw-sec.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+#wl-rows.sorting > * { transition: transform .16s ease; }
+#wl-rows .lifted { visibility: hidden; }
+#wl-favs .fav.drop-over { background: var(--accent-soft); border-color: var(--accent); color: #fff; transform: scale(1.18); transition: transform .12s ease; }
 #wl-favs { display: flex; flex-wrap: nowrap; gap: 8px; padding: 4px 14px 10px; overflow-x: auto; overflow-y: hidden; }
 .compact-sidebar #side-home #wl-favs { padding-left: 8px; padding-right: 8px; }
 #wl-favs .fav {
