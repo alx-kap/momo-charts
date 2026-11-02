@@ -190,6 +190,11 @@ export async function openWatchlistPicker() {
       active: data.active,
     }),
     favorite: toggleFavorite,
+    reorder: (from, to) => {
+      data.lists.splice(to, 0, ...data.lists.splice(from, 1));
+      save();
+      renderWatchlists();
+    },
     recent: data.recent || [],
     rename: (id, name) => {
       data.lists.find((list) => list.id === id).name = name;

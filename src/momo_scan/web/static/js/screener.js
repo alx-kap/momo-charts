@@ -3,6 +3,7 @@ import { $, api, escapeHtml, fmtBig, fmtPct, store, ticker, toast } from "./util
 import { actions } from "./state.js";
 import { FLAG_SVG, flagCell, toggleFlag } from "./watchlists.js";
 import { bindColumns, gripHtml, moved } from "./columns.js";
+import { bindReorder } from "./reorder.js";
 import { columnItems, openMenu, wantsMenu } from "./contextmenu.js";
 import { pickOption } from "./picker.js";
 import { confirmDialog, promptDialog } from "./dialog.js";
@@ -227,7 +228,7 @@ function renderPresets() {
   $("sc-presets-button").querySelector(".sc-lbl").textContent = current || "Presets";
   $("sc-presets-button").title = current ? `Scan: ${current} · load a starter or saved scan` : "Load a starter or saved scan";
   const item = (preset, key, extra = "") =>
-    `<div class="sc-preset${(key[0] === "s" ? preset.name === loadedStarter : preset.name === loadedName) ? " on" : ""}"><button data-preset="${key}" title="${preset.rules.length} filters">${escapeHtml(preset.name)}</button>${extra}</div>`;
+    `<div class="sc-preset${(key[0] === "s" ? preset.name === loadedStarter : preset.name === loadedName) ? " on" : ""}"${key[0] === "u" ? ` draggable="true" data-saved` : ""}><button data-preset="${key}" title="${preset.rules.length} filters">${escapeHtml(preset.name)}</button>${extra}</div>`;
   $("sc-presets").innerHTML = `<div class="sc-head-label">Starters</div>` + STARTERS.map((p, i) => item(p, `s${i}`)).join("") +
     (saved.length ? `<div class="sc-head-label">Saved</div>` : "") +
     saved.map((p, i) => item(p, `u${i}`, `<button class="sc-del" data-delete="${i}" title="Delete this saved scan">×</button>`)).join("");
@@ -618,6 +619,14 @@ export function bindScreener() {
     loadedStarter = null;
     saveScans();
     renderPresets();
+  });
+  bindReorder($("sc-presets"), {
+    item: ".sc-preset[data-saved]",
+    onMove: (from, to) => {
+      saved.splice(to, 0, ...saved.splice(from, 1));
+      saveScans();
+      renderPresets();
+    },
   });
   $("sc-presets").addEventListener("click", (event) => {
     const del = event.target.closest("[data-delete]");

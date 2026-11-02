@@ -1,7 +1,8 @@
+import { bindReorder } from "./reorder.js";
 import { escapeHtml } from "./util.js";
 
 // The watchlist switcher: a centered panel with a search box, recent lists and all lists.
-//   pickWatchlist({ state: () => ({ lists: [{ id, name, count, flagged?, fav? }], active }), recent: [id], rename, duplicate, remove, favorite })
+//   pickWatchlist({ state: () => ({ lists: [{ id, name, count, flagged?, fav? }], active }), recent: [id], rename, duplicate, remove, favorite, reorder: (from, to) => … })
 // resolves to { id } (open that list), { action } (new / import), or null if dismissed. Hover a
 // row to rename it in place (double-click the name too), make a copy or delete it. Type to filter; ↑ ↓ Enter and Esc work; Shift+W opens it.
 let open = null;
@@ -27,7 +28,7 @@ function dismissPress(finish) {
   };
 }
 
-export function pickWatchlist({ state, recent = [], rename, duplicate, remove, favorite }) {
+export function pickWatchlist({ state, recent = [], rename, duplicate, remove, favorite, reorder }) {
   open?.finish(null);
   return new Promise((resolve) => {
     const back = document.createElement("div");
@@ -51,26 +52,27 @@ export function pickWatchlist({ state, recent = [], rename, duplicate, remove, f
         const found = lists.filter((list) => words.every((word) => list.name.toLowerCase().includes(word)));
         return found.length ? [{ items: found }] : [];
       }
-      if (lists.length <= RECENT_MAX + 1) return [{ items: lists }];
+      if (lists.length <= RECENT_MAX + 1) return [{ items: lists, all: true }];
       const byId = new Map(lists.map((list) => [list.id, list]));
       const recents = [...new Set([active, ...recent])].filter((id) => byId.has(id)).slice(0, RECENT_MAX);
-      return [{ label: "Recent", items: recents.map((id) => byId.get(id)) }, { label: "All lists", items: lists }];
+      return [{ label: "Recent", items: recents.map((id) => byId.get(id)) }, { label: "All lists", items: lists, all: true }];
     };
     const flat = () => sections().flatMap((section) => section.items);
 
     const render = () => {
       const shown = sections();
       const all = shown.flatMap((section) => section.items);
-      const { active } = state();
+      const { active, lists } = state();
       cursor = Math.max(0, Math.min(cursor, all.length - 1));
       let index = -1;
       listEl.innerHTML = all.length ? shown.map((section) =>
         (section.label ? `<div class="wlp-group">${section.label}</div>` : "") + section.items.map((list) => {
+          const drag = section.all && editing !== list.id && lists.length > 1 ? ` draggable="true" data-all` : "";
           index += 1;
           const name = editing === list.id
             ? `<input class="wlp-edit" value="${escapeHtml(list.name)}" spellcheck="false" autocomplete="off">`
             : `<span class="wlp-name">${escapeHtml(list.name)}</span>`;
-          return `<div class="wlp-row${list.id === active ? " on" : ""}${index === cursor ? " cur" : ""}${editing === list.id ? " editing" : ""}" data-id="${escapeHtml(list.id)}" data-i="${index}">` +
+          return `<div class="wlp-row${list.id === active ? " on" : ""}${index === cursor ? " cur" : ""}${editing === list.id ? " editing" : ""}" data-id="${escapeHtml(list.id)}" data-i="${index}"${drag}>` +
             `${list.flagged ? FLAG : ""}${name}<span class="wlp-count">${list.count}</span>` +
             `<span class="wlp-tools"><button type="button" data-tool="favorite" class="star${list.fav ? " on" : ""}" title="${list.fav ? "Remove from favorites" : "Add to favorites"}">${STAR}</button>${list.flagged ? "" : `<button type="button" data-tool="rename" title="Rename">${PENCIL}</button>` +
               `<button type="button" data-tool="duplicate" title="Make a copy">${COPY}</button>` +
@@ -158,6 +160,7 @@ export function pickWatchlist({ state, recent = [], rename, duplicate, remove, f
       cursor = Number(row.dataset.i);
     });
 
+    bindReorder(listEl, { item: ".wlp-row[data-all]", onMove: (from, to) => { reorder(from, to); render(); } });
     document.body.appendChild(back);
     open = { back, finish };
     document.addEventListener("keydown", onKey, true);
