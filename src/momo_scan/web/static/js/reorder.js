@@ -46,10 +46,30 @@ export function bindReorder(container, { item, onMove }) {
       row.classList.add("lifted");
     }, 0);
   });
-  // Rows sliding under a still pointer make the browser enter a new element: accept it too.
-  container.addEventListener("dragenter", (event) => { if (lift) event.preventDefault(); });
-  container.addEventListener("dragover", (event) => {
-    if (!lift) return;
+  // The pointer leaves the list when a row is dragged past its first or last row, so these listen on
+  // the whole page; a drop is taken as the nearest end within REACH of the list, and cancelled
+  // further out.
+  const REACH = 60;
+  const near = (event) => {
+    const box = container.getBoundingClientRect();
+    return event.clientX > box.left - REACH && event.clientX < box.right + REACH &&
+      event.clientY > box.top - REACH && event.clientY < box.bottom + REACH;
+  };
+  // A list that has been taken out of the page (a closed picker) leaves its listeners behind: drop them.
+  const gone = () => {
+    if (container.isConnected) return false;
+    for (const [type, fn] of listeners) document.removeEventListener(type, fn);
+    return true;
+  };
+  const listeners = [];
+  const onPage = (type, fn) => {
+    const wrapped = (event) => { if (!gone()) fn(event); };
+    listeners.push([type, wrapped]);
+    document.addEventListener(type, wrapped);
+  };
+  onPage("dragenter", (event) => { if (lift && near(event)) event.preventDefault(); });
+  onPage("dragover", (event) => {
+    if (!lift || !near(event)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     const at = slotAt(event);
@@ -57,8 +77,8 @@ export function bindReorder(container, { item, onMove }) {
     lift.at = at;
     place();
   });
-  container.addEventListener("drop", (event) => {
-    if (!lift) return;
+  onPage("drop", (event) => {
+    if (!lift || !near(event)) return;
     const { from, at } = lift;
     end();
     event.preventDefault();
