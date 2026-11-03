@@ -6,7 +6,7 @@ section to its version, and the section becomes the release's notes on GitHub.
 Changes to momo itself (charts, lists, keys) reach the app from its server without a new
 version; this file is for the app around it.
 
-## Unreleased
+## 0.1.6 · 2026-11-03
 
 ### Fixed
 - Clicking off a window while its tab menu or link panel is open no longer makes a Mac's window flicker for a few seconds.
