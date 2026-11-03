@@ -6,7 +6,7 @@
 // and Practice charts stop at their scan date.
 //
 // In the desktop app the tab's right-click menu holds the colours and switches, as in
-// TradingView Desktop, so the chain button stays hidden; the page reports its state to the app
+// TradingView Desktop, so the chain button stays hidden (in the browser as well); the page reports its state to the app
 // (momoDesktop.setLinkState) and takes the menu's changes (momoDesktop.onLink).
 
 import { $, store, ticker } from "./util.js";
@@ -62,9 +62,10 @@ export function bindLink(handlers) {
   }
   // Another tab changed a colour's switches.
   window.addEventListener("storage", (event) => { if (event.key === "momo.linkGroups") render(); });
+  // The chain button stays hidden in the browser too: linking is a desktop-app feature.
+  $("link-button").closest(".link-wrap").hidden = true;
   const desktop = window.momoDesktop;
   if (desktop?.onLink) {
-    $("link-button").closest(".link-wrap").hidden = true;
     desktop.onLink((change) => {
       if ("color" in change) setColor(COLORS[change.color] ? change.color : null);
       if (change.kind in DEFAULTS && color) setSwitch(change.kind, Boolean(change.on));
