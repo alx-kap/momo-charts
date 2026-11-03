@@ -23,8 +23,7 @@ const editMenu = () => Menu.buildFromTemplate([
 const savedTab = (entry) => (typeof entry === "string" ? { path: entry } : entry);
 
 class MomoWindow {
-  // `ctl` is the app (main.js): the server, other windows, saving. `saved` is a snapshot(), or
-  // { bounds, adopt } to take over a tab detached from another window.
+  // `ctl` is the app (main.js): the server, other windows, saving. `saved` is a snapshot().
   constructor(ctl, saved = {}) {
     this.ctl = ctl;
     this.tabs = [];
@@ -61,11 +60,6 @@ class MomoWindow {
       ctl.closed(this);
     });
 
-    if (saved.adopt) {
-      this.adopt(saved.adopt);
-      this.activate(saved.adopt.id);
-      return;
-    }
     const tabs = saved.tabs?.length ? saved.tabs.map(savedTab) : [{ path: "/" }];
     for (const entry of tabs) this.addTab(entry.path, { activate: false, title: entry.title, pinned: entry.pinned });
     this.activate(this.tabs[Math.min(saved.active || 0, this.tabs.length - 1)].id);
@@ -107,11 +101,6 @@ class MomoWindow {
     const index = after ? this.tabs.indexOf(after) + 1 : this.tabs.length;
     this.tabs.splice(index, 0, tab);
     this.order();
-  }
-
-  adopt(tab) {
-    this.place(tab, null);
-    this.render();
   }
 
   // Pinned tabs sit at the left, in their own order.
@@ -237,16 +226,20 @@ class MomoWindow {
     this.ctl.save();
   }
 
-  // Move a tab into a new window of its own, page and all.
+  // Move a tab into a new window of its own. The page is made afresh there at the same address
+  // (its colour, chart and title come along): a live view moved between windows flickers on a Mac.
   detach(id) {
     const tab = this.find(id);
     if (!tab || this.tabs.length < 2) return;
+    const entry = { path: this.address(tab), title: tab.custom || undefined, pinned: tab.pinned || undefined };
     this.tabs.splice(this.tabs.indexOf(tab), 1);
     this.win.contentView.removeChildView(tab.view);
+    tab.view.webContents.close();
     if (this.active === id) this.activate(this.tabs[0].id);
     else this.render();
     const from = this.win.getBounds();
-    this.ctl.open({ bounds: { ...from, x: from.x + 28, y: from.y + 28 }, adopt: tab });
+    this.ctl.open({ bounds: { ...from, x: from.x + 28, y: from.y + 28 }, tabs: [entry] });
+    this.ctl.save();
   }
 
   move(id, index) {

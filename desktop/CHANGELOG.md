@@ -6,6 +6,11 @@ section to its version, and the section becomes the release's notes on GitHub.
 Changes to momo itself (charts, lists, keys) reach the app from its server without a new
 version; this file is for the app around it.
 
+## Unreleased
+
+### Fixed
+- Detaching a tab opens it fresh in the new window (same chart, colour and title) instead of moving the live page, which made a Mac's window flicker for a few seconds once the tab was linked.
+
 ## 0.1.5 · 2026-11-03
 
 ### What's new
