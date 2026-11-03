@@ -64,7 +64,9 @@ export function tokenize(source, options = {}) {
   const error = (code, message, p, end = p + 1, fix = null) => {
     throw new ScriptError(code, message, line, col(p), col(end), fix);
   };
+  let pending = false;                      // a line has tokens that a NEWLINE hasn't closed
   const push = (type, value, start, end, extra) => {
+    if (type !== "COMMENT" && type !== "INDENT" && type !== "DEDENT") pending = type !== "NEWLINE" && type !== "HEADER";
     tokens.push({ type, value, line, col: col(start), endCol: col(end), ...extra });
   };
   const last = () => tokens[tokens.length - 1];
@@ -114,7 +116,7 @@ export function tokenize(source, options = {}) {
     if (c === " ") { pos++; continue; }
     if (c === "\t") error("E101", "Tabs aren't allowed.", pos, pos + 1, "Use spaces.");
     if (c === "\n") {
-      if (!brackets.length && !inline && tokens.length && last().type !== "NEWLINE") {
+      if (!brackets.length && !inline && pending) {
         push("NEWLINE", "\n", pos, pos + 1);
       }
       pos++; line++; lineStart = pos;
@@ -171,7 +173,7 @@ export function tokenize(source, options = {}) {
     throw new ScriptError("E111", `\`${open.c}\` is never closed.`, open.line, open.col, open.col + 1, `Add \`${OPEN[open.c]}\`.`);
   }
   if (!inline) {
-    if (tokens.length && last().type !== "NEWLINE") push("NEWLINE", "\n", pos, pos);
+    if (pending) push("NEWLINE", "\n", pos, pos);
     while (indents.length > 1) { indents.pop(); push("DEDENT", 0, pos, pos); }
   }
   push("EOF", "", pos, pos);
