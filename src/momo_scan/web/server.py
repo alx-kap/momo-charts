@@ -154,6 +154,12 @@ class SignInBody(BaseModel):
     redirect: str = Field(min_length=4, max_length=4000)  # the address Schwab redirected to
 
 
+# The momo script sandbox worker gets its own policy: no connections of any kind, scripts only
+# from this origin (the runtime modules it imports) plus eval for the compiled function.
+SCRIPT_WORKER_PATH = "/static/js/script/worker.js"
+SCRIPT_WORKER_CSP = "default-src 'none'; script-src 'self' 'unsafe-eval'"
+
+
 class _RevalidatedStaticFiles(StaticFiles):
     """Make browsers check for a newer file on every load (a cheap 304 when unchanged).
 
@@ -383,6 +389,14 @@ def create_app(
                 return JSONResponse({"detail": str(error)}, status_code=403)
             return PlainTextResponse(f"{error}. Ask the owner for access.", status_code=403)
         return await call_next(request)
+    @app.middleware("http")
+    async def sandbox_policy(request: Request, call_next: Any) -> Any:
+        response = await call_next(request)
+        if request.url.path == SCRIPT_WORKER_PATH:  # every response, 304s included
+            response.headers["Content-Security-Policy"] = SCRIPT_WORKER_CSP
+            response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
     app.mount("/static", _RevalidatedStaticFiles(directory=STATIC), name="static")
 
     def storage() -> Storage:
