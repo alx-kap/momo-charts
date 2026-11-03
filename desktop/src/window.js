@@ -50,7 +50,7 @@ class MomoWindow {
     this.win.on("resize", () => { this.layout(); ctl.save(); });
     this.win.on("move", () => ctl.save());
     this.win.on("focus", () => { ctl.focused = this; if (!this.menuTab) this.current()?.view.webContents.focus(); });
-    this.win.on("blur", () => this.closeMenu());
+    this.win.on("blur", () => this.closeMenu(false));
     for (const event of ["enter-full-screen", "leave-full-screen"]) this.win.on(event, () => this.render());
     this.win.webContents.on("did-stop-loading", () => this.render());
     this.win.on("close", () => ctl.closing(this));
@@ -341,11 +341,13 @@ class MomoWindow {
     });
   }
 
-  closeMenu() {
+  // `refocus` is false when the window lost focus: focusing a page then pulls the window back
+  // (a Mac flickers as the two fight over it).
+  closeMenu(refocus = true) {
     if (!this.menuTab) return;
     this.menuTab = null;
     this.menu?.setVisible(false);
-    if (!this.win.isDestroyed()) this.current()?.view.webContents.focus();
+    if (refocus && !this.win.isDestroyed()) this.current()?.view.webContents.focus();
   }
 
   // Actions sent by the tab menu, for the tab it was opened on.

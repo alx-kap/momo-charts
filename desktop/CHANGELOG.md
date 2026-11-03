@@ -9,6 +9,7 @@ version; this file is for the app around it.
 ## Unreleased
 
 ### Fixed
+- Clicking off a window while its tab menu or link panel is open no longer makes a Mac's window flicker for a few seconds.
 - Detaching a tab opens it fresh in the new window (same chart, colour and title) instead of moving the live page, which made a Mac's window flicker for a few seconds once the tab was linked.
 
 ## 0.1.5 · 2026-11-03
