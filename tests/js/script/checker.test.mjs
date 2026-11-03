@@ -40,6 +40,8 @@ const FAILING = [
   ["E211 reserved name", "close = 3", "E211", 1, 1],
   ["E211 function name", "signal = ta.ema(close, 9)", "E211", 1, 1],
   ["E211 double underscore", "__proto__ = 3", "E211", 1, 1],
+  ["E211 a built-in as a parameter", "def f(close):\n    return close\nx = f(1)", "E211", 1, 7],
+  ["E211 double underscore as a parameter", "def f(__a):\n    return 1\nx = f(1)", "E211", 1, 7],
   ["E212 duplicate def", "def f(a):\n    return a\ndef f(b):\n    return b", "E212", 3, 1],
   ["E212 var after set", "x = 1\nvar x = 2", "E212", 2, 5],
   ["E213 a line that does nothing", "close + 1", "E213", 1, 1],

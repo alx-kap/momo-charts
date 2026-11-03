@@ -269,6 +269,7 @@ class Checker {
       return;
     }
     if (this.reserved(node.name, node, "function")) return;
+    for (const param of node.params) if (this.reserved(param.name, param, "name")) return;
     if (this.functions.has(node.name) || this.top.vars.has(node.name) || this.top.info.has(node.name)) {
       this.report("E212", `\`${node.name}\` is already used for something else.`, node, null, node.col + 3 + node.name.length + 1);
       return;

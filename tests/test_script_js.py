@@ -22,9 +22,10 @@ def test_script_compiler_in_node() -> None:
         pytest.skip("node is not installed")
     if node_major(node) < 21:
         pytest.skip("node 21+ is needed for test globs")
-    # Node 22 takes globs, not directories, so `node --test tests/js/` becomes this.
+    # Node 22 takes globs, not directories, so `node --test tests/js/` becomes this. One file
+    # at a time: the benchmarks time things, and other test files would compete for the CPU.
     result = subprocess.run(
-        [node, "--test", "tests/js/**/*.test.mjs"],
+        [node, "--test", "--test-concurrency=1", "tests/js/**/*.test.mjs"],
         cwd=ROOT, capture_output=True, text=True, timeout=300,
     )
     assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-2000:]

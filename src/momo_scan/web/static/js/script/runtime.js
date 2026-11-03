@@ -271,62 +271,65 @@ function whole(at, name, v, min = 1) {
 const REFRESH = 1024;
 const NEARLY_FLAT = 1e-8;
 
-// The last n values, with a count of the na among them.
+const pow2 = (n) => {
+  let c = 2;
+  while (c < n) c *= 2;
+  return c;
+};
+
+// The last n values. `quiet` counts the values since the last na, so a window is clean when
+// quiet >= n. The buffer holds a power of two, so positions wrap with a mask, not a division.
 class Ring {
   constructor(n) {
     this.n = n;
-    this.buf = new Float64Array(n);
+    this.mask = pow2(n + 1) - 1;
+    this.buf = new Float64Array(this.mask + 1);
     this.i = 0;
-    this.bad = 0;
+    this.quiet = 0;
   }
 
   // Adds x; returns the value that fell out of the window (NaN while it was filling).
   push(x) {
-    const n = this.n;
-    const p = this.i % n;
-    let old = NaN;
-    if (this.i >= n) {
-      old = this.buf[p];
-      if (old !== old) this.bad--;
-    }
-    if (x !== x) this.bad++;
-    this.buf[p] = x;
-    this.i++;
+    const i = this.i;
+    const old = i >= this.n ? this.buf[(i - this.n) & this.mask] : NaN;
+    this.buf[i & this.mask] = x;
+    this.quiet = x === x ? this.quiet + 1 : 0;
+    this.i = i + 1;
     return old;
   }
 
-  get ready() { return this.i >= this.n && this.bad === 0; }
+  get ready() { return this.quiet >= this.n; }
 
   // Value k bars ago (0 is the newest).
-  at(k) { return this.buf[(((this.i - 1 - k) % this.n) + this.n) % this.n]; }
+  at(k) { return this.buf[(this.i - 1 - k) & this.mask]; }
 }
 
-// Running sum (and sum of squared deviations, and weighted sum) of a full, clean window,
-// updated in O(1) and rebuilt from the ring every REFRESH bars and after an na leaves.
-class Moments extends Ring {
-  constructor(n, m2 = false, weighted = false) {
+// Running sum of a full, clean window, updated in O(1). `fresh` counts updates since the sum
+// was last built from the ring (-1: not valid yet), so it is rebuilt every REFRESH bars and
+// after an na leaves the window. `push` returns whether the window is full and clean.
+class SumWindow extends Ring {
+  constructor(n) {
     super(n);
-    this.wantM2 = m2;
-    this.weighted = weighted;
+    this.inv = 1 / n;
     this.sum = 0;
-    this.m2 = 0;
-    this.wsum = 0;
-    this.valid = false;
-    this.age = 0;
+    this.fresh = -1;
   }
 
   push(x) {
     const n = this.n;
-    const old = super.push(x);
-    if (this.i < n || this.bad > 0) { this.valid = false; return false; }
-    if (this.valid && ++this.age < REFRESH) {
-      const prevSum = this.sum;
-      this.sum = prevSum + x - old;
-      if (this.wantM2) this.m2 += (x - old) * (x - this.sum / n + old - prevSum / n);
-      if (this.weighted) this.wsum = this.wsum - prevSum + n * x;
-      // The running update loses precision when the window is nearly flat (its stdev under
-      // 0.01% of its mean); work it out from scratch then, as a two-pass sum would.
-      if (this.wantM2 && this.m2 < NEARLY_FLAT * ((this.sum * this.sum) / n)) this.rebuild();
+    const i = this.i;
+    const buf = this.buf;
+    const old = buf[(i - n) & this.mask];
+    buf[i & this.mask] = x;
+    this.i = i + 1;
+    if (x !== x) { this.quiet = 0; this.fresh = -1; return false; }
+    const quiet = this.quiet + 1;
+    this.quiet = quiet;
+    if (quiet < n) return false;
+    const fresh = this.fresh;
+    if (fresh >= 0 && fresh < REFRESH) {
+      this.fresh = fresh + 1;
+      this.sum += x - old;
     } else {
       this.rebuild();
     }
@@ -334,114 +337,227 @@ class Moments extends Ring {
   }
 
   rebuild() {
-    const n = this.n;
-    const start = this.i % n;
+    const first = this.i - this.n;
     let sum = 0;
-    let wsum = 0;
-    for (let k = 0; k < n; k++) {
-      const v = this.buf[(start + k) % n];
-      sum += v;
-      wsum += (k + 1) * v;
-    }
+    for (let k = 0; k < this.n; k++) sum += this.buf[(first + k) & this.mask];
     this.sum = sum;
-    this.wsum = wsum;
-    if (this.wantM2) {
-      const mean = sum / n;
-      let m2 = 0;
-      for (let k = 0; k < n; k++) m2 += (this.buf[k] - mean) ** 2;
-      this.m2 = m2;
-    }
-    this.valid = true;
-    this.age = 0;
+    this.fresh = 0;
   }
 }
 
-// Highest (sign 1) or lowest (sign -1) over the last n values, with a monotonic deque.
+// Also the sum of squared deviations from the mean, by Welford's running update.
+class M2Window extends SumWindow {
+  constructor(n) { super(n); this.m2 = 0; }
+
+  push(x) {
+    const n = this.n;
+    const i = this.i;
+    const buf = this.buf;
+    const old = buf[(i - n) & this.mask];
+    buf[i & this.mask] = x;
+    this.i = i + 1;
+    if (x !== x) { this.quiet = 0; this.fresh = -1; return false; }
+    const quiet = this.quiet + 1;
+    this.quiet = quiet;
+    if (quiet < n) return false;
+    const fresh = this.fresh;
+    if (fresh >= 0 && fresh < REFRESH) {
+      this.fresh = fresh + 1;
+      const inv = this.inv;
+      const prevMean = this.sum * inv;
+      const sum = this.sum + x - old;
+      this.sum = sum;
+      const mean = sum * inv;
+      const m2 = this.m2 + (x - old) * (x - mean + old - prevMean);
+      this.m2 = m2;
+      // The running update loses precision when the window is nearly flat (its stdev under
+      // 0.01% of its mean); work it out from scratch then, as a two-pass sum would.
+      if (m2 < NEARLY_FLAT * sum * mean) this.rebuild();
+    } else {
+      this.rebuild();
+    }
+    return true;
+  }
+
+  rebuild() {
+    super.rebuild();
+    const first = this.i - this.n;
+    const mean = this.sum * this.inv;
+    let m2 = 0;
+    for (let k = 0; k < this.n; k++) m2 += (this.buf[(first + k) & this.mask] - mean) ** 2;
+    this.m2 = m2;
+  }
+}
+
+// Also the weighted sum (the oldest value counts 1, the newest n).
+class WeightedWindow extends SumWindow {
+  constructor(n) { super(n); this.wsum = 0; }
+
+  push(x) {
+    const n = this.n;
+    const i = this.i;
+    const buf = this.buf;
+    const old = buf[(i - n) & this.mask];
+    buf[i & this.mask] = x;
+    this.i = i + 1;
+    if (x !== x) { this.quiet = 0; this.fresh = -1; return false; }
+    const quiet = this.quiet + 1;
+    this.quiet = quiet;
+    if (quiet < n) return false;
+    const fresh = this.fresh;
+    if (fresh >= 0 && fresh < REFRESH) {
+      this.fresh = fresh + 1;
+      this.wsum = this.wsum - this.sum + n * x;
+      this.sum += x - old;
+    } else {
+      this.rebuild();
+    }
+    return true;
+  }
+
+  rebuild() {
+    super.rebuild();
+    const first = this.i - this.n;
+    let wsum = 0;
+    for (let k = 0; k < this.n; k++) wsum += (k + 1) * this.buf[(first + k) & this.mask];
+    this.wsum = wsum;
+  }
+}
+
+// Highest (sign 1) or lowest (sign -1) over the last n values, with a monotonic deque of the
+// candidates (indices into the stream) kept in a power-of-two ring.
 class Extreme {
   constructor(n, sign) {
     this.n = n;
     this.sign = sign;
-    this.vals = new Float64Array(n);
-    this.idx = new Float64Array(n);
-    this.raw = new Float64Array(n);
+    this.mask = pow2(n) - 1;
+    this.vals = new Float64Array(this.mask + 1);
+    this.idx = new Float64Array(this.mask + 1);
     this.head = 0;
-    this.size = 0;
+    this.tail = 0;
     this.i = 0;
-    this.bad = 0;
+    this.quiet = 0;
   }
 
   push(x) {
-    const n = this.n;
-    const p = this.i % n;
-    if (this.i >= n && this.raw[p] !== this.raw[p]) this.bad--;
-    if (x !== x) this.bad++;
-    this.raw[p] = x;
-    const oldest = this.i - n + 1;
-    while (this.size && this.idx[this.head] < oldest) { this.head = (this.head + 1) % n; this.size--; }
-    if (x === x) {
-      const s = this.sign;
-      while (this.size && s * this.vals[(this.head + this.size - 1) % n] <= s * x) this.size--;
-      const t = (this.head + this.size) % n;
-      this.vals[t] = x;
-      this.idx[t] = this.i;
-      this.size++;
-    }
-    this.i++;
-    return this.i >= n && this.bad === 0 && this.size > 0;
+    const i = this.i;
+    this.i = i + 1;
+    if (x !== x) { this.quiet = 0; return false; }
+    const quiet = ++this.quiet;
+    const mask = this.mask;
+    const vals = this.vals;
+    const idx = this.idx;
+    const sign = this.sign;
+    const oldest = i - this.n;
+    let head = this.head;
+    let tail = this.tail;
+    while (head < tail && idx[head & mask] <= oldest) head++;
+    while (tail > head && sign * vals[(tail - 1) & mask] <= sign * x) tail--;
+    vals[tail & mask] = x;
+    idx[tail & mask] = i;
+    this.head = head;
+    this.tail = tail + 1;
+    return quiet >= this.n;
   }
 
-  get value() { return this.vals[this.head]; }
+  get value() { return this.vals[this.head & this.mask]; }
 
   // 0 for this bar, -k for k bars ago.
-  get offset() { return this.idx[this.head] - (this.i - 1); }
+  get offset() { return this.idx[this.head & this.mask] - (this.i - 1); }
 }
 
-class Sma {
-  constructor(at, n) { this.m = new Moments(whole(at, "length", n)); }
+// Every stepper's step() stores its result in `v` (and `o0`, `o1`, `o2` for several outputs)
+// and returns nothing: a returned double would be boxed on the heap at each call site the JIT
+// doesn't inline, which in a big script is most of them.
 
-  step(x) { return this.m.push(x) ? this.m.sum / this.m.n : NaN; }
+class Sma {
+  constructor(at, n) { this.m = new SumWindow(whole(at, "length", n)); this.v = NaN; }
+
+  step(x) { this.v = this.m.push(x) ? this.m.sum * this.m.inv : NaN; }
 }
 
 class Sum {
-  constructor(at, n) { this.m = new Moments(whole(at, "length", n)); }
+  constructor(at, n) { this.m = new SumWindow(whole(at, "length", n)); this.v = NaN; }
 
-  step(x) { return this.m.push(x) ? this.m.sum : NaN; }
+  step(x) { this.v = this.m.push(x) ? this.m.sum : NaN; }
 }
 
-// Seeds with the simple average of the first n values, then smooths.
-class Smooth {
-  constructor(at, n, wilder) {
+// Exponential and Wilder moving averages. Both seed with the simple average of the first n
+// values, then smooth; an na is skipped (the state is kept).
+class Ema {
+  constructor(at, n) {
     this.n = whole(at, "length", n);
-    this.k = wilder ? 0 : 2 / (n + 1);
-    this.wilder = wilder;
+    this.k = 2 / (n + 1);
+    this.k1 = 1 - this.k;
     this.prev = NaN;
     this.seeded = false;
     this.seed = 0;
     this.count = 0;
+    this.v = NaN;
   }
 
   step(x) {
-    if (x !== x) return NaN;
-    if (!this.seeded) {
-      this.seed += x;
-      if (++this.count === this.n) { this.prev = this.seed / this.n; this.seeded = true; return this.prev; }
-      return NaN;
+    if (this.seeded) {
+      if (x !== x) { this.v = NaN; return; }
+      this.prev = x * this.k + this.prev * this.k1;
+      this.v = this.prev;
+      return;
     }
-    this.prev = this.wilder ? (this.prev * (this.n - 1) + x) / this.n : x * this.k + this.prev * (1 - this.k);
-    return this.prev;
+    this.start(x);
+  }
+
+  start(x) {
+    this.v = NaN;
+    if (x !== x) return;
+    this.seed += x;
+    if (++this.count < this.n) return;
+    this.seeded = true;
+    this.prev = this.seed / this.n;
+    this.v = this.prev;
   }
 }
 
-class Ema extends Smooth { constructor(at, n) { super(at, n, false); } }
-class Rma extends Smooth { constructor(at, n) { super(at, n, true); } }
+class Rma {
+  constructor(at, n) {
+    this.n = whole(at, "length", n);
+    this.nm1 = n - 1;
+    this.inv = 1 / n;
+    this.prev = NaN;
+    this.seeded = false;
+    this.seed = 0;
+    this.count = 0;
+    this.v = NaN;
+  }
+
+  step(x) {
+    if (this.seeded) {
+      if (x !== x) { this.v = NaN; return; }
+      this.prev = (this.prev * this.nm1 + x) * this.inv;
+      this.v = this.prev;
+      return;
+    }
+    this.start(x);
+  }
+
+  start(x) {
+    this.v = NaN;
+    if (x !== x) return;
+    this.seed += x;
+    if (++this.count < this.n) return;
+    this.seeded = true;
+    this.prev = this.seed / this.n;
+    this.v = this.prev;
+  }
+}
 
 class Wma {
   constructor(at, n) {
-    this.m = new Moments(whole(at, "length", n), false, true);
+    this.m = new WeightedWindow(whole(at, "length", n));
     this.div = (n * (n + 1)) / 2;
+    this.v = NaN;
   }
 
-  step(x) { return this.m.push(x) ? this.m.wsum / this.div : NaN; }
+  step(x) { this.v = this.m.push(x) ? this.m.wsum / this.div : NaN; }
 }
 
 class Hma {
@@ -450,96 +566,189 @@ class Hma {
     this.half = new Wma(at, Math.max(1, Math.floor(n / 2)));
     this.full = new Wma(at, n);
     this.out = new Wma(at, Math.max(1, Math.floor(Math.sqrt(n))));
+    this.v = NaN;
   }
 
-  step(x) { return this.out.step(2 * this.half.step(x) - this.full.step(x)); }
+  step(x) {
+    this.half.step(x);
+    this.full.step(x);
+    this.out.step(2 * this.half.v - this.full.v);
+    this.v = this.out.v;
+  }
 }
 
 class Vwma {
-  constructor(at, n) { this.pv = new Moments(whole(at, "length", n)); this.v = new Moments(n); }
+  constructor(at, n) { this.pv = new SumWindow(whole(at, "length", n)); this.vol = new SumWindow(n); this.v = NaN; }
 
   step(x, volume) {
     const a = this.pv.push(x * volume);
-    const b = this.v.push(volume);
-    return a && b && this.v.sum !== 0 ? this.pv.sum / this.v.sum : NaN;
+    const b = this.vol.push(volume);
+    this.v = a && b && this.vol.sum !== 0 ? this.pv.sum / this.vol.sum : NaN;
   }
 }
 
 class Variance {
-  constructor(at, n, root) { this.m = new Moments(whole(at, "length", n), true); this.root = root; }
+  constructor(at, n, root) { this.m = new M2Window(whole(at, "length", n)); this.root = root; this.v = NaN; }
 
   step(x) {
-    if (!this.m.push(x)) return NaN;
-    const v = Math.max(0, this.m.m2) / this.m.n;
-    return this.root ? Math.sqrt(v) : v;
+    if (!this.m.push(x)) { this.v = NaN; return; }
+    const v = Math.max(0, this.m.m2) * this.m.inv;
+    this.v = this.root ? Math.sqrt(v) : v;
   }
 }
 
-class Highest {
-  constructor(at, n, sign) { this.e = new Extreme(whole(at, "length", n), sign); }
+// Highest or lowest over the last n values without a deque (van Herk / Gil-Werman): the
+// window is the tail of the previous block of n values plus the head of the current one, so
+// its extreme is Math.max / Math.min of a running head and a stored tail. An na poisons the
+// head and the tails that cover it, which is exactly "a window that holds an na gives na".
+class BlockMax {
+  constructor(n) {
+    this.n = n;
+    this.block = new Float64Array(n);
+    this.tail = new Float64Array(n + 1).fill(-Infinity);
+    this.j = 0;
+    this.head = -Infinity;
+    this.count = 0;
+    this.v = NaN;
+  }
 
-  step(x) { return this.e.push(x) ? this.e.value : NaN; }
+  step(x) {
+    const j = this.j;
+    const head = Math.max(this.head, x);
+    const value = Math.max(head, this.tail[j + 1]);
+    this.block[j] = x;
+    if (j + 1 === this.n) {
+      const block = this.block;
+      const tail = this.tail;
+      let t = -Infinity;
+      for (let k = this.n - 1; k >= 0; k--) {
+        t = Math.max(t, block[k]);
+        tail[k] = t;
+      }
+      this.j = 0;
+      this.head = -Infinity;
+    } else {
+      this.j = j + 1;
+      this.head = head;
+    }
+    this.v = ++this.count >= this.n ? value : NaN;
+  }
+}
+
+class BlockMin {
+  constructor(n) {
+    this.n = n;
+    this.block = new Float64Array(n);
+    this.tail = new Float64Array(n + 1).fill(Infinity);
+    this.j = 0;
+    this.head = Infinity;
+    this.count = 0;
+    this.v = NaN;
+  }
+
+  step(x) {
+    const j = this.j;
+    const head = Math.min(this.head, x);
+    const value = Math.min(head, this.tail[j + 1]);
+    this.block[j] = x;
+    if (j + 1 === this.n) {
+      const block = this.block;
+      const tail = this.tail;
+      let t = Infinity;
+      for (let k = this.n - 1; k >= 0; k--) {
+        t = Math.min(t, block[k]);
+        tail[k] = t;
+      }
+      this.j = 0;
+      this.head = Infinity;
+    } else {
+      this.j = j + 1;
+      this.head = head;
+    }
+    this.v = ++this.count >= this.n ? value : NaN;
+  }
 }
 
 class HighestBars {
-  constructor(at, n, sign) { this.e = new Extreme(whole(at, "length", n), sign); }
+  constructor(at, n, sign) { this.e = new Extreme(whole(at, "length", n), sign); this.v = NaN; }
 
-  step(x) { return this.e.push(x) ? this.e.offset : NaN; }
+  step(x) { this.v = this.e.push(x) ? this.e.offset : NaN; }
 }
 
 class Change {
-  constructor(at, n, mode) { this.n = whole(at, "length", n); this.buf = new Float64Array(this.n); this.i = 0; this.mode = mode; }
+  constructor(at, n, mode) { this.ring = new Ring(whole(at, "length", n)); this.mode = mode; this.v = NaN; }
 
   step(x) {
-    const p = this.i % this.n;
-    const old = this.i >= this.n ? this.buf[p] : NaN;
-    this.buf[p] = x;
-    this.i++;
-    return this.mode === 0 ? x - old : old === 0 ? NaN : ((x - old) / old) * 100;
+    const old = this.ring.push(x);
+    this.v = this.mode === 0 ? x - old : old === 0 ? NaN : ((x - old) / old) * 100;
   }
 }
 
 class Rsi {
   constructor(at, n) {
-    this.up = new Rma(at, n);
-    this.down = new Rma(at, n);
+    this.n = whole(at, "length", n);
+    this.nm1 = n - 1;
+    this.inv = 1 / n;
     this.prev = NaN;
+    this.up = 0;
+    this.down = 0;
+    this.count = 0;
+    this.seeded = false;
+    this.v = NaN;
   }
 
+  // Wilder smoothing of the gains and the losses, seeded with their simple averages.
   step(x) {
     const change = x - this.prev;
     this.prev = x;
-    const g = this.up.step(change !== change ? NaN : Math.max(change, 0));
-    const l = this.down.step(change !== change ? NaN : Math.max(-change, 0));
-    if (g !== g || l !== l) return NaN;
-    return l === 0 ? 100 : 100 - 100 / (1 + g / l);
+    this.v = NaN;
+    if (change !== change) return;
+    const gain = (change + Math.abs(change)) * 0.5;      // branch-free max(change, 0)
+    const loss = gain - change;
+    if (this.seeded) {
+      this.up = (this.up * this.nm1 + gain) * this.inv;
+      this.down = (this.down * this.nm1 + loss) * this.inv;
+    } else {
+      this.up += gain;
+      this.down += loss;
+      if (++this.count < this.n) return;
+      this.up *= this.inv;
+      this.down *= this.inv;
+      this.seeded = true;
+    }
+    this.v = this.down === 0 ? 100 : (100 * this.up) / (this.up + this.down);
   }
 }
 
 class Tr {
-  constructor() { this.prev = NaN; this.first = true; }
+  constructor() { this.prev = NaN; this.first = true; this.v = NaN; }
 
   step(high, low, close) {
     const range = high - low;
-    let r;
-    if (this.first) { r = range; this.first = false; } else {
-      r = Math.max(range, Math.abs(high - this.prev), Math.abs(low - this.prev));
+    if (this.first) {
+      this.v = range;
+      this.first = false;
+    } else {
+      this.v = Math.max(range, Math.abs(high - this.prev), Math.abs(low - this.prev));
     }
     this.prev = close;
-    return r;
   }
 }
 
 class Atr {
-  constructor(at, n) { this.tr = new Tr(); this.rma = new Rma(at, n); }
+  constructor(at, n) { this.tr = new Tr(); this.rma = new Rma(at, n); this.v = NaN; }
 
-  step(high, low, close) { return this.rma.step(this.tr.step(high, low, close)); }
+  step(high, low, close) {
+    this.tr.step(high, low, close);
+    this.rma.step(this.tr.v);
+    this.v = this.rma.v;
+  }
 }
 
 class Adr {
-  constructor(at, n) { this.m = new Moments(whole(at, "length", n)); }
+  constructor(at, n) { this.m = new SumWindow(whole(at, "length", n)); this.v = NaN; }
 
-  step(high, low) { return this.m.push(low === 0 ? NaN : (high / low - 1) * 100) ? this.m.sum / this.m.n : NaN; }
+  step(high, low) { this.v = this.m.push(low === 0 ? NaN : (high / low - 1) * 100) ? this.m.sum * this.m.inv : NaN; }
 }
 
 class Macd {
@@ -547,134 +756,136 @@ class Macd {
     this.fast = new Ema(at, fast);
     this.slow = new Ema(at, slow);
     this.signal = new Ema(at, signal);
-    this.o0 = this.o1 = this.o2 = NaN;
+    this.v = this.o0 = this.o1 = this.o2 = NaN;
   }
 
   step(x) {
-    const line = this.fast.step(x) - this.slow.step(x);
-    const signal = this.signal.step(line);
-    this.o0 = line;
-    this.o1 = signal;
-    this.o2 = line - signal;
-    return line;
+    this.fast.step(x);
+    this.slow.step(x);
+    const line = this.fast.v - this.slow.v;
+    this.signal.step(line);
+    this.o0 = this.v = line;
+    this.o1 = this.signal.v;
+    this.o2 = line - this.signal.v;
   }
 }
 
 class Bb {
-  constructor(at, n) { this.m = new Moments(whole(at, "length", n), true); this.o0 = this.o1 = this.o2 = NaN; }
+  constructor(at, n) { this.m = new M2Window(whole(at, "length", n)); this.v = this.o0 = this.o1 = this.o2 = NaN; }
 
   step(x, mult) {
-    if (!this.m.push(x)) { this.o0 = this.o1 = this.o2 = NaN; return NaN; }
-    const basis = this.m.sum / this.m.n;
-    const dev = Math.sqrt(Math.max(0, this.m.m2) / this.m.n);
-    this.o0 = basis;
+    if (!this.m.push(x)) { this.v = this.o0 = this.o1 = this.o2 = NaN; return; }
+    const basis = this.m.sum * this.m.inv;
+    const dev = Math.sqrt(Math.max(0, this.m.m2) * this.m.inv);
+    this.v = this.o0 = basis;
     this.o1 = basis + mult * dev;
     this.o2 = basis - mult * dev;
-    return basis;
   }
 }
 
 class Kc {
-  constructor(at, n, atrLength) { this.ema = new Ema(at, n); this.atr = new Atr(at, atrLength); this.o0 = this.o1 = this.o2 = NaN; }
+  constructor(at, n, atrLength) { this.ema = new Ema(at, n); this.atr = new Atr(at, atrLength); this.v = this.o0 = this.o1 = this.o2 = NaN; }
 
   step(x, mult, high, low, close) {
-    const basis = this.ema.step(x);
-    const atr = this.atr.step(high, low, close);
-    this.o0 = basis;
+    this.ema.step(x);
+    this.atr.step(high, low, close);
+    const basis = this.ema.v;
+    const atr = this.atr.v;
+    this.v = this.o0 = basis;
     this.o1 = basis + mult * atr;
     this.o2 = basis - mult * atr;
-    return basis;
   }
 }
 
 class Stoch {
   constructor(at, n, kSmooth, dSmooth) {
-    this.hi = new Extreme(whole(at, "length", n), 1);
-    this.lo = new Extreme(n, -1);
+    this.hi = new BlockMax(whole(at, "length", n));
+    this.lo = new BlockMin(n);
     this.k = new Sma(at, kSmooth);
     this.d = new Sma(at, dSmooth);
-    this.o0 = this.o1 = NaN;
+    this.v = this.o0 = this.o1 = NaN;
   }
 
   step(high, low, close) {
-    const a = this.hi.push(high);
-    const b = this.lo.push(low);
-    let raw = NaN;
-    if (a && b) {
-      const range = this.hi.value - this.lo.value;
-      raw = range > 0 ? (100 * (close - this.lo.value)) / range : NaN;
-    }
-    this.o0 = this.k.step(raw);
-    this.o1 = this.d.step(this.o0);
-    return this.o0;
+    this.hi.step(high);
+    this.lo.step(low);
+    const range = this.hi.v - this.lo.v;
+    this.k.step(range > 0 ? (100 * (close - this.lo.v)) / range : NaN);
+    this.d.step(this.k.v);
+    this.v = this.o0 = this.k.v;
+    this.o1 = this.d.v;
   }
 }
 
 class Cross {
-  constructor(mode) { this.mode = mode; this.pa = NaN; this.pb = NaN; }
+  constructor(mode) { this.mode = mode; this.pa = NaN; this.pb = NaN; this.v = false; }
 
   step(a, b) {
     const over = a > b && this.pa <= this.pb;
     const under = a < b && this.pa >= this.pb;
     this.pa = a;
     this.pb = b;
-    return this.mode === 0 ? over : this.mode === 1 ? under : over || under;
+    this.v = this.mode === 0 ? over : this.mode === 1 ? under : over || under;
   }
 }
 
 class Run {
-  constructor(at, n, rising) { this.n = whole(at, "length", n); this.rising = rising; this.prev = NaN; this.run = 0; }
+  constructor(at, n, rising) { this.n = whole(at, "length", n); this.rising = rising; this.prev = NaN; this.run = 0; this.v = false; }
 
   step(x) {
     this.run = (this.rising ? x > this.prev : x < this.prev) ? this.run + 1 : 0;
     this.prev = x;
-    return this.run >= this.n;
+    this.v = this.run >= this.n;
   }
 }
 
 class BarsSince {
-  constructor() { this.n = NaN; }
+  constructor() { this.v = NaN; }
 
-  step(cond) { this.n = cond ? 0 : this.n + 1; return this.n; }
+  step(cond) { this.v = cond ? 0 : this.v + 1; }
 }
 
 class ValueWhen {
-  constructor(at, nth) { this.size = whole(at, "nth", nth, 0) + 1; this.buf = new Float64Array(this.size); this.count = 0; }
+  constructor(at, nth) { this.size = whole(at, "nth", nth, 0) + 1; this.buf = new Float64Array(this.size); this.count = 0; this.v = NaN; }
 
   step(cond, x) {
     if (cond) { this.buf[this.count % this.size] = x; this.count++; }
-    return this.count >= this.size ? this.buf[(this.count - this.size) % this.size] : NaN;
+    this.v = this.count >= this.size ? this.buf[(this.count - this.size) % this.size] : NaN;
   }
 }
 
 class Cum {
-  constructor() { this.total = 0; }
+  constructor() { this.total = 0; this.v = NaN; }
 
-  step(x) { if (x !== x) return NaN; this.total += x; return this.total; }
+  step(x) {
+    if (x !== x) { this.v = NaN; return; }
+    this.total += x;
+    this.v = this.total;
+  }
 }
 
 class Median {
-  constructor(at, n) { this.r = new Ring(whole(at, "length", n)); this.tmp = new Float64Array(n); }
+  constructor(at, n) { this.r = new Ring(whole(at, "length", n)); this.tmp = new Float64Array(n); this.v = NaN; }
 
   step(x) {
     this.r.push(x);
-    if (!this.r.ready) return NaN;
+    if (!this.r.ready) { this.v = NaN; return; }
     const n = this.r.n;
-    this.tmp.set(this.r.buf);
+    for (let k = 0; k < n; k++) this.tmp[k] = this.r.at(k);
     this.tmp.sort();
-    return n % 2 ? this.tmp[(n - 1) / 2] : (this.tmp[n / 2 - 1] + this.tmp[n / 2]) / 2;
+    this.v = n % 2 ? this.tmp[(n - 1) / 2] : (this.tmp[n / 2 - 1] + this.tmp[n / 2]) / 2;
   }
 }
 
 class PercentRank {
-  constructor(at, n) { this.r = new Ring(whole(at, "length", n) + 1); }
+  constructor(at, n) { this.r = new Ring(whole(at, "length", n) + 1); this.v = NaN; }
 
   step(x) {
     this.r.push(x);
-    if (!this.r.ready) return NaN;
+    if (!this.r.ready) { this.v = NaN; return; }
     let count = 0;
     for (let k = 1; k < this.r.n; k++) if (this.r.at(k) <= x) count++;
-    return (count / (this.r.n - 1)) * 100;
+    this.v = (count / (this.r.n - 1)) * 100;
   }
 }
 
@@ -686,41 +897,42 @@ class Pivot {
     this.right = whole(at, "right", right);
     this.r = new Ring(left + right + 1);
     this.sign = sign;
+    this.v = NaN;
   }
 
   step(x) {
     this.r.push(x);
-    if (!this.r.ready) return NaN;
+    this.v = NaN;
+    if (!this.r.ready) return;
     const s = this.sign;
     const mid = this.r.at(this.right);
-    for (let k = 0; k < this.right; k++) if (s * this.r.at(k) > s * mid) return NaN;
-    for (let k = this.right + 1; k <= this.right + this.left; k++) if (s * this.r.at(k) >= s * mid) return NaN;
-    return mid;
+    for (let k = 0; k < this.right; k++) if (s * this.r.at(k) > s * mid) return;
+    for (let k = this.right + 1; k <= this.right + this.left; k++) if (s * this.r.at(k) >= s * mid) return;
+    this.v = mid;
   }
 }
 
 class Vwap {
-  constructor() { this.day = NaN; this.value = 0; this.volume = 0; }
+  constructor() { this.day = NaN; this.value = 0; this.volume = 0; this.v = NaN; }
 
   step(time, high, low, close, volume) {
     const day = Math.floor(time / 86400);
     if (day !== this.day) { this.day = day; this.value = 0; this.volume = 0; }
     const typical = (high + low + close) / 3;
-    if (typical !== typical || volume !== volume) return NaN;
+    if (typical !== typical || volume !== volume) { this.v = NaN; return; }
     this.value += typical * volume;
     this.volume += volume;
-    return this.volume ? this.value / this.volume : typical;
+    this.v = this.volume ? this.value / this.volume : typical;
   }
 }
 
 // Volume over its average across the bars before this one.
 class Rvol {
-  constructor(at, n) { this.m = new Moments(whole(at, "length", n)); this.prev = NaN; }
+  constructor(at, n) { this.m = new SumWindow(whole(at, "length", n)); this.prev = NaN; this.v = NaN; }
 
   step(volume) {
-    const out = this.prev && this.prev === this.prev ? volume / this.prev : NaN;
-    this.prev = this.m.push(volume) ? this.m.sum / this.m.n : NaN;
-    return out;
+    this.v = this.prev && this.prev === this.prev ? volume / this.prev : NaN;
+    this.prev = this.m.push(volume) ? this.m.sum * this.m.inv : NaN;
   }
 }
 
@@ -733,8 +945,8 @@ export const ta = {
   hma: (at, n) => new Hma(at, n),
   stdev: (at, n) => new Variance(at, n, true),
   variance: (at, n) => new Variance(at, n, false),
-  highest: (at, n) => new Highest(at, n, 1),
-  lowest: (at, n) => new Highest(at, n, -1),
+  highest: (at, n) => new BlockMax(whole(at, "length", n)),
+  lowest: (at, n) => new BlockMin(whole(at, "length", n)),
   highestbars: (at, n) => new HighestBars(at, n, 1),
   lowestbars: (at, n) => new HighestBars(at, n, -1),
   change: (at, n) => new Change(at, n, 0),

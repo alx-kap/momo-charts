@@ -216,7 +216,7 @@ class Generator {
       p = { arr: valueless ? "EMPTY" : `P${n}`, colors: null, n };
       this.plots.set(key, p);
       if (valueless) this.empty = true;
-      else this.arrays.push(`const ${p.arr} = rt.f64(N);`);
+      else this.arrays.push(`const ${p.arr} = new Float64Array(N);`);
     }
     if (colored && !p.colors) {
       p.colors = `C${p.n}`;
@@ -280,7 +280,7 @@ class Generator {
       case "signal": case "value": {
         const arr = `SG${this.signals.size}`;
         this.signals.set(s.name, arr);
-        this.arrays.push(s.what === "signal" ? `const ${arr} = new Uint8Array(N);` : `const ${arr} = rt.f64(N);`);
+        this.arrays.push(s.what === "signal" ? `const ${arr} = new Uint8Array(N);` : `const ${arr} = new Float64Array(N);`);
         const v = this.ex(s.v, pre);
         out.push(...pre, s.what === "signal" ? `${arr}[i] = ${v} ? 1 : 0;` : `${arr}[i] = ${this.helper("F")}(${v});`);
         return;
@@ -441,12 +441,10 @@ class Generator {
     const make = [`[${stepper.site[0]}, ${stepper.site[1]}]`, ...ctor].join(", ");
     pre.push(`if (${name} === null) ${name} = rt.ta.${short}(${make});`);
     const args = [...stepper.step.map((a) => this.ex(a, pre)), ...stepper.implicit.map((n) => this.arrayRead(n))];
-    if (Array.isArray(stepper.entry.returns)) {
-      pre.push(`${name}.step(${args.join(", ")});`);
-      return { name };
-    }
+    pre.push(`${name}.step(${args.join(", ")});`);
+    if (Array.isArray(stepper.entry.returns)) return { name };
     const t = this.temp();
-    pre.push(`const ${t} = ${name}.step(${args.join(", ")});`);
+    pre.push(`const ${t} = ${name}.v;`);
     return { name: t };
   }
 

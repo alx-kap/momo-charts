@@ -65,9 +65,11 @@ export function tokenize(source, options = {}) {
     throw new ScriptError(code, message, line, col(p), col(end), fix);
   };
   let pending = false;                      // a line has tokens that a NEWLINE hasn't closed
-  const push = (type, value, start, end, extra) => {
+  const push = (type, value, start, end, parts) => {
     if (type !== "COMMENT" && type !== "INDENT" && type !== "DEDENT") pending = type !== "NEWLINE" && type !== "HEADER";
-    tokens.push({ type, value, line, col: col(start), endCol: col(end), ...extra });
+    const token = { type, value, line, col: start - lineStart + 1, endCol: end - lineStart + 1 };
+    if (parts) token.parts = parts;
+    tokens.push(token);
   };
   const last = () => tokens[tokens.length - 1];
 
@@ -149,9 +151,12 @@ export function tokenize(source, options = {}) {
 
     if (c === '"' || c === "'") { pos = readString(pos, false, pos); continue; }
 
-    const two = text.slice(pos, pos + 2);
-    if (two === "=>") error("E102", "`=>` is Pine's function arrow.", pos, pos + 2, "Write `def name(args):` and indent the body.");
-    if (TWO.has(two)) { push("OP", two, pos, pos + 2); pos += 2; continue; }
+    const d = text[pos + 1];
+    if (d === "=" || (d === "*" && c === "*") || (d === ">" && c === "=")) {
+      const two = c + d;
+      if (two === "=>") error("E102", "`=>` is Pine's function arrow.", pos, pos + 2, "Write `def name(args):` and indent the body.");
+      if (TWO.has(two)) { push("OP", two, pos, pos + 2); pos += 2; continue; }
+    }
     if (ONE.has(c)) {
       if (c in OPEN) brackets.push({ c, p: pos, line, col: col() });
       else if (CLOSE.has(c)) {
@@ -273,7 +278,7 @@ export function tokenize(source, options = {}) {
     }
     if (isF) {
       if (out || !parts.length) parts.push(out);
-      push("FSTR", "", start, q, { parts });
+      push("FSTR", "", start, q, parts);
     } else {
       push("STR", out, start, q);
     }

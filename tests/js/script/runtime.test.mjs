@@ -11,7 +11,10 @@ const { ta } = rt;
 // Runs a stepper over columns: `args(i)` gives this bar's step arguments.
 function run(stepper, n, args) {
   const out = new Float64Array(n);
-  for (let i = 0; i < n; i++) out[i] = stepper.step(...args(i));
+  for (let i = 0; i < n; i++) {
+    stepper.step(...args(i));
+    out[i] = stepper.v;
+  }
   return out;
 }
 const column = (stepper, n, get) => run(stepper, n, (i) => [get(i)]);
