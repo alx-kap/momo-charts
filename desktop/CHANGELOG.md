@@ -8,11 +8,16 @@ version; this file is for the app around it.
 
 ## Unreleased
 
+## 0.1.4 · 2026-11-02
+
 ### What's new
 - momo can run on your computer: on first launch choose **On this computer**, and the app runs
-  momo itself, with nothing else to install. Add your Schwab app's keys and sign in, and charts
-  fill from your account. **Connect to a server** works as before. Switch any time with
-  momo → Server….
+  momo itself, with nothing else to install. **Connect to a server** works as before. Switch any
+  time with momo → Server….
+- A step-by-step guide to connecting your Schwab account: making a free Schwab developer app,
+  what to fill in, where its keys go, then signing in. Each step is ticked as you finish it.
+- Split view syncs like linked tabs: Symbol, Interval, Time, Date range and Crosshair between
+  its two charts.
 
 ## 0.1.3 · 2026-11-02
 
