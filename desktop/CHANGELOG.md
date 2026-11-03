@@ -6,11 +6,13 @@ section to its version, and the section becomes the release's notes on GitHub.
 Changes to momo itself (charts, lists, keys) reach the app from its server without a new
 version; this file is for the app around it.
 
-## Unreleased
+## 0.1.5 · 2026-11-03
 
 ### What's new
-- A tab detached into its own window now shows in that window's tab strip (it was missing, so it couldn't be renamed or linked).
 - The tab menu, its switches and the setup pages share momo's new corner radii, shadows and type sizes, so the app and the charts read as one.
+
+### Fixed
+- A tab detached into its own window now shows in that window's tab strip (it was missing, so it couldn't be renamed or linked).
 
 ## 0.1.4 · 2026-11-02
 
