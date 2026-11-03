@@ -14,10 +14,10 @@
 
 import { GLOBALS, KWARG_ALIASES, METHODS, NAMESPACES, formatColor, members, parseColor, signature, withAlpha } from "./catalog.js";
 import { ScriptError, describe, didYouMean } from "./errors.js";
+import { LIMITS } from "./runtime.js";
 
-export const LIMITS = {
-  source: 100_000, plots: 64, string: 200, list: 10_000, calls: 400, drawings: 500, length: 5000,
-};
+export { LIMITS };
+
 
 const SOURCES = ["open", "high", "low", "close", "volume", "hl2", "hlc3", "ohlc4"];
 // Built-in series a script may reuse as a variable name (they're reference data, not syntax).

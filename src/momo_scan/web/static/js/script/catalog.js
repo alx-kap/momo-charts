@@ -21,7 +21,7 @@ export const TYPES = ["number", "bool", "string", "color", "list", "bars", "plot
 export const packColor = (r, g, b, a = 255) => (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
 
 // The colour with a new opacity (0 clear, 100 solid), keeping its red, green and blue.
-export const withAlpha = (color, pct) => ((((color >>> 8) << 8) | Math.round(Math.min(100, Math.max(0, pct)) * 2.55)) >>> 0);
+export const withAlpha = (color, pct) => ((((color >>> 8) << 8) | Math.round((Math.min(100, Math.max(0, pct)) * 255) / 100)) >>> 0);
 
 // "#rgb", "#rrggbb" or "#rrggbbaa" → packed, else null.
 export function parseColor(text) {
