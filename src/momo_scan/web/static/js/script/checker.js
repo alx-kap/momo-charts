@@ -960,12 +960,15 @@ class Checker {
         return this.fail("E202", `\`${node.name}\` isn't in \`${root}\`.`, { ...node, col: node.nameCol, line: node.nameLine },
           this.suggest(node.name, root), node.nameCol + node.name.length);
       }
-      if (!NAMESPACES.has(root) && node.target.type === "Name") return this.nameExpr(node.target, ctx);
+      if (!NAMESPACES.has(root) && node.target.type === "Name") {
+        const base = this.nameExpr(node.target, ctx);
+        if (isErr(base)) return base;
+      }
     }
     const target = this.expr(node.target, ctx);
     if (isErr(target)) return target;
     const at = { line: node.nameLine, col: node.nameCol };
-    const methods = METHODS[target.t === "color" ? "color" : target.t] || {};
+    const methods = METHODS[target.t === "color" ? "color" : target.t] || Object.create(null);
     if (methods[node.name]) {
       return this.fail("E306", `\`${node.name}\` is a method; call it with ( ).`, at, `${node.name}(...)`, node.nameCol + node.name.length);
     }
@@ -1251,7 +1254,7 @@ class Checker {
     const at = { line: callee.nameLine, col: callee.nameCol };
     if (isErr(target)) { node.args.forEach((a) => this.expr(a, ctx)); return target; }
     const type = target.t;
-    const methods = Object.hasOwn(METHODS, type) ? METHODS[type] : {};
+    const methods = Object.hasOwn(METHODS, type) ? METHODS[type] : Object.create(null);
     const entry = methods[callee.name];
     if (!entry) {
       const near = didYouMean(callee.name, Object.keys(methods));

@@ -9,6 +9,7 @@ from typing import Annotated, Any
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from momo_scan.config import AppConfig, load_config
 from momo_scan.providers.fixture import FixtureProvider
@@ -162,6 +163,220 @@ def cot_update(
     except (OSError, RuntimeError) as error:
         typer.echo(f"COT update failed: {error}", err=True)
         raise typer.Exit(1) from error
+
+
+script_app = typer.Typer(help="Check and run momo script indicators.", no_args_is_help=True)
+app.add_typer(script_app, name="script")
+
+
+def _read_script(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        typer.echo(f"Can't read {path}: {error}", err=True)
+        raise typer.Exit(2) from error
+
+
+def _print_script_errors(path: Path, errors: list[dict[str, Any]]) -> None:
+    from momo_scan.script.lexer import from_utf16
+
+    for error in errors:
+        typer.echo(
+            f"{path}:{error['line']}:{error['col']}: {error['code']} {from_utf16(error['message'])}"
+        )
+        if error.get("fix"):
+            typer.echo(f"    {from_utf16(error['fix'])}")
+
+
+@script_app.command("check")
+def script_check(
+    file: Annotated[Path, typer.Argument(help="A .momo script")],
+    as_json: Annotated[bool, typer.Option("--json", help="Print the result as JSON")] = False,
+) -> None:
+    """Check a script: every error with its code, position and fix; exit 1 if there are any."""
+    from momo_scan.script.compile import check_source
+
+    result = check_source(_read_script(file))
+    if as_json:
+        shown = {"ok": True, "meta": result["meta"]} if result["ok"] else result
+        typer.echo(json.dumps(shown, indent=2, default=str))
+    elif result["ok"]:
+        from momo_scan.script.lexer import from_utf16
+
+        meta = result["meta"]
+        parts = [
+            f"{len(meta['inputs'])} inputs", f"{len(meta['plots'])} plots",
+            f"{len(meta['signals'])} signals",
+            f"needs {int(meta['needs']['history'])} bars of history",
+        ]
+        typer.echo(f"OK: {from_utf16(meta['title'])} ({', '.join(parts)})")
+    else:
+        _print_script_errors(file, result["errors"])
+    if not result["ok"]:
+        raise typer.Exit(1)
+
+
+def _script_value(value: Any) -> str:
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if value is None or value != value:
+        return "na"
+    if isinstance(value, int) or float(value).is_integer() and abs(value) < 1e15:
+        return str(int(value))
+    return f"{value:.4f}".rstrip("0").rstrip(".")
+
+
+def _script_inputs(settings: list[str]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for item in settings:
+        key, _, text = item.partition("=")
+        if not key or not _:
+            raise typer.BadParameter(f"{item!r}: write NAME=VALUE, like length=50")
+        lowered = text.strip().lower()
+        if lowered in ("true", "false"):
+            out[key] = lowered == "true"
+            continue
+        try:
+            out[key] = float(text)
+        except ValueError:
+            out[key] = text
+    return out
+
+
+@script_app.command("run")
+def script_run(
+    file: Annotated[Path, typer.Argument(help="A .momo script")],
+    symbol: Annotated[str, typer.Option("--symbol", help="Ticker, like NVDA")],
+    interval: Annotated[str, typer.Option("--interval", help="D, W, M, or 5m, 15m, 1h")] = "D",
+    last: Annotated[int, typer.Option("--last", help="How many of the latest bars to show")] = 5,
+    bars: Annotated[int, typer.Option("--bars", help="Bars to run the script over")] = 520,
+    setting: Annotated[
+        list[str] | None, typer.Option("--input", help="An input, NAME=VALUE (repeat)")
+    ] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print the result as JSON")] = False,
+    config_path: Annotated[Path, typer.Option("--config")] = Path("config/momo.toml"),
+) -> None:
+    """Run a script on a symbol and print the last values of every plot, signal and value."""
+    from momo_scan.script.compile import check_source
+    from momo_scan.script.evaluator import run_script
+    from momo_scan.script.lexer import from_utf16
+
+    source = _read_script(file)
+    compiled = check_source(source)
+    if not compiled["ok"]:
+        _print_script_errors(file, compiled["errors"])
+        raise typer.Exit(1)
+    config = load_config(config_path)
+    try:
+        columns, labels, shown = asyncio.run(_script_bars(config, symbol, interval, bars))
+    except ValueError as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(1) from error
+    extra = {"chart": {"interval": interval, "ticker": shown}}
+    out = run_script(compiled["ir"], columns, _script_inputs(setting or []), extra)
+    if not out["ok"]:
+        error = out["error"]
+        typer.echo(
+            f"{file}:{error['line']}:{error['col']}: {error['code']} "
+            f"{from_utf16(error['message'])} (bar {error['i']})", err=True,
+        )
+        raise typer.Exit(1)
+    count = max(1, min(last, len(labels)))
+    series: dict[str, list[Any]] = {
+        key: plot["values"] for key, plot in out["plots"].items() if plot["values"]
+    }
+    series.update(out["signals"])
+    kinds = {item["name"]: item["kind"] for item in compiled["meta"]["signals"]}
+    if as_json:
+        rows = [
+            {"time": labels[i], **{
+                key: (bool(values[i]) if kinds.get(key) == "bool" else
+                      None if values[i] != values[i] else values[i])
+                for key, values in series.items()
+            }}
+            for i in range(len(labels) - count, len(labels))
+        ]
+        typer.echo(json.dumps({
+            "symbol": shown, "interval": interval, "bars": len(labels), "rows": rows,
+            "stats": out["stats"], "levels": out["levels"],
+            "logs": out["logs"][-20:], "ms": round(out["ms"], 1),
+        }, indent=2, default=str))
+        return
+    table = Table(title=f"{from_utf16(compiled['meta']['title'])}: {shown} {interval}")
+    table.add_column("time")
+    for key in series:
+        table.add_column(key, justify="right")
+    for i in range(len(labels) - count, len(labels)):
+        table.add_row(labels[i], *[
+            _script_value(bool(values[i]) if kinds.get(key) == "bool" else values[i])
+            for key, values in series.items()
+        ])
+    console.print(table)
+    for stat in out["stats"]:
+        typer.echo(f"{from_utf16(stat['title'])}: {_script_value(stat['value'])}")
+    for level in out["levels"]:
+        typer.echo(f"level {from_utf16(level['title'])}: {_script_value(level['price'])}")
+    for line in out["logs"][-10:]:
+        typer.echo(f"log bar {line['i']}: {from_utf16(line['text'])}")
+    typer.echo(f"{len(labels)} bars, ran in {out['ms']:.0f} ms")
+
+
+async def _script_bars(
+    config: AppConfig, symbol: str, interval: str, count: int
+) -> tuple[dict[str, list[float]], list[str], str]:
+    """The bars a chart of this symbol and interval would show, as the script's columns."""
+    from zoneinfo import ZoneInfo
+
+    from momo_scan.intraday import INTERVALS, IntradayStore
+    from momo_scan.intraday import aggregate as aggregate_rows
+    from momo_scan.web.timeframes import aggregate, daily_bars_needed, parse_interval
+
+    ticker = symbol.strip().upper().split(":")[-1]
+    count = max(20, min(count, 5000))
+    if interval in INTERVALS:
+        path = Path(config.storage.database).parent / "intraday.db"
+        minutes, multiple = INTERVALS[interval]
+        if not path.exists():
+            raise ValueError(f"No intraday store at {path}: intraday bars come from the app.")
+        store = IntradayStore(path)
+        try:
+            rows = store.read(ticker, minutes, limit=count * multiple + 400)
+            if minutes == 5:
+                rows = aggregate_rows(rows, minutes * multiple)
+        finally:
+            store.close()
+        rows = rows[-count:]
+        if not rows:
+            raise ValueError(f"No stored {interval} bars for {ticker}.")
+        zone = ZoneInfo("America/New_York")
+        # Scripts see New York wall-clock seconds (docs/scripting.md, "Contracts").
+        wall = [
+            int(datetime.fromtimestamp(t, UTC).astimezone(zone).replace(tzinfo=UTC).timestamp())
+            for t, *_ in rows
+        ]
+        labels = [datetime.fromtimestamp(t, UTC).strftime("%Y-%m-%d %H:%M") for t in wall]
+        columns = {"time": [float(t) for t in wall]}
+        for k, name in enumerate(("open", "high", "low", "close", "volume"), 1):
+            columns[name] = [float(row[k]) for row in rows]
+        return columns, labels, ticker
+    try:
+        unit, multiple = parse_interval(interval)
+    except ValueError as error:
+        raise ValueError(f"{error}; intraday: {', '.join(INTERVALS)}") from error
+    async with LocalSQLiteProvider(config.provider, config.regime) as provider:
+        found = (await provider.get_symbol_data_batch([ticker])).get(ticker)
+        qualified = f"{found['exchange']}:{ticker}" if found and found.get("exchange") else ticker
+        loaded = await provider.get_chart_bars(qualified, daily_bars_needed(unit, multiple, count))
+    if not loaded:
+        raise ValueError(f"No bars for {qualified}")
+    shown = aggregate(loaded, unit, multiple)[-count:]
+    labels = [datetime.fromtimestamp(bar.t, UTC).date().isoformat() for bar in shown]
+    columns = {
+        "time": [float(bar.t) for bar in shown], "open": [bar.o for bar in shown],
+        "high": [bar.h for bar in shown], "low": [bar.l for bar in shown],
+        "close": [bar.c for bar in shown], "volume": [bar.v for bar in shown],
+    }
+    return columns, labels, qualified.split(":")[-1]
 
 
 # Alex's scan, evaluation, practice, review and playbook commands (cli_private.py). The public

@@ -1,0 +1,5 @@
+{
+  "about": "A method or attribute a value doesn't have is E202, including names JavaScript objects inherit (constructor) and an attribute on a built-in series (close.bogus).",
+  "bars": "ramp",
+  "expect": { "errors": [{ "code": "E202", "line": 4, "col": 4 }, { "code": "E202", "line": 5, "col": 12 }] }
+}

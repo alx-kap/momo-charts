@@ -1,0 +1,50 @@
+#momo 1
+indicator("Squeeze and trend", overlay=true)
+
+# Bollinger squeeze, trend and momentum in one pane.
+
+length = input.int(20, "Length", min=2, max=200)
+mult = input.float(2.0, "StdDev", step=0.1)
+src = input.source(close, "Source")
+fast_n = input.int(12, "Fast")
+slow_n = input.int(26, "Slow")
+
+# Bands and squeeze.
+basis = ta.sma(src, length)
+dev = mult * ta.stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+width = (upper - lower) / basis * 100
+squeeze = width < ta.lowest(width, 120)[1]
+trend = ta.ema(close, fast_n) - ta.ema(close, slow_n)
+momentum = ta.rsi(close, 14)
+atr = ta.atr(14)
+macd_line, signal_line, hist = ta.macd(close, fast_n, slow_n, 9)
+vol_ratio = volume / ta.sma(volume, 20)
+range_pct = (high - low) / close * 100
+cross_up = ta.crossover(close, basis)
+
+def score(a, b):
+    return (a - b) / b * 100
+
+var count = 0
+var best = na
+if na(best) or close > best:
+    best = close
+if squeeze and not squeeze[1]:
+    count += 1
+sc = score(close, basis)
+
+# Drawing and signals.
+plot(basis, "Basis", color=color.orange)
+plot(upper, "Upper", color=color.blue)
+plot(lower, "Lower", color=color.blue)
+plot(trend, "Trend")
+plot(momentum, "RSI")
+plot(hist, "Hist", style="histogram")
+plot(sc, "Score")
+marker(squeeze and not squeeze[1], "Squeeze", shape="dot", at="below")
+marker(cross_up, "Cross", shape="triangle_up")
+barcolor(color.yellow if squeeze else na)
+signal("squeeze", squeeze)
+value("vol", vol_ratio)

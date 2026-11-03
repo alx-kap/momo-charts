@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 export const SETS = ["trend", "choppy", "intraday"];
 
 export function loadBars(name) {
-  const cols = JSON.parse(readFileSync(new URL(`./fixtures/bars-${name}.json`, import.meta.url), "utf8"));
+  const cols = JSON.parse(readFileSync(new URL(`../../script_cases/bars/bars-${name}.json`, import.meta.url), "utf8"));
   const bars = Object.fromEntries(Object.entries(cols).map(([k, v]) => [k, Float64Array.from(v)]));
   const rows = cols.time.map((time, i) => ({
     time, open: cols.open[i], high: cols.high[i], low: cols.low[i], close: cols.close[i], volume: cols.volume[i],

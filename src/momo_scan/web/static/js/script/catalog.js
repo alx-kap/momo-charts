@@ -61,8 +61,10 @@ const length = (name = "length") => arg(name, "number", { fixed: true });
 const text = (name, options = {}) => arg(name, "string", { literal: true, ...options });
 const color = (options = {}) => arg("color", "color", { default: null, ...options });
 
-const GLOBALS = {};
-const METHODS = { list: {}, color: {}, handle: {}, bars: {} };
+const GLOBALS = Object.create(null);
+const METHODS = {
+  list: Object.create(null), color: Object.create(null), handle: Object.create(null), bars: Object.create(null),
+};
 
 function add(name, entry) {
   GLOBALS[name] = { name, args: [], ...entry };
@@ -171,7 +173,9 @@ add("range", {
 
 // ---- inputs --------------------------------------------------------------------------------
 
-export const KWARG_ALIASES = { minval: "min", maxval: "max" };
+// Tables keyed by names a script writes have no prototype, so `constructor` and `toString` are
+// ordinary (unknown) names and not Object's.
+export const KWARG_ALIASES = Object.assign(Object.create(null), { minval: "min", maxval: "max" });
 const inputExtras = [
   text("group", { default: "" }), text("tooltip", { default: "" }),
 ];

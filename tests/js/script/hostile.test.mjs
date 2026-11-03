@@ -186,7 +186,7 @@ function mulberry(seed) {
   };
 }
 
-const CASES = new URL("./cases/", import.meta.url);
+const CASES = new URL("../../script_cases/", import.meta.url);
 const SOURCES = readdirSync(CASES).filter((f) => f.endsWith(".momo")).sort().map((f) => readFileSync(new URL(f, CASES), "utf8"));
 const SNIPPETS = ["(", ")", "[", "]", ",", ":", "=", "==", "!=", "**", "-", "not ", " and ", " or ", "if ", "else", "def ", "return ", "\n", "    ", "\t", "#", "//", '"', "'", "f\"{", "}", "na", "true", "ta.", "close", "[1]", "[-1]", "0", "1e999", "1e-999", "а", "`", "$", "\\", "__x", "constructor", "plot(", "input.int(", "var ", "for i in range(", "while true:", "break", "continue", "xs.push(", "2 ** 2 ** 2", ".5", "1_0", "e"];
 

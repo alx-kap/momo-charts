@@ -1,0 +1,9 @@
+#momo 1
+indicator("Names that are also Object properties")
+constructor = 2
+toString = 3
+valueOf = constructor * toString
+hasOwnProperty = valueOf + 1
+plot(hasOwnProperty, "h")
+xs = [5]
+plot(len(xs), "n")

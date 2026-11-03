@@ -1,4 +1,4 @@
-// Regenerates fixtures/*.json (columnar bars) deterministically: node tests/js/script/make-fixtures.mjs
+// Regenerates tests/script_cases/bars/*.json (columnar bars) deterministically: node tests/js/script/make-fixtures.mjs
 // Three sets: a steady uptrend (daily), a choppy one with gaps, flat runs and zero volume
 // (daily), and four sessions of 5-minute bars (times are New York wall-clock seconds).
 import { writeFileSync } from "node:fs";
@@ -69,7 +69,7 @@ const sets = {
 };
 
 for (const [name, cols] of Object.entries(sets)) {
-  const path = new URL(`./fixtures/bars-${name}.json`, import.meta.url);
+  const path = new URL(`../../script_cases/bars/bars-${name}.json`, import.meta.url);
   writeFileSync(path, JSON.stringify(cols) + "\n");
   console.log(name, cols.close.length, "bars");
 }

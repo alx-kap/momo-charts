@@ -1,0 +1,12 @@
+{
+  "about": "f-string numbers: plain (trimmed), fixed decimals (ties away from zero), thousands, percent, na.",
+  "bars": "ramp",
+  "expect": {
+    "logs": [
+      { "i": 7, "text": "0.5 2.675 1e+21 0 123456.789 -0 1234567.891 1000000000000000 0.3" },
+      { "i": 7, "text": "1 2.67 123,457 1,234,567.89 -0.000 1,000,000,000,000,000" },
+      { "i": 7, "text": "50.00% 267.5% 0.0000% 12,345,678.9%" },
+      { "i": 7, "text": "7.00 na -2 3 0.04 1.00" }
+    ]
+  }
+}

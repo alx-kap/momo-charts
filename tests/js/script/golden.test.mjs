@@ -1,6 +1,6 @@
-// Golden cases: tests/js/script/cases/NAME.momo (a script) + NAME.json (bars, inputs, what to
+// Golden cases: tests/script_cases/NAME.momo (a script) + NAME.json (bars, inputs, what to
 // expect). They are plain data so the Python port of the language can run the same files.
-// See cases/README.md for the format.
+// See tests/script_cases/README.md for the format.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
@@ -8,7 +8,7 @@ import { test } from "node:test";
 import { compile, execute } from "../../../src/momo_scan/web/static/js/script/compile.js";
 import { loadBars } from "./fixtures.mjs";
 
-const DIR = new URL("./cases/", import.meta.url);
+const DIR = new URL("../../script_cases/", import.meta.url);
 const TOLERANCE = 1e-9;
 const read = (name) => readFileSync(new URL(name, DIR), "utf8");
 

@@ -1,0 +1,5 @@
+#momo 1
+indicator("Method of a list")
+xs = [1, 2]
+xs.constructor()
+plot(close.bogus, "p")
