@@ -222,6 +222,9 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const windows = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
     ok("Detach tab moves it into a window of its own", windows === 2 && (await strip.$$eval(".tab", (each) => each.length)) === 2, `${windows} windows`);
+    const strips = app.context().pages().filter((page) => page.url().endsWith("strip.html"));
+    const counts = await Promise.all(strips.map((page) => page.$$eval(".tab", (each) => each.length)));
+    ok("the detached tab shows in its new window's strip", strips.length === 2 && counts.every((n) => n >= 1), counts.join(","));
     await shot(app, "4-restored");
     await app.close();
   }

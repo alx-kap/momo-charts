@@ -9,6 +9,7 @@ version; this file is for the app around it.
 ## Unreleased
 
 ### What's new
+- A tab detached into its own window now shows in that window's tab strip (it was missing, so it couldn't be renamed or linked).
 - The tab menu, its switches and the setup pages share momo's new corner radii, shadows and type sizes, so the app and the charts read as one.
 
 ## 0.1.4 · 2026-11-02

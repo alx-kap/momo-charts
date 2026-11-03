@@ -53,7 +53,7 @@ class MomoWindow {
     this.win.on("focus", () => { ctl.focused = this; if (!this.menuTab) this.current()?.view.webContents.focus(); });
     this.win.on("blur", () => this.closeMenu());
     for (const event of ["enter-full-screen", "leave-full-screen"]) this.win.on(event, () => this.render());
-    this.win.webContents.on("did-finish-load", () => this.render());
+    this.win.webContents.on("did-stop-loading", () => this.render());
     this.win.on("close", () => ctl.closing(this));
     this.win.on("closed", () => {
       for (const tab of this.tabs) tab.view.webContents.close();

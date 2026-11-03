@@ -124,8 +124,8 @@ const order = () => {
 };
 const hidden = () => layout.hidden || Object.keys(COLUMNS).filter((key) => !DEFAULT_SHOWN.includes(key));
 const shown = () => order().filter((key) => !hidden().includes(key));
-const widthOf = (key) => (layout.widths && layout.widths[key]) || COLUMNS[key].width;
-const gridOf = () => `${FLAG_WIDTH}px ${SYMBOL_WIDTH}px ${shown().map((key) => `${widthOf(key)}px`).join(" ")}`;
+const widthOf = (key) => (layout.widths && layout.widths[key]) || (key === "symbol" ? SYMBOL_WIDTH : COLUMNS[key].width);
+const gridOf = () => `${FLAG_WIDTH}px ${widthOf("symbol")}px ${shown().map((key) => `${widthOf(key)}px`).join(" ")}`;
 const saveLayout = () => { layout.fundamentals = true; store.set("screenColumns", layout); };
 
 export const screenerOpen = () => !$("screener").hidden;
@@ -245,7 +245,7 @@ function renderHeader() {
   const state = (key) => `${sort.key === key ? " sorted" : ""}${pin?.key === key ? " pinned" : ""}`;
   $("sc-cols").innerHTML =
     `<span class="fl" title="Flag: click a row's flag to mark it">${FLAG_SVG}</span>` +
-    `<span data-sort="symbol" class="${state("symbol")}" title="Right-click to pin">Symbol${arrow("symbol")}</span>` +
+    `<span data-sort="symbol" data-col="symbol" class="${state("symbol")}" title="Right-click to pin">Symbol${arrow("symbol")}${gripHtml(false)}</span>` +
     shown().map((key) => {
       const col = COLUMNS[key];
       const label = key === "buzz" ? buzzLabel({ session: buzzSession() }) : col.label;
