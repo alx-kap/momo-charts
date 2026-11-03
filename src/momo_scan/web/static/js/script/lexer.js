@@ -203,7 +203,9 @@ export function tokenize(source, options = {}) {
     const raw = text.slice(start, q);
     if (isWord(text[q] || "")) error("E105", `\`${raw}${text[q]}\` isn't a number.`, start, q + 1, "Put a space or an operator after the number.");
     if (/__|_$|^_|_\.|\._|_[eE]|[eE]_|[eE][+-]_/.test(raw)) error("E105", `\`${raw}\` has a misplaced underscore.`, start, q, "Use _ only between digits, like 1_000_000.");
-    push("NUM", parseFloat(raw.replace(/_/g, "")), start, q);
+    const value = parseFloat(raw.replace(/_/g, ""));
+    if (!Number.isFinite(value)) error("E105", `\`${raw}\` is too large a number.`, start, q, "Numbers go up to about 1.7e308.");
+    push("NUM", value, start, q);
     return q;
   }
 

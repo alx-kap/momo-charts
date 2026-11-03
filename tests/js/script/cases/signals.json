@@ -1,0 +1,14 @@
+{
+ "about": "signal() publishes a bool, value() a number; history of a bool before the first bar is false.",
+ "bars": "ramp",
+ "expect": {
+  "signals": {
+   "up": [1, 1, 0, 0, 0, 0, 1, 0],
+   "up_after_down": [1, 0, 0, 0, 0, 0, 1, 0],
+   "range": [1.5, 1.5, 2.0, 1.0, 3.0, 1.0, 1.5, 2.0]
+  },
+  "meta": {
+   "signals": [{"name": "up", "kind": "bool"}, {"name": "up_after_down", "kind": "bool"}, {"name": "range", "kind": "number"}]
+  }
+ }
+}

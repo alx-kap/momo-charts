@@ -49,6 +49,12 @@ export const round = (x, digits = 0) => {
 export const clamp = (x, lo, hi) => (x < lo ? lo : x > hi ? hi : x);
 export const nz = (x, replace) => (x !== x ? replace : x);
 export const ne = (a, b) => a !== b && a === a && b === b;
+export const isna = (x) => x !== x;
+// History: the value k bars before bar i of an array that holds every bar so far.
+export const at = (array, i, k) => {
+  const j = i - k;
+  return k >= 0 && j >= 0 && Number.isInteger(j) ? array[j] : NaN;
+};
 export const T = (x) => x === x && x !== 0;                 // a number as true/false
 export const F = (x) => (x - x === 0 ? x : NaN);            // infinity is na too
 
@@ -88,8 +94,8 @@ export const clip = (s) => (s.length > LIMITS.string ? s.slice(0, LIMITS.string)
 
 // ---- lists --------------------------------------------------------------------------------------
 
-export function lpush(xs, v) {
-  if (xs.length >= LIMITS.list) throw new RunError("R403", `A list can hold at most ${LIMITS.list.toLocaleString("en-US")} items.`);
+export function lpush(xs, v, at, i) {
+  if (xs.length >= LIMITS.list) throw new RunError("R403", `A list can hold at most ${LIMITS.list.toLocaleString("en-US")} items.`, at, i);
   xs.push(v);
 }
 export const lpop = (xs) => (xs.length ? xs.pop() : NaN);

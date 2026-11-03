@@ -1,0 +1,4 @@
+#momo 1
+indicator("T", overlay=true)
+if close > open:
+    plot(close)

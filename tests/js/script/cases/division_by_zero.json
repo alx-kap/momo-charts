@@ -1,0 +1,15 @@
+{
+ "about": "Dividing by zero, and anything infinite, is na.",
+ "bars": "ramp",
+ "expect": {
+  "plots": {
+   "div": [null, null, null, null, null, null, null, null],
+   "mod": [null, null, null, null, null, null, null, null],
+   "nz": [-1, -1, -1, -1, -1, -1, -1, -1],
+   "pow": [null, null, null, null, null, null, null, null],
+   "log": [null, null, null, null, null, null, null, null],
+   "sqrt": [null, null, null, null, null, null, null, null],
+   "sum": [null, null, null, null, null, null, null, null]
+  }
+ }
+}

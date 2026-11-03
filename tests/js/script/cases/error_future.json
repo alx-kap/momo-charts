@@ -1,0 +1,7 @@
+{
+ "about": "x[-1] is E206: no peeking.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E206", "line": 3, "col": 11}]
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "about": "An input that makes a length less than 1 stops the run with R404 at the ta call.",
+ "bars": "ramp",
+ "inputs": {
+  "n": 0
+ },
+ "expect": {
+  "runError": {
+   "code": "R404",
+   "line": 4,
+   "col": 6
+  }
+ }
+}

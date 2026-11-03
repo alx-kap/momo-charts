@@ -1,0 +1,7 @@
+{
+ "about": "A built-in name can't be a variable (E211).",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E211", "line": 3, "col": 1}]
+ }
+}

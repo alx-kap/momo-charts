@@ -1,0 +1,7 @@
+{
+ "about": "Two signals with one name are E216.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E216", "line": 4, "col": 7}]
+ }
+}

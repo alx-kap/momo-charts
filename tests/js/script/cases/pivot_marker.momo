@@ -1,0 +1,5 @@
+#momo 1
+indicator("T", overlay=true)
+ph = ta.pivothigh(high, 1, 1)
+marker(not na(ph), "Pivot", shape="dot")
+plot(ph, "ph")

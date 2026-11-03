@@ -1,0 +1,13 @@
+#momo 1
+indicator("T", overlay=true)
+n = 0
+total = 0
+while n < 10:
+    n += 1
+    if n == 3:
+        continue
+    if n > 6:
+        break
+    total += n
+plot(total, "total")
+plot(n, "n")

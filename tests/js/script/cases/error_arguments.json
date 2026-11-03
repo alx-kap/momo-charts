@@ -1,0 +1,7 @@
+{
+ "about": "Too many arguments is E303.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E303", "line": 3, "col": 22}]
+ }
+}

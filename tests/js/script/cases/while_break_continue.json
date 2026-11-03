@@ -1,0 +1,10 @@
+{
+ "about": "while, continue and break.",
+ "bars": "ramp",
+ "expect": {
+  "plots": {
+   "total": [18, 18, 18, 18, 18, 18, 18, 18],
+   "n": [7, 7, 7, 7, 7, 7, 7, 7]
+  }
+ }
+}

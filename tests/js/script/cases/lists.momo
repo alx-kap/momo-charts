@@ -1,0 +1,17 @@
+#momo 1
+indicator("T", overlay=true)
+var seen = []
+seen.push(close)
+plot(len(seen), "n")
+plot(seen.sum(), "sum")
+plot(seen[0], "first")
+plot(seen[-1], "last")
+xs = [1, 2, 3]
+xs.push(close)
+plot(xs.max(), "max")
+plot(xs.avg(), "avg")
+total = 0
+for v in xs:
+    total += v
+plot(total, "loop")
+plot(seen[99], "oob")

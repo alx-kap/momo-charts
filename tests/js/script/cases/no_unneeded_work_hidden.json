@@ -1,0 +1,9 @@
+{
+ "about": "History of one name at two offsets.",
+ "bars": "ramp",
+ "expect": {
+  "plots": {
+   "sum": [null, null, 6.0, 7.0, 6.0, 8.0, 8.0, 5.0]
+  }
+ }
+}

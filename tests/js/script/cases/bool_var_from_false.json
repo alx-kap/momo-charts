@@ -1,0 +1,9 @@
+{
+ "about": "A bool var starts false and stays true once set.",
+ "bars": "ramp",
+ "expect": {
+  "plots": {
+   "seen": [0, 0, 0, 0, 0, 1, 1, 1]
+  }
+ }
+}

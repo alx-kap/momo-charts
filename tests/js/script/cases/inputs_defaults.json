@@ -1,0 +1,13 @@
+{
+ "about": "With no inputs given, every input takes its default.",
+ "bars": "ramp",
+ "expect": {
+  "plots": {
+   "v": [null, null, 4.0, 5.666666666666667, 6.0, 8.666666666666666, 11.0, 13.666666666666666],
+   "mode": [0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  "meta": {
+   "inputs": [{"key": "length", "kind": "int", "default": 3, "min": 1, "max": 10}, {"key": "src", "kind": "source", "default": "close"}, {"key": "mult", "kind": "float", "default": 2}, {"key": "on", "kind": "bool", "default": true}, {"key": "mode", "kind": "choice", "default": "a", "options": ["a", "b"]}, {"key": "tint", "kind": "color", "default": "#ff0000"}]
+  }
+ }
+}

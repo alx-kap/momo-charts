@@ -1,0 +1,11 @@
+#momo 1
+indicator("T", overlay=true)
+def band(src, length, k=2.0):
+    basis = ta.sma(src, length)
+    dev = ta.stdev(src, length)
+    return basis + k * dev, basis - k * dev
+hi, lo = band(close, 3)
+hi2, lo2 = band(close, 3, 1.0)
+plot(hi, "hi")
+plot(lo, "lo")
+plot(hi2 - lo2, "width")

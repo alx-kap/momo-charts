@@ -1,0 +1,7 @@
+{
+ "about": "An input inside an if is E214.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E214", "line": 4, "col": 5}]
+ }
+}

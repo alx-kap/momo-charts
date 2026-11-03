@@ -1,0 +1,17 @@
+{
+ "about": "Out-of-range, wrong-kind and unknown inputs fall back or clamp (the page's values are checked again).",
+ "bars": "ramp",
+ "inputs": {
+  "length": 99,
+  "src": "evil",
+  "mult": "x",
+  "mode": "<script>",
+  "constructor": 3
+ },
+ "expect": {
+  "plots": {
+   "v": [null, null, null, null, null, null, null, null],
+   "mode": [0, 0, 0, 0, 0, 0, 0, 0]
+  }
+ }
+}

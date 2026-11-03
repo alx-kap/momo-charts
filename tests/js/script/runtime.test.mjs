@@ -352,7 +352,7 @@ test("text: fmt formats numbers, booleans and strings", () => {
 test("lists: push limit, pop, remove, get, aggregates skip na", () => {
   const xs = [];
   for (let i = 0; i < 10000; i++) rt.lpush(xs, i);
-  assert.throws(() => rt.lpush(xs, 1), (e) => e.code === "R403");
+  assert.throws(() => rt.lpush(xs, 1, [3, 4], 9), (e) => e.code === "R403" && e.line === 3 && e.col === 4 && e.i === 9);
   const ys = [3, NaN, 1, 2];
   assert.equal(rt.lsum(ys), 6);
   assert.equal(rt.lmax(ys), 3);

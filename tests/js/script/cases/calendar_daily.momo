@@ -1,0 +1,6 @@
+#momo 1
+indicator("T", overlay=true)
+signal("intraday", timeframe.is_intraday)
+signal("daily", timeframe.is_daily)
+signal("regular", session.regular)
+plot(dayofweek, "dow")

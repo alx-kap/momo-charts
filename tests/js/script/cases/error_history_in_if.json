@@ -1,0 +1,7 @@
+{
+ "about": "History of an expression inside an if is E205.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E205", "line": 4, "col": 10}]
+ }
+}

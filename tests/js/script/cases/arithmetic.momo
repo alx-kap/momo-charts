@@ -1,0 +1,10 @@
+#momo 1
+indicator("T", overlay=true)
+plot(1 + 2 * 3 - 4 / 2, "a")
+plot(2 ** 3 ** 2, "b")
+plot(-2 ** 2, "c")
+plot(7 % 3 + (-7) % 3, "d")
+plot(10 / 4, "e")
+plot(2 ** -1, "f")
+plot(5 - -3, "g")
+plot(1e3 + 1_000, "h")

@@ -1,0 +1,12 @@
+#momo 1
+indicator("T", overlay=true)
+plot(hour, "h")
+plot(minute, "m")
+plot(dayofweek, "dow")
+plot(day, "d")
+plot(month, "mo")
+plot(year, "y")
+signal("new_day", session.new_day)
+signal("regular", session.regular)
+signal("intraday", timeframe.is_intraday)
+stat("Symbol", ticker)

@@ -1,0 +1,11 @@
+#momo 1
+indicator("T", overlay=true)
+xs = [5, 6, 7]
+a = xs.pop()
+xs.remove(0)
+b = len(xs)
+xs.clear()
+plot(a, "a")
+plot(b, "b")
+plot(len(xs), "c")
+plot(xs.pop(), "empty")

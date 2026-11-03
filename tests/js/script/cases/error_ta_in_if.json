@@ -1,0 +1,7 @@
+{
+ "about": "ta inside an if is E204.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E204", "line": 4, "col": 9}]
+ }
+}

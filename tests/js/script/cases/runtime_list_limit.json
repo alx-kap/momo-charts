@@ -1,0 +1,11 @@
+{
+ "about": "A list past 10,000 items stops the run with R403.",
+ "bars": "ramp",
+ "expect": {
+  "runError": {
+   "code": "R403",
+   "line": 5,
+   "col": 5
+  }
+ }
+}

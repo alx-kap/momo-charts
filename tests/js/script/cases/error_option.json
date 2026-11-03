@@ -1,0 +1,7 @@
+{
+ "about": "A value that isn't one of the options is E305.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E305", "line": 3, "col": 19}]
+ }
+}

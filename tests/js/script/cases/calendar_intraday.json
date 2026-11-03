@@ -1,0 +1,26 @@
+{
+ "about": "Calendar values, session flags and chart flags (New York wall-clock bar times; 5m chart).",
+ "bars": "intraday",
+ "extra": {
+  "chart": {
+   "interval": "5m",
+   "ticker": "NVDA"
+  }
+ },
+ "expect": {
+  "plotsAt": {
+   "h": {"0": 9, "1": 9, "77": 15, "78": 9},
+   "m": {"0": 30, "1": 35, "77": 55, "78": 30},
+   "dow": {"0": 1, "77": 1, "78": 2, "311": 4},
+   "d": {"0": 4, "78": 5, "311": 7},
+   "mo": {"0": 3},
+   "y": {"0": 2024}
+  },
+  "signalsAt": {
+   "new_day": {"0": 1, "1": 0, "77": 0, "78": 1, "156": 1},
+   "regular": {"0": 1, "77": 1},
+   "intraday": {"0": 1, "311": 1}
+  },
+  "stats": [{"title": "Symbol", "value": "NVDA"}]
+ }
+}

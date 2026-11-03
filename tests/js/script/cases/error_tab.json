@@ -1,0 +1,7 @@
+{
+ "about": "A tab in the indent is E101.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E101", "line": 4, "col": 1}]
+ }
+}

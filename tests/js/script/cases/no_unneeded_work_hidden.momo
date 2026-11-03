@@ -1,0 +1,4 @@
+#momo 1
+indicator("T", overlay=true)
+x = (high - low) * 2
+plot(x[1] + x[2], "sum")

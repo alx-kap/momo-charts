@@ -1,0 +1,5 @@
+#momo 1
+indicator("T", overlay=true)
+plot(ta.highest(high, 3)[1], "prior_high")
+tight = high - low < 1.2
+signal("tight_twice", tight and tight[1])

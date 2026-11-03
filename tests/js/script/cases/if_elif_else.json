@@ -1,0 +1,9 @@
+{
+ "about": "if / elif / else.",
+ "bars": "ramp",
+ "expect": {
+  "plots": {
+   "r": [1, 2, 1, 2, 2, 3, 3, 3]
+  }
+ }
+}

@@ -1,0 +1,6 @@
+#momo 1
+indicator("T", overlay=true)
+plot(close, "Close", color=color.green if close > open else color.red)
+plot(open, "Fixed", color="#112233")
+barcolor(color.yellow if close > open else na)
+bgcolor(color.blue.alpha(10) if close < open else na)

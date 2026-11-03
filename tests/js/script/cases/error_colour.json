@@ -1,0 +1,7 @@
+{
+ "about": "Text that isn't a colour is E307.",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E307", "line": 3, "col": 19}]
+ }
+}

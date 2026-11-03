@@ -1,0 +1,8 @@
+#momo 1
+indicator("T", overlay=true)
+count = nz(count[1]) + 1
+flag = na
+if close > 3:
+    flag = 1
+plot(count, "count")
+plot(flag, "flag")

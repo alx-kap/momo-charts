@@ -1,0 +1,20 @@
+{
+ "about": "The page's input values replace the defaults.",
+ "bars": "ramp",
+ "inputs": {
+  "length": 2,
+  "src": "hl2",
+  "mult": 1.5,
+  "mode": "b",
+  "tint": "#00ff00"
+ },
+ "expect": {
+  "plots": {
+   "v": [null, 2.625, 3.5625, 4.875, 6.0, 7.5, 9.9375, 11.0625],
+   "mode": [1, 1, 1, 1, 1, 1, 1, 1]
+  },
+  "plotColors": {
+   "v": [16711935, 16711935, 16711935, 16711935, 16711935, 16711935, 16711935, 16711935]
+  }
+ }
+}

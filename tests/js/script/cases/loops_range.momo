@@ -1,0 +1,18 @@
+#momo 1
+indicator("T", overlay=true)
+total = 0
+for i in range(5):
+    total += i
+down = 0
+for j in range(10, 0, -3):
+    down += j
+none = 0
+for k in range(3, 3):
+    none += 1
+s = 0
+for i in range(bar_index + 1):
+    s += i
+plot(total, "total")
+plot(down, "down")
+plot(none, "none")
+plot(s, "tri")

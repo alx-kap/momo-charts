@@ -1,0 +1,11 @@
+{
+ "about": "A loop past 1,000,000 steps stops the run with R402 and the loop's position.",
+ "bars": "ramp",
+ "expect": {
+  "runError": {
+   "code": "R402",
+   "line": 4,
+   "col": 1
+  }
+ }
+}

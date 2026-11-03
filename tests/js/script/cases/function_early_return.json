@@ -1,0 +1,10 @@
+{
+ "about": "return inside an if leaves the function; the default argument fills in.",
+ "bars": "ramp",
+ "expect": {
+  "plots": {
+   "s": [1, 1, -1, 0, -1, 0, 1, -1],
+   "z": [1, 1, -1, 9, -1, 9, 1, -1]
+  }
+ }
+}

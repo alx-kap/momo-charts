@@ -1,0 +1,5 @@
+#momo 1
+indicator("T", overlay=true)
+def f(a):
+    return f(a)
+x = f(1)

@@ -1,0 +1,7 @@
+{
+ "about": "A script must start with indicator(...).",
+ "bars": "ramp",
+ "expect": {
+  "errors": [{"code": "E210", "line": 2, "col": 1}]
+ }
+}

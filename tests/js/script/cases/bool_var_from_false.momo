@@ -1,0 +1,6 @@
+#momo 1
+indicator("T", overlay=true)
+var seen = false
+if close > 5:
+    seen = true
+plot(1 if seen else 0, "seen")

@@ -547,7 +547,7 @@ class Checker {
   }
 
   output(call, entry, ctx, handle) {
-    if (!ctx.top || ctx.cond) {
+    if (entry.name !== "log" && (!ctx.top || ctx.cond)) {
       const where = ctx.fn ? "inside a function" : `inside ${ctx.why || "an if"}`;
       this.report("E207", `${entry.name}() has to be at the top level of the script, not ${where}.`, call,
         "Compute the value you need there, then call it at the top level.", this.span(call));
@@ -1266,7 +1266,7 @@ class Checker {
       return { k: "pure", t: "color", fixed: target.fixed && exprs[0].fixed, entry: { rt: "alpha", js: null, name: "color.alpha" }, args: [target, ...exprs] };
     }
     const t = entry.returns === "void" ? "void" : entry.returns;
-    return { k: "lm", t, fixed: false, name: callee.name, list: target, args: exprs };
+    return { k: "lm", t, fixed: false, name: callee.name, list: target, args: exprs, at: [node.line, node.col] };
   }
 
   // ---- user functions ----------------------------------------------------------------------
