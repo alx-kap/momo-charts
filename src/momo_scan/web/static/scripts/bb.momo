@@ -1,0 +1,11 @@
+#momo 1
+indicator("Bollinger Bands", overlay=true, short="BB")
+
+length = input.int(20, "Length", min=2, max=500)
+mult = input.float(2.0, "StdDev", min=0.1, max=10, step=0.1)
+
+basis, upper, lower = ta.bb(close, length, mult)
+
+plot(basis, "Basis", color="#ff6d00")
+plot(upper, "Upper", color="#2962ff")
+plot(lower, "Lower", color="#2962ff")

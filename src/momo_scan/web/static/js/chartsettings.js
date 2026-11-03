@@ -1,5 +1,6 @@
 import { $, api, escapeHtml, store, toast } from "./util.js";
-import { INDICATORS, TIMEFRAMES, newIndicator } from "./indicators.js";
+import { INDICATORS, LIBRARY, TIMEFRAMES, cleanScriptEntry, defOf, hydrate, knownType, newIndicator, newScriptIndicator } from "./indicators.js";
+import { loadScript } from "./scripts.js";
 import { swatch } from "./colorpicker.js";
 import { liveSetup, marketSetup, onLiveStatus, openSignIn, saveSchwabKeys } from "./live.js";
 import { state } from "./state.js";
@@ -61,7 +62,8 @@ function merge(defaults, saved) {
     out[key] = base && typeof base === "object" && !Array.isArray(base) ? merge(base, value) : value;
   }
   if (Array.isArray(saved.indicators)) {
-    out.indicators = saved.indicators.filter((item) => item && INDICATORS[item.type]).map((item) => {
+    out.indicators = saved.indicators.filter((item) => item && knownType(item)).map((item) => {
+      if (item.type === "script") return cleanScriptEntry(item);
       const fresh = newIndicator(item.type);
       return {
         ...fresh, ...item,
@@ -73,7 +75,7 @@ function merge(defaults, saved) {
           return [k, style];
         })),
       };
-    });
+    }).filter(Boolean);
   }
   out.version = 2;
   return out;
@@ -371,19 +373,38 @@ function timeframeChips(item) {
   return `<div class="cs-tf"><span>Show on</span>${intraday.map(chip).join("")}<i></i>${["D", "W", "M"].map(chip).join("")}</div>`;
 }
 
+// One input's control in an indicator's row. A built-in's inputs are numbers; a script's have
+// kinds (`meta.inputs`): numbers, switches, lists of options and colours. Text from a script is
+// always escaped.
+function inputControl(item, input) {
+  const value = item.params[input.key];
+  const label = escapeHtml(input.label);
+  const at = `data-ind="${item.id}" data-param="${input.key}" data-kind="${input.kind || "int"}"`;
+  const tip = input.tooltip ? ` title="${escapeHtml(input.tooltip)}"` : "";
+  if (input.kind === "bool") return `<label class="cs-in"${tip}>${label}<input type="checkbox" ${at} ${value ? "checked" : ""}></label>`;
+  if (input.kind === "choice" || input.kind === "source") {
+    const options = (input.options || []).map((option) => `<option ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`).join("");
+    return `<label class="cs-in"${tip}>${label}<select ${at}>${options}</select></label>`;
+  }
+  if (input.kind === "color") return `<span class="cs-in"${tip}>${label}${swatch(escapeHtml(value), `${at} title="${label}"`)}</span>`;
+  const bound = (name, v) => (v == null ? "" : ` ${name}="${v}"`);
+  return `<label class="cs-in"${tip}>${label}<input type="number" ${at} value="${escapeHtml(value)}"` +
+    `${bound("min", input.min)}${bound("max", input.max)} step="${input.step || 1}"></label>`;
+}
+
 function indicatorsTab() {
   const active = chartSettings.indicators.filter((item) =>
-    !INDICATORS[item.type].chartOnly || state.mode === "chart").map((item) => {
-    const def = INDICATORS[item.type];
-    const inputs = def.inputs.map((input) =>
-      `<label class="cs-in">${input.label}<input type="number" data-ind="${item.id}" data-param="${input.key}" ` +
-      `value="${item.params[input.key]}" min="${input.min}" max="${input.max}" step="${input.step || 1}"></label>`).join("");
-    const plots = def.plots.map((plot) =>
-      swatch(escapeHtml(item.style[plot.key].color), `data-ind="${item.id}" data-plot="${plot.key}" title="${plot.label}"`) +
+    !defOf(item).chartOnly || state.mode === "chart").map((item) => {
+    const def = defOf(item);
+    if (def.script && def.ready) hydrate(item, def);
+    const inputs = def.inputs.map((input) => inputControl(item, input)).join("");
+    const plots = def.plots.filter((plot) => !plot.colorSeries).map((plot) =>
+      swatch(escapeHtml(item.style[plot.key].color), `data-ind="${item.id}" data-plot="${plot.key}" title="${escapeHtml(plot.label)}"`) +
       (plot.color2 ? swatch(escapeHtml(item.style[plot.key].color2), `data-ind="${item.id}" data-plot="${plot.key}" data-second="1" title="${plot.label} (falling)"`) : "")).join("");
-    const width = def.plots.some((plot) => plot.type !== "histogram")
+    const lined = def.plots.find((plot) => plot.type !== "histogram");
+    const width = lined
       ? `<select data-ind="${item.id}" data-width="1" title="Line width">${[1, 2, 3, 4].map((n) =>
-        `<option value="${n}" ${item.style[def.plots.find((p) => p.type !== "histogram").key].width === n ? "selected" : ""}>${n}px</option>`).join("")}</select>`
+        `<option value="${n}" ${item.style[lined.key].width === n ? "selected" : ""}>${n}px</option>`).join("")}</select>`
       : "";
     return `<div class="cs-ind ${item.visible ? "" : "off"} ${item.id === focusId ? "focus" : ""}" data-id="${item.id}">` +
       `<button class="cs-eye" data-toggle="${item.id}" title="${item.visible ? "Hide" : "Show"}">${item.visible ? "◉" : "○"}</button>` +
@@ -392,10 +413,13 @@ function indicatorsTab() {
       `<button class="cs-x" data-remove="${item.id}" title="Remove">×</button>` +
       timeframeChips(item) + `</div>`;
   }).join("") || `<div class="cs-note">No indicators. Add one below.</div>`;
+  const button = (attr, def, where) =>
+    `<button ${attr}><b>${escapeHtml(def.name)}</b><em>${where === "price" ? "on price" : "own pane"}</em></button>`;
   const add = Object.entries(INDICATORS).filter(([, def]) =>
-    !def.chartOnly || state.mode === "chart").map(([type, def]) =>
-    `<button data-add="${type}"><b>${escapeHtml(def.name)}</b><em>${def.pane === "price" ? "on price" : "own pane"}</em></button>`).join("");
-  return heading("On the chart") + `<div class="cs-list">${active}</div>` + heading("Add an indicator") + `<div class="cs-add">${add}</div>`;
+    !def.chartOnly || state.mode === "chart").map(([type, def]) => button(`data-add="${type}"`, def, def.pane)).join("");
+  const library = LIBRARY.map((item) => button(`data-library="${item.key}"`, item, item.pane)).join("");
+  return heading("On the chart") + `<div class="cs-list">${active}</div>` + heading("Add an indicator") + `<div class="cs-add">${add}</div>` +
+    heading("Library") + `<div class="cs-add">${library}</div>`;
 }
 
 // Search every settings section at once (not the indicator list), keeping the rows that match.
@@ -524,8 +548,12 @@ function onInput(event) {
     const item = findIndicator(el.dataset.ind);
     if (!item) return;
     if (el.dataset.param) {
+      const kind = el.dataset.kind;
+      if (kind === "bool") return changeSettings(() => { item.params[el.dataset.param] = el.checked; }, "series");
+      if (kind === "choice" || kind === "source") return changeSettings(() => { item.params[el.dataset.param] = el.value; }, "series");
+      if (kind === "color") return changeSettings(() => { item.params[el.dataset.param] = el.value; }, "series", quiet);
       const value = Number(el.value);
-      if (!Number.isFinite(value) || value <= 0 || (live && el.value === "")) return;
+      if (!Number.isFinite(value) || (item.type !== "script" && value <= 0) || (live && el.value === "")) return;
       changeSettings(() => { item.params[el.dataset.param] = value; }, "series");
     } else if (el.dataset.plot) {
       changeSettings(() => { item.style[el.dataset.plot][el.dataset.second ? "color2" : "color"] = el.value; }, "series", quiet);
@@ -594,6 +622,9 @@ export function bindChartSettings() {
         item.hiddenOn = TIMEFRAMES.filter((each) => off.has(each));
       }, "series");
     }
+    else if (button.dataset.library) {
+      addLibrary(button.dataset.library).then((item) => { focusId = item.id; renderDialog(); });
+    }
     else if (button.dataset.add) {
       const item = newIndicator(button.dataset.add);
       focusId = item.id;
@@ -627,6 +658,17 @@ export function addIndicator(type) {
   const item = newIndicator(type);
   changeSettings((s) => s.indicators.push(item), "series");
   toast(`Added ${INDICATORS[type].name}`);
+}
+
+// A library script: fetched and compiled first, so the entry starts with the script's own
+// defaults. Returns the new entry.
+export async function addLibrary(key) {
+  const ref = { library: key };
+  await loadScript({ type: "script", ...ref });
+  const item = newScriptIndicator(ref, defOf({ type: "script", ...ref }));
+  changeSettings((s) => s.indicators.push(item), "series");
+  toast(`Added ${defOf(item).name}`);
+  return item;
 }
 
 export function removeIndicator(id) {

@@ -222,6 +222,7 @@ body.split .chart-pane.active-pane::after {
 .lg-row .label { display: inline-block; min-width: 62px; }
 .lg-row .v { font-variant-numeric: tabular-nums; }
 .lg-row.off { opacity: .45; }
+.lg-row .lg-err { color: #ef5350; max-width: 70ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lg-tools { display: inline-flex; gap: 2px; visibility: hidden; }
 .lg-row:hover { background: rgba(127, 127, 127, .14); }
 .lg-row:hover .lg-tools { visibility: visible; }

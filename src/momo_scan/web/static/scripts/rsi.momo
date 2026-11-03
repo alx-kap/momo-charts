@@ -1,0 +1,8 @@
+#momo 1
+indicator("Relative Strength Index", overlay=false, short="RSI")
+
+length = input.int(14, "Length", min=2, max=500)
+
+plot(ta.rsi(close, length), "RSI", color="#7e57c2")
+hline(70, "Upper", color="#787b86")
+hline(30, "Lower", color="#787b86")

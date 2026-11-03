@@ -1,0 +1,6 @@
+#momo 1
+indicator("Average True Range", overlay=false, short="ATR")
+
+length = input.int(14, "Length", min=1, max=500)
+
+plot(ta.atr(length), "ATR", color="#ff5252")
