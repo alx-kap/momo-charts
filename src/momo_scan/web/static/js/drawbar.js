@@ -77,7 +77,7 @@ function position() {
   const maxX = Math.max(0, area.clientWidth - el.offsetWidth - 4);
   const maxY = Math.max(0, area.clientHeight - el.offsetHeight - 4);
   const x = place?.x ?? (area.clientWidth - el.offsetWidth) / 2;
-  const earnings = document.body.classList.contains("mode-chart") && document.querySelector(".earnings-axis:not([hidden])");
+  const earnings = (document.body.classList.contains("mode-chart") || document.body.classList.contains("mode-review")) && document.querySelector(".earnings-axis:not([hidden])");
   const y = place?.y ?? area.clientHeight - el.offsetHeight - (earnings ? 60 : 40);
   el.style.left = `${Math.round(Math.min(Math.max(4, x), maxX))}px`;
   el.style.top = `${Math.round(Math.min(Math.max(4, y), maxY))}px`;

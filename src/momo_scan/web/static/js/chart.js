@@ -122,7 +122,7 @@ function createPane(root, { side, owner, settings, info = true }) {
   let unsubscribe = null; // from the live series on screen
   const earnings = createEarnings(root, chart, () => ({
     ...chartContext(),
-    allowed: state.mode === "chart" && !view.anonymous && (!view.replayFrom || view.replay),
+    allowed: (state.mode === "chart" || state.mode === "review") && !view.anonymous && (!view.replayFrom || view.replay),
     enabled: ["D", "W", "M"].includes(timeframeOf(currentRequest.interval)), // not intraday
   }));
 
@@ -1219,7 +1219,7 @@ function createPane(root, { side, owner, settings, info = true }) {
     // Bars paint first. A slow fundamentals read must never delay switching charts.
     const nextAsOf = !through && !options.replayFrom ? todayET() : asof;
     if (replay) refreshReplay(data.symbol, asof, 0);
-    else earnings.load(data.symbol, asof, state.mode === "chart" && !view.anonymous && !options.replayFrom, nextAsOf).then(() => {
+    else earnings.load(data.symbol, asof, (state.mode === "chart" || state.mode === "review") && !view.anonymous && !options.replayFrom, nextAsOf).then(() => {
       if (token !== loadToken) return;
       earnings.render();
       renderLegend(null);

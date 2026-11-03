@@ -800,7 +800,7 @@ function paintDetails() {
   const scan = box.id === "details" && latestDeck && latestDeck.get(ticker(symbol));
   const known = (name) => name && name !== "Unknown";
   const place = [data.sector, data.industry].filter(known);
-  const fundamentals = state.mode === "chart" && box.id === "details" &&
+  const fundamentals = (state.mode === "chart" ? box.id === "details" : state.mode === "review" && box.id === "rv-details") &&
     detailsFundamentals && ticker(detailsFundamentals.symbol) === ticker(symbol)
     ? fundamentalsTable(detailsFundamentals.data, detailsFundamentals.error) : "";
   box.innerHTML =

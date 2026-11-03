@@ -84,7 +84,7 @@ function slideIntervalHighlight() {
 new ResizeObserver(slideIntervalHighlight).observe(document.querySelector(".iv-quick"));
 
 function renderModes(mode) {
-  if (mode !== "chart") {
+  if (mode !== "chart" && mode !== "review") {
     for (const side of ["left", "right"]) chartPane(side)?.clearEarnings();
     setDetailsFundamentals(null);
   }
@@ -185,7 +185,7 @@ onChartLoad(({ pane, symbol, anonymous }) => {
 });
 
 function updateFundamentals({ pane, anonymous }) {
-  if (state.mode === "chart" && !anonymous && pane === activePane()) {
+  if ((state.mode === "chart" || state.mode === "review") && !anonymous && pane === activePane()) {
     setDetailsFundamentals(pane.fundamentals());
   }
 }

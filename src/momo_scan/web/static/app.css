@@ -1203,7 +1203,7 @@ button.mini.active { border-color: rgba(61, 116, 255, .55); color: var(--text-hi
 .earnings-pair em { font-style: normal; font-size: 10px; margin-left: 5px; }
 .earnings-tip .up { color: var(--like); }
 .earnings-tip .down { color: var(--pass); }
-body:not(.mode-chart) .earnings-axis, body:not(.mode-chart) .earnings-tip, body:not(.mode-chart) .earnings-pill, body:not(.mode-chart) .dt-fund, body:not(.mode-chart) .dt-fund-empty { display: none; }
+body:not(.mode-chart):not(.mode-review) .earnings-axis, body:not(.mode-chart):not(.mode-review) .earnings-tip, body:not(.mode-chart):not(.mode-review) .earnings-pill, body:not(.mode-chart):not(.mode-review) .dt-fund, body:not(.mode-chart):not(.mode-review) .dt-fund-empty { display: none; }
 body:not(.mode-chart) .lg-row.chart-only { display: none; }
 
 /* ---------- Scan review hub ---------- */
