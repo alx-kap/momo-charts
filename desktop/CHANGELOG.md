@@ -8,6 +8,9 @@ version; this file is for the app around it.
 
 ## Unreleased
 
+### What's new
+- The tab menu, its switches and the setup pages share momo's new corner radii, shadows and type sizes, so the app and the charts read as one.
+
 ## 0.1.4 · 2026-11-02
 
 ### What's new

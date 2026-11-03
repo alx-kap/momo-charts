@@ -11,7 +11,7 @@ p { margin: 0 0 18px; color: var(--muted); }
 
 input {
   width: 100%; box-sizing: border-box; height: 34px; padding: 0 11px;
-  border: 1px solid var(--line-strong); border-radius: 7px; background: var(--bg);
+  border: 1px solid var(--line-strong); border-radius: 6px; background: var(--bg);
   color: var(--text); font: inherit; outline: none; transition: border-color var(--fast);
 }
 input::placeholder { color: var(--faint); }
@@ -19,7 +19,7 @@ input:focus { border-color: var(--accent); }
 
 .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .row button {
-  height: 30px; padding: 0 14px; border-radius: 7px; border: 1px solid transparent;
+  height: 30px; padding: 0 14px; border-radius: 6px; border: 1px solid transparent;
   font-weight: 500; transition: background var(--fast), border-color var(--fast), opacity var(--fast);
 }
 .row .primary { background: var(--accent); color: #fff; }
