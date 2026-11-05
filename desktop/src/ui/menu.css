@@ -3,8 +3,9 @@
 html, body { background: transparent; }
 #panel {
   position: absolute; width: 268px; box-sizing: border-box; padding: 6px;
-  background: #0e1015;
-  border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
+  background: #14161c; /* Solid: this view can't blur the page. The colour of momo's menu glass. */
+  border: 1px solid rgba(255, 255, 255, .11); border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .07);
   font-size: 13px; animation: drop 0.12s cubic-bezier(.2, .7, .3, 1);
 }
 #panel.link { width: 256px; padding-bottom: 4px; }
@@ -31,7 +32,7 @@ html, body { background: transparent; }
   position: relative; transition: transform var(--fast), box-shadow var(--fast);
 }
 .swatch:hover { transform: scale(1.12); }
-.swatch.active { box-shadow: 0 0 0 2px #0e1015, 0 0 0 3.5px var(--swatch); }
+.swatch.active { box-shadow: 0 0 0 2px #14161c, 0 0 0 3.5px var(--swatch); }
 .swatch.active::after {
   content: ""; position: absolute; left: 7px; top: 5px; width: 4px; height: 8px;
   border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);

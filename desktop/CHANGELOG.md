@@ -6,6 +6,11 @@ section to its version, and the section becomes the release's notes on GitHub.
 Changes to momo itself (charts, lists, keys) reach the app from its server without a new
 version; this file is for the app around it.
 
+## Unreleased
+
+### Changed
+- The tab menu and link panel match momo's new glass menus.
+
 ## 0.1.6 · 2026-11-03
 
 ### Fixed

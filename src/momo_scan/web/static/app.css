@@ -2222,16 +2222,14 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 /* ---------- one look for floating things ----------
    Dialogs (centred, dimmed backdrop), menus (anchored to a control) and the keyboard cursor in
    searchable lists each share one surface, radius, shadow and row style. */
-.rc-card {
-  background: var(--pop); backdrop-filter: none; -webkit-backdrop-filter: none;
-  border: 1px solid var(--line-strong); border-radius: var(--r-xl); box-shadow: var(--shadow-dialog);
-}
 /* Glass: a dark tint, blur with the colour turned up, a hairline and a soft top edge. A surface
    picks its opacity with --glass-tint: dialogs sit over a dim, menus are small, and anything
    read closely stays denser. Inside, the greys lift and fills turn translucent. */
 .palette-card, .ss-card, .wlp, .help-card, .dlg, .cs-card, #interval-box, #sign-in-box,
 #iv-menu, .pick-menu, #layout-menu, #link-menu, #settings, #px-menu, .ctx-menu, #color-picker,
-#themes, #screener:not(.docked), #industry {
+#themes, #screener:not(.docked), #industry, #sc-presets, #sc-colmenu, #in-colmenu,
+#draw-bar, #draw-toolbar, .example-replay, #toast, .alert-card, .earnings-tip, .cot-tip, #wl-tray,
+.draw-position {
   --glass-tint: var(--glass-menu);
   --muted: #9aa1b0; --faint: #7a8190; --line: rgba(255, 255, 255, .08); --line-strong: rgba(255, 255, 255, .14);
   --raised: var(--glass-fill); --tile: var(--glass-fill); --tile-line: rgba(255, 255, 255, .08);
@@ -2248,16 +2246,24 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 }
 /* Rows scroll under table headers. Blur doesn't work on table cells, so headers are nearly solid. */
 .th-table thead th, #screener:not(.docked) .sc-colhead, #industry .sc-colhead { background: var(--glass-head); }
-.draw-position, #color-picker {
-  --glass-tint: var(--glass-dense); border-radius: var(--r-lg);
+/* Dense: small type, chart-side bars, and popups inside other glass (which can only blur that glass). */
+.draw-position, #color-picker, #sc-presets, #sc-colmenu, #in-colmenu, #draw-bar, #draw-toolbar,
+.example-replay, #toast, .alert-card, .earnings-tip, .cot-tip, #wl-tray {
+  --glass-tint: var(--glass-dense);
   backdrop-filter: var(--glass-blur-dense); -webkit-backdrop-filter: var(--glass-blur-dense);
 }
+.draw-position { border-radius: var(--r-lg); box-shadow: var(--shadow-menu), var(--glass-edge); }
+#draw-bar, #draw-toolbar, .example-replay, #toast, .alert-card, .cot-tip { border-radius: var(--r-md); }
+.alert-card { border-left: 3px solid var(--alert, var(--alert-c)); }
+#wl-tray { border-style: dashed; box-shadow: none; }
+/* The tooltip follows the mouse: no blur, and nearly solid so it reads over anything. */
+#tooltip { background: var(--glass-head); border-color: var(--glass-line); box-shadow: var(--shadow-menu), var(--glass-edge); }
 .alert-editor { border-radius: var(--r-lg); box-shadow: var(--shadow-menu), var(--glass-edge); }
 .cs-side, .mk-side { background: rgba(0, 0, 0, .18); }
 #cs-tabs button.active, #cs-tabs-general button.active, .iv-row button:hover, .mk-side button.active,
 .mk-per button.on, .cot-legend button.active { background: rgba(255, 255, 255, .1); }
 .cp-rule { background: rgba(255, 255, 255, .12); }
-.dlg option, .cs-card option { background: var(--pop); }
+.dlg option, .cs-card option, #draw-toolbar option, .example-replay option { background: var(--pop); }
 #palette, #symsearch, .wlp-back, #help { background: rgba(0, 0, 0, .2); }
 .dlg-back { background: rgba(0, 0, 0, .3); }
 .dlg-back:has(.dlg-ok.danger) { background: rgba(0, 0, 0, .55); }
