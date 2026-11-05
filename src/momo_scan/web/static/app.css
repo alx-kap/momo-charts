@@ -25,6 +25,7 @@
   /* Glass: solid until the block after this one turns it on. */
   --glass-dialog: var(--pop); --glass-window: var(--pop); --glass-menu: var(--pop); --glass-dense: var(--pop);
   --glass-blur: none; --glass-blur-dense: none;
+  --glass-head: var(--pop);
   --glass-line: rgba(255, 255, 255, .11);
   --glass-fill: rgba(255, 255, 255, .06);
   --glass-edge: inset 0 1px 0 rgba(255, 255, 255, .07);
@@ -36,12 +37,14 @@
     --glass-dialog: rgba(20, 22, 28, .68); --glass-window: rgba(20, 22, 28, .78);
     --glass-menu: rgba(22, 24, 31, .74); --glass-dense: rgba(18, 20, 26, .86);
     --glass-blur: blur(28px) saturate(1.6); --glass-blur-dense: blur(16px) saturate(1.4);
+    --glass-head: rgba(18, 20, 26, .96);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
   :root {
     --glass-dialog: var(--pop); --glass-window: var(--pop); --glass-menu: var(--pop); --glass-dense: var(--pop);
     --glass-blur: none; --glass-blur-dense: none;
+    --glass-head: var(--pop);
   }
 }
 
@@ -2227,7 +2230,8 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
    picks its opacity with --glass-tint: dialogs sit over a dim, menus are small, and anything
    read closely stays denser. Inside, the greys lift and fills turn translucent. */
 .palette-card, .ss-card, .wlp, .help-card, .dlg, .cs-card, #interval-box, #sign-in-box,
-#iv-menu, .pick-menu, #layout-menu, #link-menu, #settings, #px-menu, .ctx-menu, #color-picker {
+#iv-menu, .pick-menu, #layout-menu, #link-menu, #settings, #px-menu, .ctx-menu, #color-picker,
+#themes, #screener:not(.docked), #industry {
   --glass-tint: var(--glass-menu);
   --muted: #9aa1b0; --faint: #7a8190; --line: rgba(255, 255, 255, .08); --line-strong: rgba(255, 255, 255, .14);
   --raised: var(--glass-fill); --tile: var(--glass-fill); --tile-line: rgba(255, 255, 255, .08);
@@ -2239,13 +2243,19 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 .palette-card, .ss-card, .wlp, .dlg, .cs-card, #interval-box, #sign-in-box,
 .help-card { --glass-tint: var(--glass-dialog); border-radius: var(--r-xl); box-shadow: var(--shadow-dialog), var(--glass-edge); }
 .help-card, .alert-editor { --glass-tint: var(--glass-window); }
+#themes, #screener:not(.docked), #industry {
+  --glass-tint: var(--glass-window); border-radius: var(--r-xl); box-shadow: var(--shadow-dialog), var(--glass-edge);
+}
+/* Rows scroll under table headers. Blur doesn't work on table cells, so headers are nearly solid. */
+.th-table thead th, #screener:not(.docked) .sc-colhead, #industry .sc-colhead { background: var(--glass-head); }
 .draw-position, #color-picker {
   --glass-tint: var(--glass-dense); border-radius: var(--r-lg);
   backdrop-filter: var(--glass-blur-dense); -webkit-backdrop-filter: var(--glass-blur-dense);
 }
 .alert-editor { border-radius: var(--r-lg); box-shadow: var(--shadow-menu), var(--glass-edge); }
-.cs-side { background: rgba(0, 0, 0, .18); }
-#cs-tabs button.active, #cs-tabs-general button.active, .iv-row button:hover { background: rgba(255, 255, 255, .1); }
+.cs-side, .mk-side { background: rgba(0, 0, 0, .18); }
+#cs-tabs button.active, #cs-tabs-general button.active, .iv-row button:hover, .mk-side button.active,
+.mk-per button.on, .cot-legend button.active { background: rgba(255, 255, 255, .1); }
 .cp-rule { background: rgba(255, 255, 255, .12); }
 .dlg option, .cs-card option { background: var(--pop); }
 #palette, #symsearch, .wlp-back, #help { background: rgba(0, 0, 0, .2); }
