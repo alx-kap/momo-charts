@@ -1,9 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-var bars_up = 0
-bars_up += 1 if close > open else 0
-var hi = na
-if na(hi) or close > hi:
-    hi = close
-plot(bars_up, "up")
-plot(hi, "hi")

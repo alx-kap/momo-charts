@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-y = x + 1
-x = 2

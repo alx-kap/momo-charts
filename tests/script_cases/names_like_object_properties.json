@@ -1,5 +1,0 @@
-{
-  "about": "constructor, toString and valueOf are ordinary names; they are not inherited from JavaScript's Object.",
-  "bars": "ramp",
-  "expect": { "plots": { "h": [7, 7, 7, 7, 7, 7, 7, 7], "n": [1, 1, 1, 1, 1, 1, 1, 1] } }
-}

@@ -1,7 +1,0 @@
-{
- "about": "A name that is documented but not built yet is E217.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E217", "line": 3, "col": 5}]
- }
-}

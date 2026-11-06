@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-x = "a"
-x = 1

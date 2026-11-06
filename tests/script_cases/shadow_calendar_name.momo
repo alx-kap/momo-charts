@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-day = close * 2
-plot(day, "d")

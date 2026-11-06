@@ -1,7 +1,0 @@
-{
- "about": "A name read before it is set is E203.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E203", "line": 3, "col": 5}]
- }
-}

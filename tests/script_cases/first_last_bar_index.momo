@@ -1,6 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-plot(bar_index, "i")
-plot(bar_index[2], "i2")
-signal("first", first_bar)
-signal("last", last_bar)

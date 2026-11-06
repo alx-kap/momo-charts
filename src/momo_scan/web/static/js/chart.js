@@ -2,8 +2,7 @@ import { $, api, escapeHtml, fmtBig, fmtPct, fmtPrice, narrow, store, ticker } f
 import { state, throughDate } from "./state.js";
 import { bindReorder } from "./reorder.js";
 import { chartProfile, openChartSettings, removeIndicator, toggleIndicator, useChartProfile } from "./chartsettings.js";
-import { defOf, ema, shownOn, sma, timeframeOf } from "./indicators.js";
-import { runScript } from "./scripts.js";
+import { INDICATORS, ema, shownOn, sma, timeframeOf } from "./indicators.js";
 import { formatColor, parseColor } from "./colorpicker.js";
 import { CHART_BARS, DECK_BARS, fetchBars, inRegular, isIntraday, prefetchNeighbors, series, showLive } from "./feed.js";
 import { extendedQuote, marketSession, onLiveQuotes, onSessionChange, watchBuzz } from "./live.js";
@@ -336,79 +335,10 @@ function createPane(root, { side, owner, settings, info = true }) {
   const volumeBar = (b) => ({ time: b.time, value: vol(b), color: b.close >= b.open ? S.volume.up : S.volume.down });
   const candle = ({ time, open, high, low, close }) => ({ time, open, high, low, close });
 
-  // ---------- script indicators ----------
-  // Scripts run in the sandbox, so their results arrive later than a built-in's: they are fetched
-  // before the series are (re)built, the way the benchmark is, and kept here by indicator id as
-  // { ok, series, colors } or { ok: false, error }. Only the bars shown are ever given to a script.
-
-  const GUIDE_STYLES = { solid: LC.LineStyle.Solid, dashed: LC.LineStyle.Dashed, dotted: LC.LineStyle.Dotted };
-  const GHOST_COLOR = "#c8ccd6";
-  const SCRIPT_TICK_MS = 250; // live ticks re-run a script at most 4 times a second
-  let scriptRuns = new Map();
-  let ghosts = [];        // an old version of a script, dashed over the chart while History is open
-  let scriptSeq = 0;      // bumped when the series are rebuilt or reloaded: runs started before are stale
-  let refreshSeq = 0;     // the newest refresh (replay step, live tick); older answers are dropped
-  let needFull = false;   // a bar was added or replayed: redraw whole series, not only the newest point
-  let errorSig = "";
-  let liveTimer = 0;
-  let liveAt = 0;
-
-  // A script plot's style is filled in from its definition the first time it's needed.
-  const styleOf = ({ ind, plot }) => ind.style[plot.key] || (ind.style[plot.key] = { color: plot.color, width: plot.width || 1 });
-  const scriptInds = () => [...S.indicators, ...ghosts].filter((ind) => ind.type === "script" && drawn(ind));
-  function scriptError(ind) {
-    if (ind.type !== "script") return null;
-    const def = defOf(ind);
-    if (def.error) return def.error;
-    const run = scriptRuns.get(ind.id);
-    return run && !run.ok ? run.error : null;
-  }
-  const errorKey = () => [...scriptRuns].filter(([, run]) => !run.ok).map(([id, run]) => id + run.error.code).join();
-
-  async function runScripts(bars) {
-    const chartInfoForScripts = { interval: currentRequest.interval, ticker: view.anonymous ? "" : chartInfo.ticker || "" };
-    const ran = await Promise.all(scriptInds().map(async (ind) => [ind.id, await runScript(ind, bars, chartInfoForScripts)]));
-    return new Map(ran);
-  }
-
-  // Run the scripts again over the bars shown and redraw them: a replay step, a live bar, a
-  // reveal. Answers that arrive after a newer request are dropped.
-  async function refreshScripts({ last = false } = {}) {
-    if (!scriptInds().length) return;
-    if (!last) needFull = true;
-    const token = loadToken;
-    const seq = scriptSeq;
-    const mine = ++refreshSeq;
-    const ran = await runScripts(currentBars);
-    if (token !== loadToken || seq !== scriptSeq || mine !== refreshSeq) return;
-    scriptRuns = ran;
-    computeSeries();
-    if (needFull) fillSeries();
-    else for (const item of plots) if (item.def.script) item.series.update(point(item, currentBars.length - 1));
-    needFull = false;
-    if (errorKey() !== errorSig) { errorSig = errorKey(); buildLegend(); }
-    renderLegend(null);
-  }
-
-  // Live ticks: run at once if the last run was long enough ago, otherwise once the wait is over.
-  function liveScripts(added) {
-    if (added) needFull = true;
-    if (liveTimer || !scriptInds().length) return;
-    liveTimer = setTimeout(() => {
-      liveTimer = 0;
-      liveAt = performance.now();
-      refreshScripts({ last: true });
-    }, Math.max(0, liveAt + SCRIPT_TICK_MS - performance.now()));
-  }
-
   function point(item, i) {
     const value = item.values[i];
     const time = fullBars[i].time;
     if (value == null) return { time };
-    if (item.def.script) {
-      const color = item.colors && item.colors[i];
-      return color ? { time, value, color } : { time, value, ...(item.plot.type === "histogram" ? { color: styleOf(item).color } : {}) };
-    }
     if (item.plot.type === "histogram") {
       const style = item.ind.style[item.plot.key];
       return { time, value, color: value >= 0 ? style.color : style.color2 };
@@ -420,13 +350,11 @@ function createPane(root, { side, owner, settings, info = true }) {
   // An indicator is drawn when it's on and not turned off for this timeframe. One turned off
   // for it isn't computed or drawn at all.
   const drawn = (ind, interval = currentRequest.interval) => ind.visible && shownOn(ind, interval) &&
-    (!defOf(ind).chartOnly || (state.mode === "chart" && !view.anonymous));
-  // A script's plots exist once it has compiled, so that counts as a change of what's drawn.
-  const drawnKey = (interval) => S.indicators.filter((ind) => drawn(ind, interval))
-    .map((ind) => ind.id + (defOf(ind).script ? (defOf(ind).ready ? "+" : "-") : "")).join();
+    (!INDICATORS[ind.type].chartOnly || (state.mode === "chart" && !view.anonymous));
+  const drawnKey = (interval) => S.indicators.filter((ind) => drawn(ind, interval)).map((ind) => ind.id).join();
   let builtKey = null; // which indicators the series were built for
   const needsBenchmark = (interval = currentRequest.interval) =>
-    S.indicators.some((item) => drawn(item, interval) && defOf(item).benchmark);
+    S.indicators.some((item) => drawn(item, interval) && INDICATORS[item.type].benchmark);
 
   // Tear down and re-add volume and every indicator, in settings order.
   function rebuildSeries() {
@@ -469,14 +397,14 @@ function createPane(root, { side, owner, settings, info = true }) {
     }
     for (const ind of S.indicators) {
       if (!drawn(ind)) continue;
-      const def = defOf(ind);
+      const def = INDICATORS[ind.type];
       if (def.kind === "events") continue;
       if (def.kind === "levels") { levelSets.push({ ind, def, result: null, series: [] }); continue; }
       const own = def.pane === "own";
       const pane = own ? paneKeys.length : 0;
       const first = plots.length;
       for (const plot of def.plots) {
-        const style = def.script ? styleOf({ ind, plot }) : ind.style[plot.key];
+        const style = ind.style[plot.key];
         const common = {
           priceLineVisible: false, lastValueVisible: own, priceFormat: { type: "price", precision: 2, minMove: 0.01 },
           // Overlays on the price pane (SMAs etc.) don't stretch the scale: the price bars set the margins.
@@ -487,29 +415,15 @@ function createPane(root, { side, owner, settings, info = true }) {
           : chart.addSeries(LC.LineSeries, {
             ...common, color: style.color, lineWidth: style.width, crosshairMarkerVisible: false,
           }, pane);
-        plots.push({ series, ind, def, plot, values: [], colors: null });
+        plots.push({ series, ind, def, plot, values: [] });
       }
-      // Guides: a built-in's `levels`, a script's `hline`s.
-      const guides = [...(own ? def.levels || [] : []).map((price) => ({ price, color: "#787b86", style: "dashed" })), ...(def.hlines || [])];
-      if (plots.length > first) {
-        for (const guide of guides) {
+      if (own) {
+        for (const level of def.levels || []) {
           plots[first].series.createPriceLine({
-            price: guide.price, color: guide.color, lineWidth: 1, lineStyle: GUIDE_STYLES[guide.style] ?? LC.LineStyle.Dashed, axisLabelVisible: false,
+            price: level, color: "#787b86", lineWidth: 1, lineStyle: LC.LineStyle.Dashed, axisLabelVisible: false,
           });
         }
-      }
-      if (own) paneKeys.push(ind.id);
-    }
-    for (const ind of ghosts) {
-      const def = defOf(ind);
-      const pane = def.pane === "own" ? paneKeys.indexOf(ind.ghostOf) : 0;
-      if (pane < 0 || !drawn(ind)) continue;
-      for (const plot of def.plots.filter((each) => each.type !== "histogram")) {
-        const series = chart.addSeries(LC.LineSeries, {
-          color: GHOST_COLOR, lineWidth: 1, lineStyle: LC.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false,
-          crosshairMarkerVisible: false, autoscaleInfoProvider: () => null,
-        }, pane);
-        plots.push({ series, ind, def, plot, values: [], colors: null, ghost: true });
+        paneKeys.push(ind.id);
       }
     }
     chart.panes().forEach((pane, n) => pane.setStretchFactor(n === 0 ? 5 : paneKeys[n] === "volume" ? 1 : 1.3));
@@ -523,12 +437,11 @@ function createPane(root, { side, owner, settings, info = true }) {
 
   function computeSeries() {
     if (!fullBars.length) return;
-    const ctx = { benchmark: benchmark.bars, scripts: scriptRuns };
+    const ctx = { benchmark: benchmark.bars };
     const results = new Map();
     for (const item of plots) {
-      if (!results.has(item.ind.id)) results.set(item.ind.id, item.def.compute(fullBars, item.ind.params, ctx, item.ind));
-      item.values = results.get(item.ind.id)[item.plot.key] || [];
-      item.colors = item.def.script && !item.ghost ? (scriptRuns.get(item.ind.id)?.colors || {})[item.plot.key] || null : null;
+      if (!results.has(item.ind.id)) results.set(item.ind.id, item.def.compute(fullBars, item.ind.params, ctx));
+      item.values = results.get(item.ind.id)[item.plot.key];
     }
     for (const set of levelSets) set.result = set.def.compute(fullBars, set.ind.params, ctx);
     volumeAvg = (S.volume.ema ? ema : sma)(fullBars.map(vol), S.volume.period);
@@ -581,20 +494,13 @@ function createPane(root, { side, owner, settings, info = true }) {
     }
   }
 
-  async function applySettings(what) {
+  settings.on(async (what) => {
     let range;
     if (what === "series") {
-      const token = loadToken;
-      const seq = ++scriptSeq;
       if (needsBenchmark()) {
+        const token = loadToken;
         await loadBenchmark(currentThrough, currentRequest.interval, currentRequest.count);
         if (token !== loadToken) return;
-      }
-      if (scriptInds().length || scriptRuns.size) {
-        const ran = await runScripts(currentBars);
-        if (token !== loadToken || seq !== scriptSeq) return;
-        scriptRuns = ran;
-        errorSig = errorKey();
       }
       range = chart.timeScale().getVisibleLogicalRange();
       rebuildSeries();
@@ -610,20 +516,8 @@ function createPane(root, { side, owner, settings, info = true }) {
     } else if (range) {
       chart.timeScale().setVisibleLogicalRange(range);
     }
-  }
-  settings.on(applySettings);
+  });
   let shownOffset = S.scale.rightOffset;
-
-  // For the script editor: is this script on the chart; run the scripts again without touching
-  // the settings; dash an old version over the entry it belongs to (null clears).
-  const scriptEntry = (id) => S.indicators.find((ind) => ind.type === "script" && ind.script === id && ind.version == null);
-  function setGhost(id, version) {
-    const base = version === null ? null : scriptEntry(id);
-    if (!base && !ghosts.length) return false;
-    ghosts = base ? [{ id: "ghost", ghostOf: base.id, type: "script", script: id, version, visible: true, params: { ...base.params }, style: {} }] : [];
-    applySettings("series");
-    return Boolean(base);
-  }
 
   // ---------- legends ----------
   // The price legend lists the overlays; each own pane (and volume) gets a legend at its top.
@@ -639,14 +533,13 @@ function createPane(root, { side, owner, settings, info = true }) {
   // `mode`: "pane" (an indicator pane's own legend, moved with the pointer) or "stack" (a row of
   // the price legend, dragged to re-order); nothing for a plain row.
   function legendRow(ind, mode = null) {
-    const def = defOf(ind);
+    const def = INDICATORS[ind.type];
     const shown = def.kind === "levels" ? [{ key: def.value, color: ind.style[def.plots[0].key].color }]
-      : def.plots.map((plot) => ({ key: plot.key, color: def.script ? styleOf({ ind, plot }).color : ind.style[plot.key].color }));
-    // A script that failed shows its error in red (set with textContent in buildLegend) instead of values.
-    const values = scriptError(ind) ? `<span class="lg-err" data-err="${ind.id}"></span>` : ind.visible
+      : def.plots.map((plot) => ({ key: plot.key, color: ind.style[plot.key].color }));
+    const values = ind.visible
       ? shown.map((plot) => `<span class="v" data-ind="${ind.id}" data-plot="${plot.key}" style="color:${plot.color}"></span>`).join("")
       : "";
-    return `<div class="lg-row ${ind.visible ? "" : "off"}${def.chartOnly ? " chart-only" : ""}${scriptError(ind) ? " err" : ""}" data-id="${ind.id}"${mode === "stack" ? ' draggable="true"' : ""}>${mode ? GRIP : ""}<span class="label">${escapeHtml(def.label(ind.params))}</span>${values}${tools(ind.id)}</div>`;
+    return `<div class="lg-row ${ind.visible ? "" : "off"}${def.chartOnly ? " chart-only" : ""}" data-id="${ind.id}"${mode === "stack" ? ' draggable="true"' : ""}>${mode ? GRIP : ""}<span class="label">${escapeHtml(def.label(ind.params))}</span>${values}${tools(ind.id)}</div>`;
   }
 
   // TradingView's arrow under the price legend: hide the indicator rows, or show how many there are.
@@ -655,8 +548,8 @@ function createPane(root, { side, owner, settings, info = true }) {
   function buildLegend() {
     // Indicators turned off for this timeframe leave the legend too, as on TradingView.
     const rows = S.indicators.filter((ind) => shownOn(ind, currentRequest.interval) &&
-      (!defOf(ind).chartOnly || (state.mode === "chart" && !view.anonymous)) &&
-      (defOf(ind).pane === "price" || !ind.visible));
+      (!INDICATORS[ind.type].chartOnly || (state.mode === "chart" && !view.anonymous)) &&
+      (INDICATORS[ind.type].pane === "price" || !ind.visible));
     el["legend-ma"].innerHTML = rows.length
       ? `<div class="lg-rows">${rows.map((ind) => legendRow(ind, "stack")).join("")}</div>` +
         `<button class="lg-collapse" data-lg="collapse" title="Hide or show the indicator legend">` +
@@ -669,10 +562,6 @@ function createPane(root, { side, owner, settings, info = true }) {
       const ind = S.indicators.find((item) => item.id === key);
       return `<div class="pane-legend" data-pane="${key}">${legendRow(ind, "pane")}</div>`;
     }).join("");
-    for (const node of root.querySelectorAll("[data-err]")) {
-      const error = scriptError(S.indicators.find((item) => item.id === node.dataset.err));
-      node.textContent = node.title = error ? `${error.code} ${error.message}` : "";
-    }
     renderLegend(null);
   }
 
@@ -1294,16 +1183,6 @@ function createPane(root, { side, owner, settings, info = true }) {
 
     // A replay starts at the scan date and animates later bars in one at a time.
     const initial = fullBars.slice(0, cut + 1);
-    clearTimeout(liveTimer);
-    liveTimer = 0;
-    const seq = ++scriptSeq;
-    if (scriptInds().length) {
-      // Scripts see only the bars shown: a replay or a practice setup never hands them later ones.
-      const ran = await runScripts(initial);
-      if (token !== loadToken || seq !== scriptSeq) return;
-      scriptRuns = ran;
-    } else scriptRuns = new Map();
-    errorSig = errorKey();
     currentBars = initial;
     const asof = replay ? options.replayFrom
       : intraday ? dayOf(initial.at(-1)?.time) : data.last_day || initial.at(-1)?.time;
@@ -1369,7 +1248,6 @@ function createPane(root, { side, owner, settings, info = true }) {
           volume.update(volumeBar(bars[i]));
           volumeAverage.update(volumeAvgPoint(i));
         }
-        refreshScripts();
         renderLegend(null);
         scheduleCallouts();
         if (options.onBar) options.onBar(bars[i], i - cut, bars[i - 1]);
@@ -1462,7 +1340,6 @@ function createPane(root, { side, owner, settings, info = true }) {
     earnings.render();
     // Like a live chart: the new bar keeps your right margin, unless you've scrolled back.
     if (following) setRightOffset(S.scale.rightOffset);
-    refreshScripts();
     renderLegend(null);
     scheduleCallouts();
     refreshReplay(lastShown.symbol, day);
@@ -1524,7 +1401,6 @@ function createPane(root, { side, owner, settings, info = true }) {
     fillSeries();
     if (currentRequest.extended) sessions.update(shade(bar));
     if (range) chart.timeScale().setVisibleLogicalRange({ from: range.from + 1, to: range.to + 1 });
-    refreshScripts();
     renderLegend(null);
     scheduleCallouts();
     updateReplayControls();
@@ -1615,7 +1491,6 @@ function createPane(root, { side, owner, settings, info = true }) {
       if (currentRequest.extended) sessions.setData(fullBars.map(shade));
       renderLegend(null);
       for (const fn of renderHooks) fn(pane);
-      liveScripts(true);
       return;
     }
     if (currentRequest.extended) sessions.update(shade(bar));
@@ -1627,7 +1502,6 @@ function createPane(root, { side, owner, settings, info = true }) {
       volumeAverage.update(volumeAvgPoint(i));
     }
     if (added) drawLevels(fullBars.length);
-    liveScripts(added);
     if (added && state.mode === "chart" && dayOf(bar.time) !== earnings.record()?.asof) {
       const token = loadToken;
       earnings.load(lastShown.symbol, dayOf(bar.time), true, todayET()).then(() => {
@@ -1848,8 +1722,6 @@ function createPane(root, { side, owner, settings, info = true }) {
     side, root, settings, show: showChart, applyLevels, setLastPriceLine, scheduleCallouts, context: chartContext,
     interval: currentInterval, resetView, showRange, visibleDates, visibleTimes, showTimes, pickBar, message: chartMessage, snapshot, copySnapshot,
     replayTo, replayNext, replayDayOf, replayDay: () => (view.replay ? view.replayFrom : null), setAlertLines,
-    scriptOnChart: (id) => Boolean(scriptEntry(id)), scriptsChanged: () => applySettings("series"), setGhost, barsShown: () => currentBars,
-    scriptChartInfo: () => ({ interval: currentRequest.interval, ticker: view.anonymous ? "" : chartInfo.ticker || "" }),
     shown: () => lastShown, setInfo(on) { info = on; el["info-table"].hidden = !on; }, echoCrosshair,
     fundamentals: () => earnings.record(), clearEarnings: () => earnings.clear(),
     // Leaving split view: stop its live symbols and clear it.

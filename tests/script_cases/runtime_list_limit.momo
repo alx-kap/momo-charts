@@ -1,6 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-xs = []
-for i in range(20000):
-    xs.push(i)
-plot(len(xs))

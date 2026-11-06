@@ -1,7 +1,0 @@
-{
- "about": "An unknown name is E201 (with did-you-mean).",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E201", "line": 3, "col": 5}]
- }
-}

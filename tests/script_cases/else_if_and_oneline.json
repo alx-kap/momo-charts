@@ -1,9 +1,0 @@
-{
- "about": "`else if` reads as elif; one-line suites.",
- "bars": "ramp",
- "expect": {
-  "plots": {
-   "r": [1, 2, 1, 2, 2, 3, 3, 3]
-  }
- }
-}

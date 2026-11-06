@@ -1,7 +1,0 @@
-{
- "about": "log() works anywhere, including inside an if.",
- "bars": "ramp",
- "expect": {
-  "logs": [{"i": 2, "text": "close 2 3.0 false na"}]
- }
-}

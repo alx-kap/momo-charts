@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-if close > open:
-    y = (high - low)[1]

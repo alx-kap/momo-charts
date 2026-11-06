@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-plot(ta.sum(close > open, 3), "ups")
-plot((close > open) + (close < open), "moved")

@@ -1,5 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-n = 2
-m = n * 2 - 1
-plot(ta.sma(close, m), "s3")

@@ -1,8 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-a = na
-plot(1 if a == a else 0, "eq")
-plot(1 if a != 1 else 0, "ne")
-plot(1 if a < 1 else 0, "lt")
-plot(1 if not (a < 1) else 0, "not")
-plot(1 if close != 2.5 else 0, "ne2")

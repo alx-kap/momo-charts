@@ -34,7 +34,6 @@ from momo_scan.config import AppConfig
 from momo_scan.live import LiveHub, load_live_settings, make_provider
 from momo_scan.metrics import adr_percent, average_dollar_volume
 from momo_scan.models import Bar
-from momo_scan.scripts import ScriptRefused, Scripts, problems
 from momo_scan.storage import Storage
 from momo_scan.web.access import AccessDenied, Account, identify, load_accounts
 from momo_scan.web.timeframes import aggregate, daily_bars_needed, parse_interval
@@ -117,30 +116,6 @@ class AlertBody(BaseModel):
     status: str | None = Field(default=None, pattern="^(active|paused)$")
 
 
-class NewScriptBody(BaseModel):
-    name: str
-    source: str
-    note: str = ""
-
-
-class ScriptChangeBody(BaseModel):
-    name: str | None = None
-    favourite: bool | None = None
-
-
-class ScriptDraftBody(BaseModel):
-    source: str
-
-
-class ScriptSaveBody(BaseModel):
-    source: str
-    note: str = ""
-
-
-class ScriptRestoreBody(BaseModel):
-    version: int
-
-
 class SeenBody(BaseModel):
     ids: list[int] = Field(max_length=500)
 
@@ -177,12 +152,6 @@ def write_live_settings(path: Path, settings: dict[str, Any]) -> None:
 
 class SignInBody(BaseModel):
     redirect: str = Field(min_length=4, max_length=4000)  # the address Schwab redirected to
-
-
-# The momo script sandbox worker gets its own policy: no connections of any kind, scripts only
-# from this origin (the runtime modules it imports) plus eval for the compiled function.
-SCRIPT_WORKER_PATH = "/static/js/script/worker.js"
-SCRIPT_WORKER_CSP = "default-src 'none'; script-src 'self' 'unsafe-eval'"
 
 
 class _RevalidatedStaticFiles(StaticFiles):
@@ -286,7 +255,6 @@ def create_app(
         state["alerts"] = Alerts(state["storage"])
         state["alert_watcher"] = AlertWatcher(state["alerts"], state["live"])
         await state["alert_watcher"].reload()
-        state["scripts"] = Scripts(state["storage"])
         await use_feed(live_provider or live_feed())
         warm = None
         if hasattr(state["provider"], "screen_universe"):
@@ -415,14 +383,6 @@ def create_app(
                 return JSONResponse({"detail": str(error)}, status_code=403)
             return PlainTextResponse(f"{error}. Ask the owner for access.", status_code=403)
         return await call_next(request)
-    @app.middleware("http")
-    async def sandbox_policy(request: Request, call_next: Any) -> Any:
-        response = await call_next(request)
-        if request.url.path == SCRIPT_WORKER_PATH:  # every response, 304s included
-            response.headers["Content-Security-Policy"] = SCRIPT_WORKER_CSP
-            response.headers["X-Content-Type-Options"] = "nosniff"
-        return response
-
     app.mount("/static", _RevalidatedStaticFiles(directory=STATIC), name="static")
 
     def storage() -> Storage:
@@ -843,89 +803,6 @@ def create_app(
         require_header(request)
         alerts().mark_seen(user(request), body.ids)
         return {"saved": True}
-
-    # Stored momo scripts (momo_scan.scripts). The checker can take seconds on a hostile script,
-    # so saves run it off the event loop; the database stays on it.
-    def scripts() -> Scripts:
-        return state["scripts"]
-
-    def script_found(script: Any) -> Any:
-        if script is None:
-            raise HTTPException(404, "No such script")
-        return script
-
-    @app.exception_handler(ScriptRefused)
-    async def script_refused(_: Request, error: ScriptRefused) -> JSONResponse:
-        return JSONResponse({"detail": error.message}, status_code=error.status)
-
-    @app.get("/api/scripts")
-    async def list_scripts(request: Request) -> dict[str, Any]:
-        return {"scripts": scripts().list(user(request))}
-
-    @app.post("/api/scripts")
-    async def create_script(body: NewScriptBody, request: Request) -> dict[str, Any]:
-        require_header(request)
-        errors = await asyncio.to_thread(problems, body.source)
-        return scripts().create(user(request), body.name, body.source, body.note, errors)
-
-    @app.get("/api/scripts/{script_id}")
-    async def get_script(script_id: int, request: Request) -> dict[str, Any]:
-        return script_found(scripts().get(user(request), script_id))
-
-    @app.patch("/api/scripts/{script_id}")
-    async def change_script(
-        script_id: int, body: ScriptChangeBody, request: Request
-    ) -> dict[str, Any]:
-        require_header(request)
-        return script_found(
-            scripts().update(user(request), script_id, body.name, body.favourite)
-        )
-
-    @app.put("/api/scripts/{script_id}/draft")
-    async def save_script_draft(
-        script_id: int, body: ScriptDraftBody, request: Request
-    ) -> dict[str, Any]:
-        require_header(request)
-        script_found(scripts().set_draft(user(request), script_id, body.source) or None)
-        return {"saved": True}
-
-    @app.post("/api/scripts/{script_id}/versions")
-    async def save_script(
-        script_id: int, body: ScriptSaveBody, request: Request
-    ) -> dict[str, Any]:
-        require_header(request)
-        errors = await asyncio.to_thread(problems, body.source)
-        return script_found(
-            scripts().save(user(request), script_id, body.source, body.note, errors)
-        )
-
-    @app.get("/api/scripts/{script_id}/versions")
-    async def script_versions(script_id: int, request: Request) -> dict[str, Any]:
-        return {"versions": script_found(scripts().versions(user(request), script_id))}
-
-    @app.get("/api/scripts/{script_id}/versions/{version}")
-    async def script_version(script_id: int, version: int, request: Request) -> dict[str, Any]:
-        return script_found(scripts().version(user(request), script_id, version))
-
-    @app.post("/api/scripts/{script_id}/restore")
-    async def restore_script(
-        script_id: int, body: ScriptRestoreBody, request: Request
-    ) -> dict[str, Any]:
-        require_header(request)
-        old = script_found(scripts().version(user(request), script_id, body.version))
-        errors = await asyncio.to_thread(problems, old["source"])
-        return script_found(scripts().restore(user(request), script_id, body.version, errors))
-
-    @app.delete("/api/scripts/{script_id}")
-    async def delete_script(script_id: int, request: Request) -> dict[str, Any]:
-        require_header(request)
-        script_found(scripts().delete(user(request), script_id) or None)
-        return {"saved": True}
-
-    @app.post("/api/scripts/{script_id}/undelete")
-    async def undelete_script(script_id: int, request: Request) -> dict[str, Any]:
-        require_header(request)
-        return script_found(scripts().undelete(user(request), script_id))
 
     @app.get("/api/themes")
     async def themes_view() -> dict[str, Any]:

@@ -1,7 +1,0 @@
-{
- "about": "Several values used as one is E308.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E308", "line": 3, "col": 5}]
- }
-}

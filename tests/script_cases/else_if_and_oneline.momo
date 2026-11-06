@@ -1,6 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-if close > 5: r = 3
-else if close > 2.4: r = 2
-else: r = 1
-plot(r, "r")

@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-n = input.int(5)
-plot(ta.sma(close, n))

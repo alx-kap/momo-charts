@@ -1,8 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-def counter(step):
-    var n = 0
-    n += step
-    return n
-plot(counter(1), "one")
-plot(counter(10), "ten")

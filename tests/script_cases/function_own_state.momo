@@ -1,7 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-def avg(src, length):
-    return ta.sma(src, length)
-plot(avg(close, 2), "a2")
-plot(avg(close, 3), "a3")
-plot(avg(open, 2), "o2")

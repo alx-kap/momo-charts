@@ -1,7 +1,0 @@
-{
- "about": "An unclosed bracket is E111, reported at the opening bracket.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E111", "line": 3, "col": 5}]
- }
-}

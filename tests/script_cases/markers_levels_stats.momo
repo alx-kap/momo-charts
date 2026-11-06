@@ -1,9 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-marker(close > open, "Up", shape="triangle_up")
-marker(close < open, "Down", shape="triangle_down", at="below", color=color.red)
-marker(bar_index == 3, "Mid", shape="dot", at=close * 2)
-level(ta.highest(high, 3), "Top", color=color.orange, style="dashed")
-level(5, "Hidden", show=false)
-stat("Range", high - low, format="number")
-stat("Side", "long" if close > open else "short")

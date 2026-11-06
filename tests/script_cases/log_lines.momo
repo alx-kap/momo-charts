@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-if bar_index == 2:
-    log("close", close, f"{open:.1f}", close > open, na)

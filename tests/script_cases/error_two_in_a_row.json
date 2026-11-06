@@ -1,7 +1,0 @@
-{
- "about": "Rule and type errors are all reported, in order.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E201", "line": 3, "col": 5}, {"code": "E202", "line": 4, "col": 8}, {"code": "E201", "line": 5, "col": 5}]
- }
-}

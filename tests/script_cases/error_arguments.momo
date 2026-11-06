@@ -1,3 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-x = ta.sma(close, 3, 4)

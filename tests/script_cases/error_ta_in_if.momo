@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-if close > open:
-    x = ta.sma(close, 3)

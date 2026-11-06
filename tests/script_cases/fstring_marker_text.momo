@@ -1,3 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-marker(close > open, "Up", shape="dot", at="below", text=f"{close:.1f}|{(close - open) / open:.1%}|{bar_index}|{open:,.0f}|{ticker}")

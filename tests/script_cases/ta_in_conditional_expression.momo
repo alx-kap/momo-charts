@@ -1,5 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-x = ta.sma(close, 2) if close > 5 else 0
-plot(x, "x")
-plot(ta.sma(close, 2), "plain")

@@ -1,7 +1,0 @@
-{
- "about": "A function calling itself is E208.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E208", "line": 4, "col": 12}]
- }
-}

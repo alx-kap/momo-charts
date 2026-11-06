@@ -1,7 +1,7 @@
 import { $, escapeHtml, ticker } from "./util.js";
 import { actions, state } from "./state.js";
-import { addIndicator, addLibrary, openChartSettings } from "./chartsettings.js";
-import { INDICATORS, LIBRARY } from "./indicators.js";
+import { addIndicator, openChartSettings } from "./chartsettings.js";
+import { INDICATORS } from "./indicators.js";
 import { openHelp } from "./help.js";
 
 // Ctrl+K command palette: symbols, decks and actions in one fuzzy list.
@@ -33,10 +33,6 @@ function commands() {
     ...Object.entries(INDICATORS).map(([type, def]) => ({
       group: "Commands", label: `Add indicator: ${def.name}`, hint: "ƒx",
       run: () => addIndicator(type),
-    })),
-    ...LIBRARY.map((item) => ({
-      group: "Commands", label: `Add indicator: ${item.name} (library script)`, hint: "ƒx",
-      run: () => addLibrary(item.key),
     })),
     { group: "Commands", label: "Trend line", hint: "⌥T", run: () => actions.setTool("trend") },
     { group: "Commands", label: "Horizontal line", hint: "⌥H", run: () => actions.setTool("hline") },

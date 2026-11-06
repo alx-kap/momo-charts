@@ -1,3 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-x = ta.macd(close, 12, 26, 9)

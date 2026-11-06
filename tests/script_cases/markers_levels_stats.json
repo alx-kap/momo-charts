@@ -1,9 +1,0 @@
-{
- "about": "Markers sit above, below or at a price; levels and stats are drawn from the last bar only.",
- "bars": "ramp",
- "expect": {
-  "markers": [{"key": "up", "i": 0, "price": 2, "shape": "triangle_up"}, {"key": "up", "i": 1, "price": 3}, {"key": "down", "i": 2, "price": 1.5, "shape": "triangle_down", "color": 4063643135}, {"key": "mid", "i": 3, "price": 8, "shape": "dot"}, {"key": "down", "i": 4, "price": 2.5}, {"key": "up", "i": 6, "price": 8}, {"key": "down", "i": 7, "price": 6.5}],
-  "levels": [{"key": "top", "price": 8.5, "color": 4288151807, "style": "dashed"}],
-  "stats": [{"title": "Range", "value": 2.0, "format": "number"}, {"title": "Side", "value": "short"}]
- }
-}

@@ -1,9 +1,0 @@
-{
- "about": "A calendar name such as day can be used as a variable.",
- "bars": "ramp",
- "expect": {
-  "plots": {
-   "d": [3.0, 5.0, 4, 8, 6, 12, 15.0, 14]
-  }
- }
-}

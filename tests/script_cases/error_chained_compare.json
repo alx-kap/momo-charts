@@ -1,7 +1,0 @@
-{
- "about": "a < b < c is E119.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E119", "line": 3, "col": 15}]
- }
-}

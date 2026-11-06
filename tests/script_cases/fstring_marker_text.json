@@ -1,7 +1,0 @@
-{
- "about": "f-string formats .1f, .1%, thousands; ticker is empty when the chart gives none.",
- "bars": "ramp",
- "expect": {
-  "markers": [{"key": "up", "i": 0, "price": 0.5, "shape": "dot", "text": "1.5|50.0%|0|1|"}, {"key": "up", "i": 1, "price": 1.5, "shape": "dot", "text": "2.5|25.0%|1|2|"}, {"key": "up", "i": 6, "price": 6.5, "shape": "dot", "text": "7.5|7.1%|6|7|"}]
- }
-}

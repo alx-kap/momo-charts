@@ -1,7 +1,0 @@
-{
- "about": "A length that is a series is E304.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E304", "line": 3, "col": 19}]
- }
-}

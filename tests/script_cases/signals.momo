@@ -1,6 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-up = close > open
-signal("up", up)
-signal("up_after_down", up and not up[1])
-value("range", high - low)

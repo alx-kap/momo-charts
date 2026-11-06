@@ -1,7 +1,0 @@
-{
- "about": "An unknown member is E202.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E202", "line": 3, "col": 8}]
- }
-}

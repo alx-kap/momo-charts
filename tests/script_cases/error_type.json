@@ -1,7 +1,0 @@
-{
- "about": "Text where a number goes is E301.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E301", "line": 3, "col": 5}]
- }
-}

@@ -1,6 +1,0 @@
-#momo 1
-indicator("Moving average (exponential)", overlay=true, short="EMA")
-
-length = input.int(21, "Length", min=1, max=500)
-
-plot(ta.ema(close, length), "Line", color="#49b3c4")

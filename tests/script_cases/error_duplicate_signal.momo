@@ -1,4 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-signal("a", close > open)
-value("a", close)

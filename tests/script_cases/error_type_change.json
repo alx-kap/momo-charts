@@ -1,7 +1,0 @@
-{
- "about": "A name that changes kind is E302.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E302", "line": 4, "col": 5}]
- }
-}

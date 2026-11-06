@@ -1,7 +1,0 @@
-{
- "about": "An open string is E103.",
- "bars": "ramp",
- "expect": {
-  "errors": [{"code": "E103", "line": 3, "col": 5}]
- }
-}

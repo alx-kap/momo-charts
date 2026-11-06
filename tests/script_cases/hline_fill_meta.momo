@@ -1,5 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-a = plot(close, "A")
-h = hline(5, "Mid", color=color.gray)
-fill(a, h, color=color.blue.alpha(20))

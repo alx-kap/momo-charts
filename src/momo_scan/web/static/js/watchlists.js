@@ -566,7 +566,6 @@ export const watchlistChoices = (symbol) => data.lists.filter((list) => list.id 
 }));
 export const inActiveList = (symbol) => data.active !== FLAGGED && symbolsOf(activeList()).some((item) => ticker(item) === ticker(symbol));
 export const activeListName = () => activeList().name;
-export const activeSymbols = () => symbolsOf(activeList());
 export const activeListId = () => data.active;
 
 // Cmd+Alt+W: tick the lists the symbol belongs in.

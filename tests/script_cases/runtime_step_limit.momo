@@ -1,6 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-n = 0
-while true:
-    n += 1
-plot(n)

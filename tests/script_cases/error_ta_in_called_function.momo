@@ -1,6 +1,0 @@
-#momo 1
-indicator("T", overlay=true)
-def f(a):
-    return ta.sma(a, 3)
-if close > open:
-    x = f(close)
