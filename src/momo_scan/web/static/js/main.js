@@ -10,18 +10,20 @@ import {
 } from "./watchlists.js";
 import { bindPalette, closePalette, openPalette, paletteOpen } from "./palette.js";
 import {
-  bindChartSettings, changeSettings, chartSettingsOpen, closeChartSettings, openChartSettings, syncChartSettings,
+  bindChartSettings, changeSettings, chartSettingsOpen, redoIndicators, undoIndicators, closeChartSettings, openChartSettings, syncChartSettings,
 } from "./chartsettings.js";
 import { bindIndustry, closeIndustry, industryNeighbors, markIndustrySymbol, openIndustry, stepIndustry } from "./industry.js";
 import { bindScreener, closeScreener, markScreenerSymbol, refreshScreener, screenerNeighbors, stepScreener } from "./screener.js";
 import { bindThemes, closeThemes, openThemes, themesOpen } from "./themes.js";
 import { bindColorPicker } from "./colorpicker.js";
 import { bindHelp, closeHelp, helpOpen, openHelp } from "./help.js";
+import { bindIndicatorBrowser, closeIndicatorBrowser, indicatorBrowserOpen, openIndicatorBrowser, refreshIndicatorBrowser, toggleIndicatorBrowser } from "./indicatorbrowser.js";
+import { bindIndicatorSettings, closeIndicatorSettings, indicatorSettingsOpen } from "./indicatorsettings.js";
 import { bindMenus } from "./menus.js";
 import { bindSidebar } from "./sidebar.js";
-import { startLive } from "./live.js";
+import { startLive, watchLive } from "./live.js";
 import {
-  bindDrawings, cancelDrawing, deleteSelected, drawingTool, hasSelection, redo, removeAllDrawings, setTool, undo,
+  bindDrawings, cancelDrawing, deleteSelected, drawingTool, drawingUndos, hasSelection, redo, removeAllDrawings, setTool, undo,
 } from "./drawings.js";
 import { armMeasure, bindMeasure } from "./measure.js";
 import { bindDrawbar } from "./drawbar.js";
@@ -157,6 +159,7 @@ async function showHome({ follow = true, interval = false } = {}) {
   const near = [industryNeighbors, screenerNeighbors].map((find) => find(state.home.symbol, offsets)).find((found) => found.length) || [];
   const next = near.length ? near : watchlistNeighbors(offsets);
   prefetchSymbols(next, options.interval, options.count);
+  watchLive("next", next); // their quotes too, so today's candle is there when you step to them
   if (other && linked()) prefetchSymbols(next, other.record.interval, CHART_BARS[other.record.interval.slice(-1)]);
 }
 
@@ -471,6 +474,14 @@ const ALT_KEYS = {
   KeyA: () => { if (state.mode === "chart" && !practicing()) newAlert(); },
 };
 
+// Ctrl+Z: the last change, a drawing's or an indicator's.
+function afterIndicatorStep() {
+  closeIndicatorSettings();
+  refreshIndicatorBrowser();
+}
+const undoLast = () => (undoIndicators() ? afterIndicatorStep() : undo());
+const redoLast = () => (redoIndicators() ? afterIndicatorStep() : redo());
+
 function overlayKey(event) {
   if (helpOpen()) {
     if (event.key === "Escape" || event.key === "?") closeHelp();
@@ -480,6 +491,8 @@ function overlayKey(event) {
   if (extra?.overlayKey(event)) return true;
   // The Market window floats like the screener: the chart's keys still work under it.
   if (themesOpen() && event.key === "Escape") { closeThemes(); return true; }
+  if (indicatorSettingsOpen() && event.key === "Escape") { closeIndicatorSettings(); return true; }
+  if (indicatorBrowserOpen() && event.key === "Escape") { closeIndicatorBrowser(); return true; }
   return false;
 }
 
@@ -498,9 +511,9 @@ document.addEventListener("keydown", (event) => {
 
   if (mod && !event.altKey && event.code === "KeyZ") {
     event.preventDefault();
-    return event.shiftKey ? redo() : undo();
+    return event.shiftKey ? redoLast() : undoLast();
   }
-  if (mod && !event.altKey && event.code === "KeyY") { event.preventDefault(); return redo(); }
+  if (mod && !event.altKey && event.code === "KeyY") { event.preventDefault(); return redoLast(); }
   if (mod && event.altKey && event.code === "KeyW" && !practicing()) {
     event.preventDefault();
     const symbol = currentSymbol();
@@ -534,7 +547,7 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     return deleteSelected();
   }
-  if (key === "/") { event.preventDefault(); return openChartSettings("indicators"); }
+  if (key === "/") { event.preventDefault(); return toggleIndicatorBrowser(); }
   if (key === "?") { event.preventDefault(); return openHelp(); }
 
   if (practicing()) {
@@ -590,7 +603,9 @@ $("settings").addEventListener("click", (event) => event.stopPropagation());
 document.addEventListener("click", () => { $("settings").hidden = true; });
 $("settings-chart").addEventListener("click", () => { $("settings").hidden = true; openChartSettings("symbol"); });
 document.addEventListener("momo:open-settings", (event) => openChartSettings(event.detail));
-$("indicators-button").addEventListener("click", () => openChartSettings("indicators"));
+$("indicators-button").addEventListener("click", toggleIndicatorBrowser);
+actions.openIndicatorBrowser = openIndicatorBrowser;
+actions.drawingUndos = drawingUndos;
 $("settings-help").addEventListener("click", () => { $("settings").hidden = true; openHelp(); });
 $("prev-button").addEventListener("click", () => step(-1));
 $("next-button").addEventListener("click", () => step(1));
@@ -610,6 +625,8 @@ bindMeasure();
 bindColorPicker();
 bindHelp();
 bindMenus();
+bindIndicatorBrowser();
+bindIndicatorSettings();
 bindSidebar();
 bindSymbolSearch();
 bindDesktop({ settings: () => openChartSettings("symbol"), help: openHelp });

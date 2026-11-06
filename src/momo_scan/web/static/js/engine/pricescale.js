@@ -120,7 +120,7 @@ export class PriceScale {
       let last = null;
       for (let u = Math.ceil(l / step) * step; u <= h; u += step) {
         const price = 10 ** u;
-        const round = niceStep(price / 20);
+        const round = niceStep(price * (10 ** step - 1)); // the gap to the next tick, in dollars here
         const value = Math.round(price / round) * round;
         if (value !== last && value > 0) out.push(value);
         last = value;

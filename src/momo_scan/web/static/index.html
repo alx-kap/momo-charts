@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#000000">
 <title>Momo</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/static/app.css?v=248">
+<link rel="stylesheet" href="/static/app.css?v=251">
 </head>
 <body>
 <header id="topbar">
@@ -89,6 +89,17 @@
     <div id="pane-legends" data-part="pane-legends"></div>
     <div id="margin-handles" data-part="margin-handles"></div>
     <div id="chart-message" data-part="chart-message" hidden></div>
+    <div id="ip" hidden role="dialog" aria-label="Indicator settings"></div>
+    <div id="ib" hidden role="dialog" aria-label="Indicators">
+      <div id="ib-head">
+        <div class="ib-title">Indicators<button id="ib-close" class="icon" title="Close (Esc)" aria-label="Close">×</button></div>
+        <input id="ib-q" type="search" placeholder="Search" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="ib-split">
+        <aside id="ib-side" class="mk-side"></aside>
+        <div id="ib-list" role="listbox"></div>
+      </div>
+    </div>
     <div id="themes" hidden>
       <div class="rc-card th-card">
         <div class="rc-head"><button id="th-close" class="icon cs-close" title="Close (Esc)">×</button></div>

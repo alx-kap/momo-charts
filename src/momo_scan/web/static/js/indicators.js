@@ -162,30 +162,36 @@ export function hvcLevels(bars, stats, p, n = bars.length) {
 // `levels` are fixed horizontal guides in an own-pane indicator. `kind: "levels"` draws
 // horizontal lines from `lines(bars, result, params, n)` instead of one line per plot; its
 // plots are styles (major, minor) and `value` names the series the legend shows.
+// The groups of the indicator browser. `about` is its one line on each indicator.
+export const GROUPS = [
+  { key: "trend", label: "Trend" }, { key: "momentum", label: "Momentum" },
+  { key: "volatility", label: "Volatility" }, { key: "levels", label: "Levels" },
+];
+
 export const INDICATORS = {
   sma: {
-    name: "Moving average (simple)", pane: "price",
+    name: "Moving average (simple)", group: "trend", about: "The average close over a set number of bars.", pane: "price",
     inputs: [{ key: "period", label: "Length", value: 20, min: 1, max: 500 }],
     plots: [{ key: "line", label: "Line", color: "#f5ea6b" }],
     label: (p) => `SMA ${p.period}`,
     compute: (bars, p) => ({ line: sma(closes(bars), p.period) }),
   },
   ema: {
-    name: "Moving average (exponential)", pane: "price",
+    name: "Moving average (exponential)", group: "trend", about: "An average that weighs recent closes more.", pane: "price",
     inputs: [{ key: "period", label: "Length", value: 21, min: 1, max: 500 }],
     plots: [{ key: "line", label: "Line", color: "#49b3c4" }],
     label: (p) => `EMA ${p.period}`,
     compute: (bars, p) => ({ line: ema(closes(bars), p.period) }),
   },
   vwap: {
-    name: "VWAP (intraday, resets daily)", pane: "price",
+    name: "VWAP (intraday, resets daily)", group: "trend", about: "The average price paid today, weighted by volume.", pane: "price",
     inputs: [],
     plots: [{ key: "line", label: "VWAP", color: "#e040fb" }],
     label: () => "VWAP",
     compute: (bars) => ({ line: vwap(bars) }),
   },
   bb: {
-    name: "Bollinger Bands", pane: "price",
+    name: "Bollinger Bands", group: "volatility", about: "An average with bands set by standard deviation.", pane: "price",
     inputs: [
       { key: "period", label: "Length", value: 20, min: 2, max: 500 },
       { key: "mult", label: "StdDev", value: 2, min: 0.1, max: 10, step: 0.1 },
@@ -208,7 +214,7 @@ export const INDICATORS = {
     },
   },
   kc: {
-    name: "Keltner Channels", pane: "price",
+    name: "Keltner Channels", group: "volatility", about: "An average with bands set by average true range.", pane: "price",
     inputs: [
       { key: "period", label: "Length", value: 20, min: 2, max: 500 },
       { key: "mult", label: "Multiplier", value: 2, min: 0.1, max: 10, step: 0.1 },
@@ -231,7 +237,7 @@ export const INDICATORS = {
     },
   },
   rsi: {
-    name: "Relative Strength Index", pane: "own",
+    name: "Relative Strength Index", group: "momentum", about: "How strong recent gains are against recent losses, 0 to 100.", pane: "own",
     inputs: [{ key: "period", label: "Length", value: 14, min: 2, max: 500 }],
     plots: [{ key: "line", label: "RSI", color: "#7e57c2" }],
     levels: [70, 30],
@@ -239,7 +245,7 @@ export const INDICATORS = {
     compute: (bars, p) => ({ line: rsi(bars, p.period) }),
   },
   macd: {
-    name: "MACD", pane: "own",
+    name: "MACD", group: "momentum", about: "The gap between a fast and a slow average, with a signal line.", pane: "own",
     inputs: [
       { key: "fast", label: "Fast", value: 12, min: 1, max: 500 },
       { key: "slow", label: "Slow", value: 26, min: 1, max: 500 },
@@ -260,14 +266,14 @@ export const INDICATORS = {
     },
   },
   atr: {
-    name: "Average True Range", pane: "own",
+    name: "Average True Range", group: "volatility", about: "How far price typically moves in a bar, gaps included.", pane: "own",
     inputs: [{ key: "period", label: "Length", value: 14, min: 1, max: 500 }],
     plots: [{ key: "line", label: "ATR", color: "#ff5252" }],
     label: (p) => `ATR ${p.period}`,
     compute: (bars, p) => ({ line: rma(trueRange(bars), p.period) }),
   },
   adr: {
-    name: "Average Daily Range %", pane: "own",
+    name: "Average Daily Range %", group: "volatility", about: "The typical daily high-to-low range, as a percent.", pane: "own",
     inputs: [{ key: "period", label: "Length", value: 20, min: 1, max: 500 }],
     plots: [{ key: "line", label: "ADR %", color: "#df8540" }],
     label: (p) => `ADR% ${p.period}`,
@@ -275,7 +281,7 @@ export const INDICATORS = {
     compute: (bars, p) => ({ line: sma(bars.map((b) => (b.high / b.low - 1) * 100), p.period) }),
   },
   hvc: {
-    name: "High-volume closes (HVC)", pane: "price", kind: "levels", value: "stats",
+    name: "High-volume closes (HVC)", group: "levels", about: "Price levels at the closes of the heaviest dollar-volume days.", pane: "price", kind: "levels", value: "stats",
     inputs: [
       { key: "top", label: "Top %", value: 10, min: 0.5, max: 50, step: 0.5 },
       { key: "majorTop", label: "Major top %", value: 2, min: 0.1, max: 50, step: 0.1 },
@@ -294,7 +300,7 @@ export const INDICATORS = {
     lines: (bars, result, p, n) => hvcLevels(bars, result.stats, p, n),
   },
   rs: {
-    name: "Relative strength line (vs SPY)", pane: "own", benchmark: true,
+    name: "Relative strength line (vs SPY)", group: "momentum", about: "This stock divided by SPY: rising means it's leading.", pane: "own", benchmark: true,
     inputs: [{ key: "period", label: "Average", value: 21, min: 1, max: 500 }],
     plots: [
       { key: "line", label: "RS", color: "#2962ff" },

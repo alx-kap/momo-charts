@@ -18,6 +18,8 @@ const PREFETCH_WORKERS = 4;
 
 const cache = state.barCache; // key -> Series; cleared when a new scan loads
 
+const latest = new Map(); // the newest quote seen for each symbol
+
 class Series {
   constructor(key, symbol, through, interval, count) {
     Object.assign(this, { key, symbol, through, interval, count });
@@ -34,6 +36,7 @@ class Series {
       this.promise = api(`/api/bars?${params}`).then((data) => {
         this.data = data;
         if (this.interval === "1D") noteDayChange(this.symbol, this.through, data);
+        catchUp(this);
         return data;
       }).catch((error) => {
         cache.delete(this.key);
@@ -186,6 +189,7 @@ class IntradaySeries {
         this.data = { ...meta, interval: this.interval, intraday: true, extended: this.extended, bars };
         this.loadedAt = Date.now() / 1000;
         this.forming.clear();
+        catchUp(this);
         return this.data;
       }).catch((error) => {
         if (this.promise === promise) cache.delete(this.key);
@@ -289,15 +293,22 @@ class IntradaySeries {
   }
 }
 
-// Every loaded series that runs to today takes the quote once, shown or not, so switching back
-// to a symbol shows its latest bar at once.
+const take = (item, quote) => (item instanceof IntradaySeries ? item.quote(quote) : item.apply(quote));
+
+// A quote can arrive before its bars: a series takes the latest one as soon as it loads.
+function catchUp(item) {
+  const quote = latest.get(item.ticker);
+  if (quote && item.liveable) take(item, quote);
+}
+
+// Every loaded series that runs to today takes the quote once, shown or not, so switching to a
+// symbol shows today's bar with the rest of the chart.
 onLiveQuotes((quotes) => {
+  for (const [symbol, quote] of quotes) latest.set(symbol, quote);
   for (const item of cache.values()) {
     if (!item.liveable) continue;
     const quote = quotes.get(item.ticker);
-    if (!quote) continue;
-    if (item instanceof IntradaySeries) item.quote(quote);
-    else item.apply(quote);
+    if (quote) take(item, quote);
   }
 });
 

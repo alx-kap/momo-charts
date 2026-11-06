@@ -3,9 +3,10 @@ import { state, throughDate } from "./state.js";
 import { bindReorder } from "./reorder.js";
 import { chartProfile, openChartSettings, removeIndicator, toggleIndicator, useChartProfile } from "./chartsettings.js";
 import { INDICATORS, ema, shownOn, sma, timeframeOf } from "./indicators.js";
+import { openIndicatorSettings } from "./indicatorsettings.js";
 import { formatColor, parseColor } from "./colorpicker.js";
 import { CHART_BARS, DECK_BARS, fetchBars, inRegular, isIntraday, prefetchNeighbors, series, showLive } from "./feed.js";
-import { extendedQuote, marketSession, onLiveQuotes, onSessionChange, watchBuzz } from "./live.js";
+import { extendedQuote, marketSession, onLiveQuotes, onSessionChange, watchBuzz, watchLive } from "./live.js";
 import { createEarnings, dayOf, previousSession, sessionsBetween, todayET } from "./earnings.js";
 import * as LC from "./engine/index.js";
 
@@ -25,6 +26,7 @@ const LEVEL_STYLES = {
   early: { lineWidth: 1, lineStyle: LC.LineStyle.Dashed },
   overhead: { lineWidth: 1, lineStyle: LC.LineStyle.Dotted },
 };
+const LINE_REACH = 6; // pixels: how near a double-click must be to an indicator's line
 const OWN_PANE_MARGINS = { top: 0.1, bottom: 0.1 };
 // The weekday after a "YYYY-MM-DD" day (holidays aside): where the ghost candle goes.
 function nextWeekday(day) {
@@ -536,7 +538,7 @@ function createPane(root, { side, owner, settings, info = true }) {
     const def = INDICATORS[ind.type];
     const shown = def.kind === "levels" ? [{ key: def.value, color: ind.style[def.plots[0].key].color }]
       : def.plots.map((plot) => ({ key: plot.key, color: ind.style[plot.key].color }));
-    const values = ind.visible
+    const values = ind.visible && !ind.hideValue
       ? shown.map((plot) => `<span class="v" data-ind="${ind.id}" data-plot="${plot.key}" style="color:${plot.color}"></span>`).join("")
       : "";
     return `<div class="lg-row ${ind.visible ? "" : "off"}${def.chartOnly ? " chart-only" : ""}" data-id="${ind.id}"${mode === "stack" ? ' draggable="true"' : ""}>${mode ? GRIP : ""}<span class="label">${escapeHtml(def.label(ind.params))}</span>${values}${tools(ind.id)}</div>`;
@@ -669,7 +671,10 @@ function createPane(root, { side, owner, settings, info = true }) {
     }
     if (lg === "toggle") toggleIndicator(id);
     else if (lg === "remove") removeIndicator(id);
-    else openChartSettings("indicators", id);
+    else {
+      const row = button.closest(".lg-row").getBoundingClientRect();
+      openIndicatorSettings(id, row.left, row.bottom + 6);
+    }
   }
   el["legend"].addEventListener("click", onLegendClick);
   el["pane-legends"].addEventListener("click", onLegendClick);
@@ -680,11 +685,11 @@ function createPane(root, { side, owner, settings, info = true }) {
     onMove: (from, to) => {
       const ids = [...el["legend-ma"].querySelectorAll(".lg-row[draggable]")].map((row) => row.dataset.id);
       ids.splice(to, 0, ...ids.splice(from, 1));
-      settings.change((s) => {
+      settings.changeIndicators((s) => {
         const slots = s.indicators.map((ind, i) => (ids.includes(ind.id) ? i : -1)).filter((i) => i >= 0);
         const ordered = ids.map((id) => s.indicators.find((ind) => ind.id === id));
         slots.forEach((slot, k) => { s.indicators[slot] = ordered[k]; });
-      }, "series");
+      });
     },
   });
 
@@ -735,6 +740,7 @@ function createPane(root, { side, owner, settings, info = true }) {
       }
       // Settings keep indicators in one list: the moved panes take the places their indicators held.
       const ids = paneKeys.filter((key) => key !== "price" && key !== "volume");
+      settings.remember();
       const slots = S.indicators.map((ind, i) => (ids.includes(ind.id) ? i : -1)).filter((i) => i >= 0);
       const ordered = ids.map((id) => S.indicators.find((ind) => ind.id === id));
       slots.forEach((slot, k) => { S.indicators[slot] = ordered[k]; });
@@ -884,10 +890,36 @@ function createPane(root, { side, owner, settings, info = true }) {
     handle.addEventListener("pointercancel", done, { once: true });
   });
 
-  // Double-clicking a price axis turns its auto-scaling back on, so the margins apply again.
+  // The indicator whose line passes within a few pixels of (x, y), in the chart's coordinates.
+  function indicatorLineAt(x, y) {
+    const i = Math.round(chart.timeScale().coordinateToLogical(x));
+    if (!(i >= 0 && i < currentBars.length)) return null;
+    const boxes = paneBoxes();
+    let best = null;
+    let nearest = LINE_REACH;
+    for (const item of plots) {
+      if (item.plot.type === "histogram" || item.values[i] == null) continue;
+      const box = boxes[item.def.pane === "own" ? paneKeys.indexOf(item.ind.id) : 0];
+      const at = item.series.priceToCoordinate(item.values[i]);
+      if (!box || at == null) continue;
+      const gap = Math.abs(at + box.top - y);
+      if (gap <= nearest) { nearest = gap; best = item.ind; }
+    }
+    return best;
+  }
+
+  // Double-clicking an indicator's line opens its settings; on a price axis it turns auto-scaling
+  // back on, so the margins apply again.
   el["chart"].addEventListener("dblclick", (event) => {
     const rect = el["chart"].getBoundingClientRect();
-    if (event.clientX < rect.right - chart.priceScale("right").width()) return;
+    if (event.clientX < rect.right - chart.priceScale("right").width()) {
+      const ind = indicatorLineAt(event.clientX - rect.left, event.clientY - rect.top);
+      if (ind) {
+        activate(side);
+        openIndicatorSettings(ind.id, event.clientX + 12, event.clientY + 12);
+      }
+      return;
+    }
     for (let n = 0; n < paneKeys.length; n++) {
       const series = paneSeries(n);
       if (series) series.priceScale().applyOptions({ autoScale: true });
@@ -1148,6 +1180,8 @@ function createPane(root, { side, owner, settings, info = true }) {
     const count = options.count || DECK_BARS;
     const intraday = isIntraday(interval);
     const shown = series(symbol, { through: intraday ? null : through, interval, count, extended: state.extended });
+    // Ask for the quote with the bars, so today's candle can arrive with them.
+    if (!through && !options.replayFrom && !view.anonymous) watchLive(owner, [symbol]);
     let data;
     try {
       [data] = await Promise.all([shown.load(), loadBenchmark(through, interval, count)]);

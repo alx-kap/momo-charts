@@ -973,22 +973,8 @@ body:not(.mode-review) #settings .review-only { display: none; }
 .seg input:checked + span { background: #2a2e38; border-color: var(--line-strong); color: var(--text-hi); }
 .seg input:focus-visible + span { outline: 2px solid var(--accent); }
 .cs-note { margin: 14px 0 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
-.cs-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-.cs-ind {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line);
-  border-radius: var(--r-lg); background: #111318; transition: border-color 600ms;
-}
-.cs-ind.focus { border-color: var(--accent); }
-.cs-ind.off .cs-name, .cs-ind.off .cs-ctl { opacity: .45; }
-.cs-ind .cs-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cs-ind .cs-ctl { grid-column: 2; min-width: 0; gap: 6px; justify-content: flex-start; }
-.cs-ind .cs-x { grid-column: 3; grid-row: 1; }
-.cs-ind .cs-in { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
-#cs .cs-ind input[type=number] { width: 54px; height: 26px; }
-.cs-eye, .cs-x { background: none; border: none; padding: 0 4px; color: var(--muted); font-size: 14px; }
 /* Timeframe chips under each indicator: lit where it shows, dim where it's off. */
-.cs-tf { grid-column: 2 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin-top: -2px; }
-.cs-tf span { font-size: 11px; color: var(--faint); margin-right: 5px; }
+.cs-tf { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
 .cs-tf i { width: 1px; height: 12px; margin: 0 4px; background: var(--line-strong); }
 .cs-tf button {
   padding: 1px 6px; font-size: 11px; border-radius: var(--r-xs); background: none; border: 1px solid var(--tile-line);
@@ -996,11 +982,6 @@ body:not(.mode-review) #settings .review-only { display: none; }
 }
 .cs-tf button.on { color: var(--text2); border-color: var(--line-strong); background: var(--raised); text-decoration: none; }
 .cs-tf button:hover { color: var(--text); }
-.cs-eye:hover, .cs-x:hover { color: var(--text); }
-.cs-add { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 10px; }
-.cs-add button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 10px; text-align: left; border-radius: var(--r-md); }
-.cs-add b { font-weight: 500; }
-.cs-add em { font-style: normal; font-size: 11px; color: var(--muted); }
 .cs-empty { padding: 40px 0; text-align: center; color: var(--muted); }
 
 /* Right-margin handle on the time axis, under the last bar */
@@ -1029,7 +1010,6 @@ body:not(.mode-review) #settings .review-only { display: none; }
   .cs-reset { border-top: none; padding: 0; }
   #cs-body { padding: 16px 18px 24px; }
   .cs-row { flex-wrap: wrap; gap: 8px; }
-  .cs-add { grid-template-columns: 1fr 1fr; }
 }
 
 /* ---------- top bar: modes, symbol, timeframe, tools ---------- */
@@ -2225,8 +2205,8 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
    picks its opacity with --glass-tint: dialogs sit over a dim, menus are small, and anything
    read closely stays denser. Inside, the greys lift and fills turn translucent. */
 .palette-card, .ss-card, .wlp, .help-card, .dlg, .cs-card, #interval-box, #sign-in-box,
-#iv-menu, .pick-menu, #layout-menu, #link-menu, #settings, #px-menu, .ctx-menu, #color-picker,
-#themes, #screener:not(.docked), #industry, #sc-presets, #sc-colmenu, #in-colmenu,
+#iv-menu, .pick-menu, #ip, #layout-menu, #link-menu, #settings, #px-menu, .ctx-menu, #color-picker,
+#themes, #ib, #screener:not(.docked), #industry, #sc-presets, #sc-colmenu, #in-colmenu,
 #draw-bar, #draw-toolbar, .example-replay, #toast, .alert-card, .earnings-tip, .cot-tip, #wl-tray,
 .draw-position {
   --glass-tint: var(--glass-menu);
@@ -2240,13 +2220,13 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 .palette-card, .ss-card, .wlp, .dlg, .cs-card, #interval-box, #sign-in-box,
 .help-card { --glass-tint: var(--glass-dialog); border-radius: var(--r-xl); box-shadow: var(--shadow-dialog), var(--glass-edge); }
 .help-card, .alert-editor { --glass-tint: var(--glass-window); }
-#themes, #screener:not(.docked), #industry {
+#themes, #ib, #screener:not(.docked), #industry {
   --glass-tint: var(--glass-window); border-radius: var(--r-xl); box-shadow: var(--shadow-dialog), var(--glass-edge);
 }
 /* Rows scroll under table headers. Blur doesn't work on table cells, so headers are nearly solid. */
 .th-table thead th, #screener:not(.docked) .sc-colhead, #industry .sc-colhead { background: var(--glass-head); }
 /* Dense: small type, chart-side bars, and popups inside other glass (which can only blur that glass). */
-.draw-position, #color-picker, #sc-presets, #sc-colmenu, #in-colmenu, #draw-bar, #draw-toolbar,
+.draw-position, #ip, #color-picker, #sc-presets, #sc-colmenu, #in-colmenu, #draw-bar, #draw-toolbar,
 .example-replay, #toast, .alert-card, .earnings-tip, .cot-tip, #wl-tray {
   --glass-tint: var(--glass-dense);
   backdrop-filter: var(--glass-blur-dense); -webkit-backdrop-filter: var(--glass-blur-dense);
@@ -2297,10 +2277,38 @@ body.mode-chart.side-alerts #alerts-panel { display: flex; flex-direction: colum
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
 
-/* The add list: tiles with a star, and a search over them. */
-#cs-ind-q { width: 100%; margin-top: 10px; }
-.cs-pick { position: relative; display: flex; min-width: 0; }
-.cs-pick > button:first-child { flex: 1; min-width: 0; padding-right: 26px; }
-.cs-add .cs-star { position: absolute; z-index: 1; top: 3px; right: 3px; display: block; width: 20px; height: 20px; padding: 0; text-align: center; background: transparent; border: 0; color: var(--faint); font-size: 12px; }
-.cs-add .cs-star:hover { color: var(--text); }
-.cs-add .cs-star.on { color: var(--gold); }
+/* The indicator browser behind ƒx: floats like the Market window. */
+#ib { position: fixed; z-index: 9; display: flex; flex-direction: column; overflow: hidden; width: 680px; max-width: 98vw; height: 520px; max-height: calc(100vh - 56px); font-size: 13px; }
+#ib.in { animation: fade 160ms ease-out; }
+#ib-head { flex: none; padding: 14px 16px 12px; cursor: grab; user-select: none; }
+#ib-head:active { cursor: grabbing; }
+.ib-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 15px; font-weight: 600; color: var(--text-hi); }
+#ib-q { width: 100%; height: 34px; }
+.ib-split { flex: 1; min-height: 0; display: flex; border-top: 1px solid var(--line); }
+#ib-side { width: 180px; overflow: auto; }
+#ib-list { flex: 1; min-width: 0; overflow: auto; padding: 8px; }
+.ib-row { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 10px; border-radius: var(--r-sm); cursor: pointer; }
+.ib-row:hover { background: var(--hover); }
+.ib-row.on { background: var(--accent-soft); }
+.ib-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ib-text b { font-weight: 500; color: var(--text-hi); }
+.ib-text span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-count { flex: none; font-style: normal; font-size: 12px; color: var(--accent-hi); }
+.ib-star { flex: none; width: 24px; height: 24px; padding: 0; background: transparent; border: 0; color: var(--faint); font-size: 14px; }
+.ib-star:hover { color: var(--text); }
+.ib-star.on { color: var(--gold); }
+.ib-empty { padding: 24px 12px; text-align: center; color: var(--muted); }
+.ib-row.off .ib-text b { color: var(--muted); }
+
+/* One indicator's settings, opened from the chart. */
+#ip { position: fixed; z-index: 20; width: 300px; max-height: calc(100vh - 56px); overflow: auto; padding: 8px 12px 12px; font-size: 12px; }
+.ip-head { display: flex; align-items: center; gap: 2px; margin: 0 -6px 6px 0; }
+.ip-head b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--text-hi); }
+.ip-head .icon { width: 24px; height: 24px; }
+.ip-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; color: var(--muted); }
+.ip-row > div { display: flex; align-items: center; gap: 6px; }
+#ip input[type=number] { width: 70px; height: 26px; }
+#ip select { height: 26px; }
+.ip-h { margin: 8px 0 5px; color: var(--muted); }
+.ip-remove { width: 100%; height: 28px; margin-top: 12px; background: transparent; color: var(--pass-hi); border-color: var(--line-strong); }
+.ip-remove:hover { background: var(--hover); }

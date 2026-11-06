@@ -1,8 +1,8 @@
 import { $, api, escapeHtml, store, toast } from "./util.js";
-import { INDICATORS, TIMEFRAMES, newIndicator } from "./indicators.js";
+import { INDICATORS, newIndicator } from "./indicators.js";
 import { swatch } from "./colorpicker.js";
 import { liveSetup, marketSetup, onLiveStatus, openSignIn, saveSchwabKeys } from "./live.js";
-import { state } from "./state.js";
+import { actions, state } from "./state.js";
 import { alertPrefs, setAlertPref } from "./alertprefs.js";
 import { alertSounds, playAlertSound } from "./sound.js";
 
@@ -79,12 +79,18 @@ function merge(defaults, saved) {
   return out;
 }
 
+const UNDO_STEPS = 50;
+const UNDO_MERGE_MS = 1000;
+
 class Profile {
   constructor(key, seed = null) {
     this.key = key;
     this.S = merge(defaultSettings(), store.get(key, null) || seed);
     this.listeners = [];
     this.saveTimer = 0;
+    this.undone = [];   // the list of indicators before each change, newest last
+    this.redone = [];
+    this.lastChange = { key: null, at: 0 };
     if (!store.get(key, null) && seed) this.persist(); // a new copy is saved straight away
   }
 
@@ -107,6 +113,36 @@ class Profile {
     this.persist();
     for (const fn of this.listeners) fn(what);
     if (render && this === current && !$("cs").hidden) renderDialog();
+  }
+
+  // Indicator changes can be undone, in turn with drawings: `drawings` is how many drawing
+  // undos there were at the time, so Ctrl+Z takes whichever came last. Quick changes to the same
+  // thing (`key`), like typing a length, are one step.
+  remember(key = null) {
+    const now = Date.now();
+    const again = key && key === this.lastChange.key && now - this.lastChange.at < UNDO_MERGE_MS;
+    this.lastChange = { key, at: now };
+    if (again) return;
+    this.undone.push({ indicators: JSON.stringify(this.S.indicators), drawings: actions.drawingUndos().undo });
+    if (this.undone.length > UNDO_STEPS) this.undone.shift();
+    this.redone = [];
+  }
+
+  changeIndicators(mutate, key = null) {
+    this.remember(key);
+    this.change(mutate, "series");
+  }
+
+  // Undo or redo the last indicator change, if it came after the last drawing change. False if not.
+  step(from, to, side, otherSide) {
+    const entry = from.at(-1);
+    const depths = actions.drawingUndos();
+    if (!entry || entry.drawings < depths[side]) return false;
+    from.pop();
+    to.push({ indicators: JSON.stringify(this.S.indicators), drawings: depths[otherSide] });
+    this.lastChange = { key: null, at: 0 };
+    this.change((s) => { s.indicators = JSON.parse(entry.indicators); }, "series");
+    return true;
   }
 
   replace(next) {
@@ -156,6 +192,10 @@ export function changeSettings(mutate, what = "style", options = {}) {
   current.change(mutate, what, options);
 }
 
+export const changeIndicators = (mutate, key) => current.changeIndicators(mutate, key);
+export const undoIndicators = () => current.step(current.undone, current.redone, "undo", "redo");
+export const redoIndicators = () => current.step(current.redone, current.undone, "redo", "undo");
+
 export async function syncChartSettings() {
   await Promise.all([...profiles.values()].map((profile) => profile.sync()));
 }
@@ -169,7 +209,6 @@ const TABS = [
   ["status", "Status line", "Status line", icon("M4 7h16M4 12h10M4 17h13")],
   ["canvas", "Canvas", "Canvas", icon("M4 5h16v14H4z", "M4 10h16M10 5v14")],
   ["scales", "Scales", "Scales", icon("M6 4v16M6 4l-2 3M6 4l2 3M6 20l-2-3M6 20l2-3", "M12 8h8M12 12h6M12 16h8")],
-  ["indicators", "Indicators", "Indicators", icon("M3 17l5-6 4 3 4-7 5 5")],
 ];
 // Settings that aren't about the chart; a section shows only when it has something to set up.
 const GENERAL_TABS = [
@@ -179,7 +218,6 @@ const GENERAL_TABS = [
 ];
 let tab = "symbol";
 let query = "";
-let focusId = null;
 
 const get = (path) => path.split(".").reduce((obj, key) => obj[key], chartSettings);
 function set(path, value) {
@@ -363,69 +401,7 @@ function scalesTab() {
 }
 
 // Which timeframes the indicator shows on: click a chip to turn it off (or on) there.
-function timeframeChips(item) {
-  const off = new Set(item.hiddenOn || []);
-  const chip = (tf) => `<button data-tf="${tf}" data-ind="${item.id}" class="${off.has(tf) ? "" : "on"}" ` +
-    `title="${off.has(tf) ? "Off" : "On"} on ${tf} charts · click to turn ${off.has(tf) ? "on" : "off"}">${tf}</button>`;
-  const intraday = TIMEFRAMES.filter((tf) => !/^[DWM]$/.test(tf));
-  return `<div class="cs-tf"><span>Show on</span>${intraday.map(chip).join("")}<i></i>${["D", "W", "M"].map(chip).join("")}</div>`;
-}
 
-function indicatorsTab() {
-  const active = chartSettings.indicators.filter((item) =>
-    !INDICATORS[item.type].chartOnly || state.mode === "chart").map((item) => {
-    const def = INDICATORS[item.type];
-    const inputs = def.inputs.map((input) =>
-      `<label class="cs-in">${input.label}<input type="number" data-ind="${item.id}" data-param="${input.key}" ` +
-      `value="${item.params[input.key]}" min="${input.min}" max="${input.max}" step="${input.step || 1}"></label>`).join("");
-    const plots = def.plots.map((plot) =>
-      swatch(escapeHtml(item.style[plot.key].color), `data-ind="${item.id}" data-plot="${plot.key}" title="${plot.label}"`) +
-      (plot.color2 ? swatch(escapeHtml(item.style[plot.key].color2), `data-ind="${item.id}" data-plot="${plot.key}" data-second="1" title="${plot.label} (falling)"`) : "")).join("");
-    const width = def.plots.some((plot) => plot.type !== "histogram")
-      ? `<select data-ind="${item.id}" data-width="1" title="Line width">${[1, 2, 3, 4].map((n) =>
-        `<option value="${n}" ${item.style[def.plots.find((p) => p.type !== "histogram").key].width === n ? "selected" : ""}>${n}px</option>`).join("")}</select>`
-      : "";
-    return `<div class="cs-ind ${item.visible ? "" : "off"} ${item.id === focusId ? "focus" : ""}" data-id="${item.id}">` +
-      `<button class="cs-eye" data-toggle="${item.id}" title="${item.visible ? "Hide" : "Show"}">${item.visible ? "◉" : "○"}</button>` +
-      `<span class="cs-name" title="${escapeHtml(def.name)}">${escapeHtml(def.label(item.params))}</span>` +
-      `<span class="cs-ctl">${inputs}${plots}${width}</span>` +
-      `<button class="cs-x" data-remove="${item.id}" title="Remove">×</button>` +
-      timeframeChips(item) + `</div>`;
-  }).join("") || `<div class="cs-note">No indicators. Add one below.</div>`;
-  const tile = (type, def) => {
-    const fav = favourites().includes(type);
-    return `<div class="cs-pick" data-find="${escapeHtml(def.name.toLowerCase())}"><button data-add="${type}"><b>${escapeHtml(def.name)}</b>` +
-      `<em>${def.pane === "price" ? "on price" : "own pane"}</em></button>` +
-      `<button class="cs-star ${fav ? "on" : ""}" data-fav="${type}" title="${fav ? "Remove from favorites" : "Add to favorites"}">${fav ? "★" : "☆"}</button></div>`;
-  };
-  const choices = Object.entries(INDICATORS).filter(([, def]) => !def.chartOnly || state.mode === "chart");
-  const starred = choices.filter(([type]) => favourites().includes(type)).map(([type, def]) => tile(type, def)).join("");
-  return heading("On the chart") + `<div class="cs-list">${active}</div>` + heading("Add an indicator") +
-    `<input id="cs-ind-q" type="search" placeholder="Search indicators" autocomplete="off" value="${escapeHtml(pickQuery)}">` +
-    (starred ? heading("Favorites") + `<div class="cs-add">${starred}</div>` : "") +
-    heading("All indicators") + `<div class="cs-add">${choices.map(([type, def]) => tile(type, def)).join("")}</div>`;
-}
-
-// The add list: a search over its tiles, and favourites, which follow the account.
-let pickQuery = "";
-store.follow(["indicatorFavs"]);
-const favourites = () => store.get("indicatorFavs", []);
-
-function toggleFavourite(type) {
-  const favs = favourites();
-  store.set("indicatorFavs", favs.includes(type) ? favs.filter((each) => each !== type) : [...favs, type]);
-  renderDialog();
-}
-
-function filterPicks() {
-  const body = $("cs-body");
-  for (const pick of body.querySelectorAll(".cs-pick")) pick.hidden = Boolean(pickQuery) && !pick.dataset.find.includes(pickQuery);
-  for (const list of body.querySelectorAll(".cs-add")) {
-    const none = Boolean(pickQuery) && ![...list.children].some((el) => !el.hidden);
-    list.hidden = none;
-    if (list.previousElementSibling?.classList.contains("cs-h")) list.previousElementSibling.hidden = none;
-  }
-}
 
 // Search every settings section at once (not the indicator list), keeping the rows that match.
 function renderSearch(sections) {
@@ -456,7 +432,7 @@ function renderDialog() {
   $("cs-tabs-general").innerHTML = general.map(([key, label, , glyph]) =>
     `<button data-tab="${key}" class="${key === tab && !query ? "active" : ""}">${glyph}${label}</button>`).join("");
   const sections = {
-    symbol: symbolTab, status: statusTab, canvas: canvasTab, scales: scalesTab, review: reviewTab, indicators: indicatorsTab, live: liveTab, alerts: alertsTab,
+    symbol: symbolTab, status: statusTab, canvas: canvasTab, scales: scalesTab, review: reviewTab, live: liveTab, alerts: alertsTab,
   };
   const isChart = TABS.some(([key]) => key === tab);
   $("cs-reset").parentElement.hidden = !isChart && !query;
@@ -468,18 +444,14 @@ function renderDialog() {
     const again = $("cs-body").querySelector(selector);
     if (again) { again.focus(); }
   }
-  const focusRow = focusId && $("cs-body").querySelector(".cs-ind.focus");
-  if (focusRow) { focusRow.scrollIntoView({ block: "nearest" }); focusId = null; }
-  filterPicks();
 }
 
 onLiveStatus(() => { if (!$("cs").hidden) renderDialog(); });
 
 export const chartSettingsOpen = () => !$("cs").hidden;
 
-export function openChartSettings(which = tab, indicatorId = null) {
+export function openChartSettings(which = tab) {
   tab = which;
-  focusId = indicatorId;
   query = "";
   $("cs-search").value = "";
   $("cs").hidden = false;
@@ -549,21 +521,6 @@ function onInput(event) {
   }
   const isSwatch = el.classList.contains("swatch");
   const quiet = { render: !isSwatch && el.type !== "range" && !(live && el.type === "number") };
-  // Colour pickers and sliders update live; numbers wait for a valid value.
-  if (el.dataset.ind) {
-    const item = findIndicator(el.dataset.ind);
-    if (!item) return;
-    if (el.dataset.param) {
-      const value = Number(el.value);
-      if (!Number.isFinite(value) || value <= 0 || (live && el.value === "")) return;
-      changeSettings(() => { item.params[el.dataset.param] = value; }, "series");
-    } else if (el.dataset.plot) {
-      changeSettings(() => { item.style[el.dataset.plot][el.dataset.second ? "color2" : "color"] = el.value; }, "series", quiet);
-    } else if (el.dataset.width) {
-      changeSettings(() => { for (const plot of Object.values(item.style)) plot.width = Number(el.value); }, "series");
-    }
-    return;
-  }
   if (el.dataset.pct) {
     const value = Number(el.value);
     if (!Number.isFinite(value) || el.value === "") return;
@@ -590,11 +547,10 @@ export function bindChartSettings() {
   box.addEventListener("input", (event) => {
     const el = event.target;
     if (el.dataset.key) { keysDraft[el.dataset.key] = el.value; return; }
-    if (el.id === "cs-ind-q") { pickQuery = el.value.trim().toLowerCase(); filterPicks(); return; }
     // Numbers apply as you type, so a value isn't lost if the page reloads before the field blurs.
     if (el.classList.contains("swatch") || el.type === "range" || (el.type === "number" && (el.dataset.path || el.dataset.pct))) onInput(event);
   });
-  box.addEventListener("change", (event) => { if (event.target.id !== "cs-ind-q") onInput(event); });
+  box.addEventListener("change", onInput);
   $("cs-search").addEventListener("input", (event) => { query = event.target.value.trim().toLowerCase(); renderDialog(); });
   box.addEventListener("click", (event) => {
     const button = event.target.closest("button");
@@ -615,34 +571,14 @@ export function bindChartSettings() {
       closeChartSettings();
       openSignIn();
     }
-    else if (button.dataset.tf) {
-      const item = findIndicator(button.dataset.ind);
-      const tf = button.dataset.tf;
-      changeSettings(() => {
-        const off = new Set(item.hiddenOn || []);
-        if (off.has(tf)) off.delete(tf);
-        else off.add(tf);
-        item.hiddenOn = TIMEFRAMES.filter((each) => off.has(each));
-      }, "series");
-    }
-    else if (button.dataset.add) {
-      const item = newIndicator(button.dataset.add);
-      focusId = item.id;
-      changeSettings((s) => s.indicators.push(item), "series");
-    } else if (button.dataset.fav) {
-      toggleFavourite(button.dataset.fav);
-    } else if (button.dataset.remove) {
-      changeSettings((s) => { s.indicators = s.indicators.filter((item) => item.id !== button.dataset.remove); }, "series");
-    } else if (button.dataset.toggle) {
-      const item = findIndicator(button.dataset.toggle);
-      changeSettings(() => { item.visible = !item.visible; }, "series");
-    } else if (button.id === "cs-reset") {
+    else if (button.id === "cs-reset") {
       $("cs-confirm").hidden = false;
       button.hidden = true;
     } else if (button.id === "cs-reset-no") {
       resetPrompt(false);
     } else if (button.id === "cs-reset-yes") {
       resetPrompt(false);
+      current.remember();
       current.replace({ ...defaultSettings() });
       changeSettings(() => {}, "series");
       toast("Chart reset to default");
@@ -653,15 +589,16 @@ export function bindChartSettings() {
 // Legend buttons: hide, edit and remove an indicator without opening the dialog first.
 export function toggleIndicator(id) {
   const item = findIndicator(id);
-  if (item) changeSettings(() => { item.visible = !item.visible; }, "series");
+  if (item) changeIndicators(() => { item.visible = !item.visible; });
 }
 
 export function addIndicator(type) {
   const item = newIndicator(type);
-  changeSettings((s) => s.indicators.push(item), "series");
+  changeIndicators((s) => s.indicators.push(item));
   toast(`Added ${INDICATORS[type].name}`);
 }
 
 export function removeIndicator(id) {
-  changeSettings((s) => { s.indicators = s.indicators.filter((item) => item.id !== id); }, "series");
+  changeIndicators((s) => { s.indicators = s.indicators.filter((item) => item.id !== id); });
+  toast("Removed · Ctrl+Z brings it back");
 }

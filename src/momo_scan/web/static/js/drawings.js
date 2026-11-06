@@ -805,6 +805,8 @@ export function drawingsAt(pane, event) {
   };
 }
 
+export const drawingUndos = () => ({ undo: history.undo.length, redo: history.redo.length });
+
 export function undo() {
   if (!history.undo.length) return toast("Nothing to undo");
   history.redo.push(JSON.stringify(list()));

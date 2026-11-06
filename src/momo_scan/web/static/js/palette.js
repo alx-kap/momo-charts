@@ -29,7 +29,7 @@ function commands() {
     { group: "Commands", label: "Market: themes, where money is moving", hint: "market", run: () => actions.openThemes("themes") },
     { group: "Commands", label: "Market: industries, strength by industry", hint: "market", run: () => actions.openThemes("industries") },
     { group: "Commands", label: "Chart settings: colours, background, scales", hint: "chart", run: () => openChartSettings("symbol") },
-    { group: "Commands", label: "Indicators: add or edit", hint: "/", run: () => openChartSettings("indicators") },
+    { group: "Commands", label: "Indicators: add or edit", hint: "/", run: () => actions.openIndicatorBrowser() },
     ...Object.entries(INDICATORS).map(([type, def]) => ({
       group: "Commands", label: `Add indicator: ${def.name}`, hint: "ƒx",
       run: () => addIndicator(type),
