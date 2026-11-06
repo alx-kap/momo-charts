@@ -20,6 +20,16 @@ function setRight(view) {
   applyRails();
 }
 
+// Which panels are open, for saved layouts.
+export const panels = () => ({ right, left });
+export function setPanels(next) {
+  right = next.right ?? null;
+  left = next.left ?? null;
+  store.set("rightPanel", right);
+  store.set("leftPanel", left);
+  applyRails();
+}
+
 // Show the screener wherever it lives: docked, as the right panel; floating, as its window.
 export function showScreener() {
   if (!inChart()) return;

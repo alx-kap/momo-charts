@@ -21,6 +21,7 @@ import { bindIndicatorBrowser, closeIndicatorBrowser, indicatorBrowserOpen, open
 import { bindIndicatorSettings, closeIndicatorSettings, indicatorSettingsOpen } from "./indicatorsettings.js";
 import { bindMenus } from "./menus.js";
 import { bindSidebar } from "./sidebar.js";
+import { bindLayouts, closeLayoutsMenu, saveLayout, layoutCommands, layoutsMenuOpen, syncLayouts } from "./layouts.js";
 import { startLive, watchLive } from "./live.js";
 import {
   bindDrawings, cancelDrawing, deleteSelected, drawingTool, drawingUndos, hasSelection, redo, removeAllDrawings, setTool, undo,
@@ -280,6 +281,30 @@ function renderSplit() {
   renderLayoutMenu();
 }
 
+// ---------- saved layouts ----------
+// layouts.js keeps the arrangement as a plain snapshot; these read and apply it.
+
+const arrangement = () => ({
+  split: layout.split, ratio: layout.ratio, sync: { ...layout.sync },
+  left: { interval: charts.left.interval }, right: { interval: charts.right.interval },
+});
+
+async function arrange(snapshot) {
+  if (state.mode !== "chart") return;
+  const before = state.interval;
+  layout.ratio = snapshot.ratio ?? 0.5;
+  Object.assign(layout.sync, snapshot.sync);
+  charts.left.interval = snapshot.left.interval;
+  charts.right.interval = snapshot.right.interval;
+  state.interval = charts[activePane().side].interval;
+  const toggle = snapshot.split !== layout.split;
+  if (toggle) await toggleSplit();
+  else { saveCharts(); renderSplit(); }
+  renderSymbolBar();
+  renderLayoutMenu();
+  if (!toggle || before !== state.interval) await redrawCharts();
+}
+
 // ---------- the layout menu ----------
 
 const SINGLE_ICON = '<svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="3" width="14" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
@@ -287,7 +312,7 @@ const SPLIT_ICON = '<svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" 
 
 function renderLayoutMenu() {
   const menu = $("layout-menu");
-  $("split-button").innerHTML = layout.split ? SPLIT_ICON : SINGLE_ICON;
+  $("split-icon").innerHTML = layout.split ? SPLIT_ICON : SINGLE_ICON;
   menu.classList.toggle("single", !layout.split);
   for (const tile of menu.querySelectorAll("[data-layout]")) {
     const on = (tile.dataset.layout === "split") === layout.split;
@@ -326,7 +351,7 @@ $("layout-menu").addEventListener("change", (event) => {
   if (box.dataset.sync === "time" || box.dataset.sync === "range") other?.showTimes(activePane().visibleTimes(), layout.sync.range);
 });
 document.addEventListener("pointerdown", (event) => {
-  if (!$("layout-menu").hidden && !event.target.closest(".layout-wrap")) closeLayoutMenu();
+  if (!$("layout-menu").hidden && !event.target.closest(".layout-wrap, .ctx-root, .dlg-back")) closeLayoutMenu();
 });
 
 async function toggleSplit() {
@@ -513,6 +538,10 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     return event.shiftKey ? redoLast() : undoLast();
   }
+  if (mod && !event.altKey && !event.shiftKey && event.code === "KeyS" && state.mode === "chart" && !practicing()) {
+    event.preventDefault(); // Ctrl/⌘+S saves the open layout, or asks for a name
+    return saveLayout();
+  }
   if (mod && !event.altKey && event.code === "KeyY") { event.preventDefault(); return redoLast(); }
   if (mod && event.altKey && event.code === "KeyW" && !practicing()) {
     event.preventDefault();
@@ -535,9 +564,10 @@ document.addEventListener("keydown", (event) => {
 
   const key = event.key;
   if (key === "Escape") {
-    const menuOpen = !$("settings").hidden || !$("layout-menu").hidden || linkMenuOpen();
+    const menuOpen = !$("settings").hidden || !$("layout-menu").hidden || layoutsMenuOpen() || linkMenuOpen();
     $("settings").hidden = true;
     closeLayoutMenu();
+    closeLayoutsMenu();
     closeLinkMenu();
     armMeasure(false);
     if (cancelDrawing()) return event.preventDefault();
@@ -642,6 +672,9 @@ bindLink({
 });
 syncChartSettings();
 syncWatchlists();
+syncLayouts();
+bindLayouts({ arrangement, arrange });
+actions.layoutCommands = layoutCommands;
 
 // The profile button at the top left: the account's initial in a circle, like
 // Claude's desktop app. It opens settings and help.

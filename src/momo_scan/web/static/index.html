@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#000000">
 <title>Momo</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/static/app.css?v=251">
+<link rel="stylesheet" href="/static/app.css?v=256">
 </head>
 <body>
 <header id="topbar">
@@ -40,9 +40,9 @@
   <button id="drawbar-button" class="icon" title="Drawing toolbar" aria-label="Drawing toolbar" aria-controls="draw-bar" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 8.5-8.5a2.1 2.1 0 0 1 3 3L6 14l-4 1zM10 4l3 3M3 11l3 3"/></svg></button>
   <button id="replay-button" class="icon" title="Bar Replay (⇧↓)" aria-label="Bar Replay"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.5v11M6.5 4.5l7.5 4.5-7.5 4.5z"/></svg></button>
   <span class="layout-wrap">
-    <button id="split-button" class="icon" title="Layout: one chart or two side by side (⌥2 switches)"><svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="3" width="14" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 3v12" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    <button id="split-button" class="icon" title="One chart or two side by side (⌥2 switches)"><span id="split-icon"><svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="3" width="14" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 3v12" stroke="currentColor" stroke-width="1.5"/></svg></span></button>
     <div id="layout-menu" hidden>
-      <div class="lm-h">Layout</div>
+      <div class="lm-h">Charts</div>
       <div class="lm-tiles">
         <button data-layout="single" class="lm-tile"><span class="lm-pic"><i></i></span><span>Single</span><kbd>⌥2</kbd></button>
         <button data-layout="split" class="lm-tile"><span class="lm-pic two"><i></i><i></i></span><span>Side by side</span><kbd>⌥2</kbd></button>
@@ -53,6 +53,15 @@
       <label class="lm-row"><span><b>Time</b><em>Scroll one chart, the other follows</em></span><input type="checkbox" class="switch" data-sync="time"></label>
       <label class="lm-row"><span><b>Date range</b><em>Both charts show the same dates</em></span><input type="checkbox" class="switch" data-sync="range"></label>
       <label class="lm-row"><span><b>Crosshair</b><em>Hover one chart, the other follows</em></span><input type="checkbox" class="switch" data-sync="crosshair"></label>
+    </div>
+  </span>
+  <span class="layout-wrap layouts-wrap">
+    <button id="layouts-button" class="icon" title="Layouts: saved chart set-ups"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2.5" y="2.5" width="5.5" height="6" rx="1.2"/><rect x="10" y="2.5" width="5.5" height="3.5" rx="1.2"/><rect x="2.5" y="10.5" width="5.5" height="5" rx="1.2"/><rect x="10" y="8" width="5.5" height="7.5" rx="1.2"/></svg><span id="layouts-name"></span></button>
+    <button id="layouts-save" class="icon" title="Save layout (Ctrl+S)" aria-label="Save layout" hidden><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 3.5h8l3 3v8h-11z"/><path d="M6 3.5v3.5h5V3.5M6 14.5v-4h6v4"/></svg></button>
+    <div id="layouts-menu" hidden>
+      <div class="lm-h lm-h-row"><span>Layouts</span><span id="lm-saved-mark">Saved</span><button id="lm-save-new" class="lm-link" hidden>Save as…</button></div>
+      <div id="lm-saved"></div>
+      <div id="lm-footer" hidden><label class="lm-auto" id="lm-auto-row" title="Save changes to the open layout as you make them"><span>Autosave</span><input type="checkbox" class="switch" id="lm-auto"></label></div>
     </div>
   </span>
   <span class="link-wrap">
@@ -263,6 +272,7 @@
       <div class="hk"><span>Commands, scans and decks</span><span class="hk-keys"><kbd>⌘</kbd><kbd>K</kbd></span></div>
       <div class="hk"><span>Reset chart view</span><span class="hk-keys"><kbd>⌥</kbd><kbd>R</kbd></span></div>
       <div class="hk"><span>Log scale / invert scale</span><span class="hk-keys"><kbd>⌥</kbd><kbd>L</kbd> <i>/</i> <kbd>⌥</kbd><kbd>I</kbd></span></div>
+      <div class="hk"><span>Save layout</span><span class="hk-keys"><kbd>⌃</kbd><kbd>S</kbd></span></div>
       <div class="hk"><span>Split view</span><span class="hk-keys"><kbd>⌥</kbd><kbd>2</kbd></span></div>
       <div class="hk"><span>Extended hours (intraday)</span><span class="hk-keys"><kbd>⇧</kbd><kbd>⌥</kbd><kbd>E</kbd></span></div>
       <div class="hk"><span>Copy chart picture</span><span class="hk-keys"><kbd>⌥</kbd><kbd>S</kbd></span></div>

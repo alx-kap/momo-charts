@@ -9,7 +9,13 @@ export const store = {
     const text = JSON.stringify(value);
     const before = localStorage.getItem("momo." + key);
     localStorage.setItem("momo." + key, text);
-    if (followed.has(key) && text !== before) prefsChanged();
+    if (text === before) return;
+    if (followed.has(key)) prefsChanged();
+    for (const fn of watchers.get(key) || []) fn();
+  },
+  // Call `fn` whenever one of these keys changes (layouts.js notices chart changes this way).
+  watch: (keys, fn) => {
+    for (const key of keys) watchers.set(key, [...(watchers.get(key) || []), fn]);
   },
   // These keys follow the account between computers (saved as the "prefs" setting).
   follow: (keys) => {
@@ -23,6 +29,7 @@ export const store = {
 // Preferences kept in the browser that follow the account: the server's copy is written into
 // this browser before any module reads it, unless this browser saved something newer.
 const followed = new Set();
+const watchers = new Map();
 let serverPrefs = null;
 let prefsKnown = false; // the server answered at load
 let prefsTimer = 0;

@@ -196,6 +196,19 @@ export const changeIndicators = (mutate, key) => current.changeIndicators(mutate
 export const undoIndicators = () => current.step(current.undone, current.redone, "undo", "redo");
 export const redoIndicators = () => current.step(current.redone, current.undone, "redo", "undo");
 
+// A chart's settings as a saved layout keeps them, and back: a layout swaps the whole profile
+// (candles, canvas, scales, indicators). Undo brings the old indicators back.
+export function profileSnapshot(key) {
+  const { savedAt, ...settings } = chartProfile(key).S;
+  return structuredClone(settings);
+}
+
+export function loadProfile(key, snapshot) {
+  const profile = chartProfile(key);
+  profile.remember();
+  profile.change(() => profile.replace(merge(defaultSettings(), structuredClone(snapshot))), "series");
+}
+
 export async function syncChartSettings() {
   await Promise.all([...profiles.values()].map((profile) => profile.sync()));
 }

@@ -25,6 +25,9 @@ function apply(width) {
   return clamped;
 }
 
+export const sideWidth = () => store.get("sideWidth", DEFAULT);
+export const setSideWidth = (width) => store.set("sideWidth", apply(width));
+
 export function bindSidebar() {
   const handle = $("side-resizer");
   apply(store.get("sideWidth", DEFAULT));

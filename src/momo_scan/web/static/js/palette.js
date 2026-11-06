@@ -52,6 +52,7 @@ function commands() {
     { group: "Commands", label: "Weekly chart", hint: "1W", run: () => actions.setInterval("1W") },
     { group: "Commands", label: "Monthly chart", hint: "1M", run: () => actions.setInterval("1M") },
     { group: "Commands", label: "Keyboard shortcuts", hint: "?", run: openHelp },
+    ...(actions.layoutCommands?.() || []),
     ...added.more(),
   ];
 }
