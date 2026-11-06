@@ -111,6 +111,12 @@ def scan(body, info=None, conditional=False):
     return info
 
 
+# "Did you mean" compares a name with every other: a long script full of typos would take
+# minutes. Past these, errors just don't suggest a name (the same in checker.js).
+SUGGESTED_ERRORS = 10
+SUGGESTED_NAMES = 300
+
+
 def slug(title):
     key = re.sub(r"^_+|_+$", "", re.sub(r"[^a-z0-9]+", "_", title.lower()))
     if not re.match(r"[a-z]", key):
@@ -905,9 +911,11 @@ class Checker:
 
     def unknown(self, name, node, ctx):
         scope = ctx["scope"] if ctx else self.top
-        candidates = [*scope.vars, *self.top.vars, *self.functions,
-                      *[n for n in GLOBALS if "." not in n], *NAMESPACES]
-        near = did_you_mean(name, candidates)
+        near = None
+        if len(self.errors) < SUGGESTED_ERRORS:
+            candidates = [*scope.vars, *self.top.vars, *self.functions,
+                          *[n for n in GLOBALS if "." not in n], *NAMESPACES]
+            near = did_you_mean(name, candidates[-SUGGESTED_NAMES:])
         if name in scope.info or name in self.top.info:
             return self.fail("E203", f"`{name}` is used before it is set.", node,
                              f"Set `{name}` on an earlier line.")

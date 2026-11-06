@@ -322,3 +322,12 @@ test("a script with errors has no meta or ir", () => {
   assert.equal(r.meta, undefined);
   assert.equal(r.ir, undefined);
 });
+
+test("a script full of typos stays quick: only the first errors suggest a name", () => {
+  const lines = Array.from({ length: 6000 }, (_, i) => `a${i} = nope${i}`);
+  const started = performance.now();
+  const { errors } = check(parse(`#momo 1\nindicator("x")\n${lines.join("\n")}\n`));
+  assert.ok(performance.now() - started < 2000);
+  assert.equal(errors.length, 6000);
+  assert.ok(errors.slice(10).every((e) => e.fix === null));
+});

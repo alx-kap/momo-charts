@@ -14,7 +14,7 @@ from rich.table import Table
 from momo_scan.config import AppConfig, load_config
 from momo_scan.providers.fixture import FixtureProvider
 from momo_scan.providers.sqlite import LocalSQLiteProvider
-from momo_scan.storage import Storage
+from momo_scan.storage import OWNER, Storage
 
 app = typer.Typer(
     help="momo: charts, watchlists and a screener for momentum traders.", no_args_is_help=True
@@ -165,7 +165,9 @@ def cot_update(
         raise typer.Exit(1) from error
 
 
-script_app = typer.Typer(help="Check and run momo script indicators.", no_args_is_help=True)
+script_app = typer.Typer(
+    help="Check, run and store momo script indicators.", no_args_is_help=True
+)
 app.add_typer(script_app, name="script")
 
 
@@ -241,6 +243,122 @@ def _script_inputs(settings: list[str]) -> dict[str, Any]:
         except ValueError:
             out[key] = text
     return out
+
+
+def _stored_script(scripts: Any, name: str) -> dict[str, Any]:
+    script = scripts.by_name(OWNER, name)
+    if script is None:
+        typer.echo(f"No script called {name}", err=True)
+        raise typer.Exit(1)
+    return script
+
+
+def _report_saved(path: Path | None, script: dict[str, Any]) -> None:
+    """One line for the save, then the script's errors; a script with errors exits 1."""
+    if script.get("saved", True):
+        typer.echo(f"Saved {script['name']} v{script['head']}")
+    else:
+        typer.echo(f"No change: {script['name']} is still v{script['head']}")
+    if script["errors"]:
+        count = len(script["errors"])
+        typer.echo(f"Saved with {count} error{'s' * (count > 1)}, charts will show it:", err=True)
+        _print_script_errors(path or Path(script["name"]), script["errors"])
+        raise typer.Exit(1)
+
+
+@script_app.command("save")
+def script_save(
+    file: Annotated[Path, typer.Argument(help="A .momo script")],
+    name: Annotated[str, typer.Option("--name", help="The script's name in momo")],
+    note: Annotated[str, typer.Option("--note", help="What changed")] = "",
+    config_path: Annotated[Path, typer.Option("--config")] = Path("config/momo.toml"),
+) -> None:
+    """Save a file as a new version of a stored script, creating the script if it's new."""
+    from momo_scan.scripts import ScriptRefused, Scripts
+
+    source = _read_script(file)
+    _, storage = _settings(config_path)
+    with storage:
+        scripts = Scripts(storage)
+        stored = scripts.by_name(OWNER, name)
+        try:
+            script = (
+                scripts.save(OWNER, stored["id"], source, note) if stored
+                else scripts.create(OWNER, name, source, note)
+            )
+        except ScriptRefused as error:
+            typer.echo(error.message, err=True)
+            raise typer.Exit(1) from error
+    _report_saved(file, script)
+
+
+@script_app.command("list")
+def script_list(
+    trash: Annotated[bool, typer.Option("--trash", help="Show the trash too")] = False,
+    as_json: Annotated[bool, typer.Option("--json", help="Print the result as JSON")] = False,
+    config_path: Annotated[Path, typer.Option("--config")] = Path("config/momo.toml"),
+) -> None:
+    """List the stored scripts."""
+    from momo_scan.scripts import Scripts
+
+    _, storage = _settings(config_path)
+    with storage:
+        rows = Scripts(storage).list(OWNER, trash=trash)
+    if as_json:
+        typer.echo(json.dumps(rows, indent=2))
+        return
+    for row in rows:
+        marks = [
+            *(["draft"] if row["has_draft"] else []),
+            *([f"{row['errors']} errors"] if row["errors"] else []),
+            *(["in trash"] if row["in_trash"] else []),
+        ]
+        extra = f"  ({', '.join(marks)})" if marks else ""
+        typer.echo(f"{row['name']}  v{row['head']}  {row['updated_at']}{extra}")
+
+
+@script_app.command("versions")
+def script_versions(
+    name: Annotated[str, typer.Argument(help="The script's name in momo")],
+    as_json: Annotated[bool, typer.Option("--json", help="Print the result as JSON")] = False,
+    config_path: Annotated[Path, typer.Option("--config")] = Path("config/momo.toml"),
+) -> None:
+    """Show a stored script's versions, newest first."""
+    from momo_scan.scripts import Scripts
+
+    _, storage = _settings(config_path)
+    with storage:
+        scripts = Scripts(storage)
+        rows = scripts.versions(OWNER, _stored_script(scripts, name)["id"]) or []
+    if as_json:
+        typer.echo(json.dumps(rows, indent=2))
+        return
+    for row in rows:
+        note = f"  {row['note']}" if row["note"] else ""
+        typer.echo(f"v{row['version']}  {row['created_at']}  {row['size']} bytes{note}")
+
+
+@script_app.command("restore")
+def script_restore(
+    name: Annotated[str, typer.Argument(help="The script's name in momo")],
+    version: Annotated[int, typer.Argument(help="The version to go back to")],
+    config_path: Annotated[Path, typer.Option("--config")] = Path("config/momo.toml"),
+) -> None:
+    """Go back to a version, saved as a new version; history stays as it was."""
+    from momo_scan.scripts import ScriptRefused, Scripts
+
+    _, storage = _settings(config_path)
+    with storage:
+        scripts = Scripts(storage)
+        try:
+            script = scripts.restore(OWNER, _stored_script(scripts, name)["id"], version)
+        except ScriptRefused as error:
+            typer.echo(error.message, err=True)
+            raise typer.Exit(1) from error
+    if script is None:
+        typer.echo(f"{name} has no v{version}", err=True)
+        raise typer.Exit(1)
+    _report_saved(None, script)
 
 
 @script_app.command("run")

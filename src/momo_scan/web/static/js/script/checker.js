@@ -18,6 +18,10 @@ import { LIMITS } from "./runtime.js";
 
 export { LIMITS };
 
+// "Did you mean" compares a name with every other: a long script full of typos would take
+// minutes. Past these, errors just don't suggest a name (the same in checker.py).
+const SUGGESTED_ERRORS = 10;
+const SUGGESTED_NAMES = 300;
 
 const SOURCES = ["open", "high", "low", "close", "volume", "hl2", "hlc3", "ohlc4"];
 // Built-in series a script may reuse as a variable name (they're reference data, not syntax).
@@ -715,9 +719,12 @@ class Checker {
 
   unknown(name, node, ctx) {
     const scope = ctx ? ctx.scope : this.top;
-    const candidates = [...scope.vars.keys(), ...this.top.vars.keys(), ...this.functions.keys(),
-      ...Object.keys(GLOBALS).filter((n) => !n.includes(".")), ...NAMESPACES];
-    const near = didYouMean(name, candidates);
+    let near = null;
+    if (this.errors.length < SUGGESTED_ERRORS) {
+      const candidates = [...scope.vars.keys(), ...this.top.vars.keys(), ...this.functions.keys(),
+        ...Object.keys(GLOBALS).filter((n) => !n.includes(".")), ...NAMESPACES];
+      near = didYouMean(name, candidates.slice(-SUGGESTED_NAMES));
+    }
     if (scope.info.has(name) || this.top.info.has(name)) {
       return this.fail("E203", `\`${name}\` is used before it is set.`, node, `Set \`${name}\` on an earlier line.`);
     }
