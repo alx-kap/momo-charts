@@ -342,8 +342,10 @@ function createPane(root, { side, owner, settings, info = true }) {
   // { ok, series, colors } or { ok: false, error }. Only the bars shown are ever given to a script.
 
   const GUIDE_STYLES = { solid: LC.LineStyle.Solid, dashed: LC.LineStyle.Dashed, dotted: LC.LineStyle.Dotted };
+  const GHOST_COLOR = "#c8ccd6";
   const SCRIPT_TICK_MS = 250; // live ticks re-run a script at most 4 times a second
   let scriptRuns = new Map();
+  let ghosts = [];        // an old version of a script, dashed over the chart while History is open
   let scriptSeq = 0;      // bumped when the series are rebuilt or reloaded: runs started before are stale
   let refreshSeq = 0;     // the newest refresh (replay step, live tick); older answers are dropped
   let needFull = false;   // a bar was added or replayed: redraw whole series, not only the newest point
@@ -353,7 +355,7 @@ function createPane(root, { side, owner, settings, info = true }) {
 
   // A script plot's style is filled in from its definition the first time it's needed.
   const styleOf = ({ ind, plot }) => ind.style[plot.key] || (ind.style[plot.key] = { color: plot.color, width: plot.width || 1 });
-  const scriptInds = () => S.indicators.filter((ind) => ind.type === "script" && drawn(ind));
+  const scriptInds = () => [...S.indicators, ...ghosts].filter((ind) => ind.type === "script" && drawn(ind));
   function scriptError(ind) {
     if (ind.type !== "script") return null;
     const def = defOf(ind);
@@ -498,6 +500,18 @@ function createPane(root, { side, owner, settings, info = true }) {
       }
       if (own) paneKeys.push(ind.id);
     }
+    for (const ind of ghosts) {
+      const def = defOf(ind);
+      const pane = def.pane === "own" ? paneKeys.indexOf(ind.ghostOf) : 0;
+      if (pane < 0 || !drawn(ind)) continue;
+      for (const plot of def.plots.filter((each) => each.type !== "histogram")) {
+        const series = chart.addSeries(LC.LineSeries, {
+          color: GHOST_COLOR, lineWidth: 1, lineStyle: LC.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false,
+          crosshairMarkerVisible: false, autoscaleInfoProvider: () => null,
+        }, pane);
+        plots.push({ series, ind, def, plot, values: [], colors: null, ghost: true });
+      }
+    }
     chart.panes().forEach((pane, n) => pane.setStretchFactor(n === 0 ? 5 : paneKeys[n] === "volume" ? 1 : 1.3));
     computeSeries();
     fillSeries();
@@ -514,7 +528,7 @@ function createPane(root, { side, owner, settings, info = true }) {
     for (const item of plots) {
       if (!results.has(item.ind.id)) results.set(item.ind.id, item.def.compute(fullBars, item.ind.params, ctx, item.ind));
       item.values = results.get(item.ind.id)[item.plot.key] || [];
-      item.colors = item.def.script ? (scriptRuns.get(item.ind.id)?.colors || {})[item.plot.key] || null : null;
+      item.colors = item.def.script && !item.ghost ? (scriptRuns.get(item.ind.id)?.colors || {})[item.plot.key] || null : null;
     }
     for (const set of levelSets) set.result = set.def.compute(fullBars, set.ind.params, ctx);
     volumeAvg = (S.volume.ema ? ema : sma)(fullBars.map(vol), S.volume.period);
@@ -567,7 +581,7 @@ function createPane(root, { side, owner, settings, info = true }) {
     }
   }
 
-  settings.on(async (what) => {
+  async function applySettings(what) {
     let range;
     if (what === "series") {
       const token = loadToken;
@@ -596,8 +610,20 @@ function createPane(root, { side, owner, settings, info = true }) {
     } else if (range) {
       chart.timeScale().setVisibleLogicalRange(range);
     }
-  });
+  }
+  settings.on(applySettings);
   let shownOffset = S.scale.rightOffset;
+
+  // For the script editor: is this script on the chart; run the scripts again without touching
+  // the settings; dash an old version over the entry it belongs to (null clears).
+  const scriptEntry = (id) => S.indicators.find((ind) => ind.type === "script" && ind.script === id && ind.version == null);
+  function setGhost(id, version) {
+    const base = version === null ? null : scriptEntry(id);
+    if (!base && !ghosts.length) return false;
+    ghosts = base ? [{ id: "ghost", ghostOf: base.id, type: "script", script: id, version, visible: true, params: { ...base.params }, style: {} }] : [];
+    applySettings("series");
+    return Boolean(base);
+  }
 
   // ---------- legends ----------
   // The price legend lists the overlays; each own pane (and volume) gets a legend at its top.
@@ -1822,6 +1848,8 @@ function createPane(root, { side, owner, settings, info = true }) {
     side, root, settings, show: showChart, applyLevels, setLastPriceLine, scheduleCallouts, context: chartContext,
     interval: currentInterval, resetView, showRange, visibleDates, visibleTimes, showTimes, pickBar, message: chartMessage, snapshot, copySnapshot,
     replayTo, replayNext, replayDayOf, replayDay: () => (view.replay ? view.replayFrom : null), setAlertLines,
+    scriptOnChart: (id) => Boolean(scriptEntry(id)), scriptsChanged: () => applySettings("series"), setGhost, barsShown: () => currentBars,
+    scriptChartInfo: () => ({ interval: currentRequest.interval, ticker: view.anonymous ? "" : chartInfo.ticker || "" }),
     shown: () => lastShown, setInfo(on) { info = on; el["info-table"].hidden = !on; }, echoCrosshair,
     fundamentals: () => earnings.record(), clearEarnings: () => earnings.clear(),
     // Leaving split view: stop its live symbols and clear it.

@@ -18,6 +18,7 @@ import { bindThemes, closeThemes, openThemes, themesOpen } from "./themes.js";
 import { bindColorPicker } from "./colorpicker.js";
 import { bindHelp, closeHelp, helpOpen, openHelp } from "./help.js";
 import { bindMenus } from "./menus.js";
+import { bindScriptEditor } from "./script/panel.js";
 import { bindSidebar } from "./sidebar.js";
 import { startLive } from "./live.js";
 import {
@@ -610,6 +611,7 @@ bindMeasure();
 bindColorPicker();
 bindHelp();
 bindMenus();
+bindScriptEditor();
 bindSidebar();
 bindSymbolSearch();
 bindDesktop({ settings: () => openChartSettings("symbol"), help: openHelp });

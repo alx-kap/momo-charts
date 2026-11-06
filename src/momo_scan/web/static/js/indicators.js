@@ -441,7 +441,7 @@ export function cleanScriptEntry(item) {
     style[key] = { color: safeColor(value.color), width: [1, 2, 3, 4].includes(value.width) ? value.width : 1 };
   }
   return {
-    id: typeof item.id === "string" ? item.id : `script-${Date.now().toString(36)}-${++counter}`, type: "script",
+    id: typeof item.id === "string" && /^[\w-]{1,80}$/.test(item.id) ? item.id : `script-${Date.now().toString(36)}-${++counter}`, type: "script",
     ...(item.library !== undefined ? { library: item.library } : { script: item.script, version: Number.isInteger(item.version) ? item.version : null }),
     visible: item.visible !== false, params, style,
     ...(Array.isArray(item.hiddenOn) ? { hiddenOn: item.hiddenOn.filter((tf) => TIMEFRAMES.includes(tf)) } : {}),

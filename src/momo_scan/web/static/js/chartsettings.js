@@ -1,9 +1,9 @@
 import { $, api, escapeHtml, store, toast } from "./util.js";
 import { INDICATORS, LIBRARY, TIMEFRAMES, cleanScriptEntry, defOf, hydrate, knownType, newIndicator, newScriptIndicator } from "./indicators.js";
-import { loadScript } from "./scripts.js";
+import { listScripts, loadScript } from "./scripts.js";
 import { swatch } from "./colorpicker.js";
 import { liveSetup, marketSetup, onLiveStatus, openSignIn, saveSchwabKeys } from "./live.js";
-import { state } from "./state.js";
+import { actions, state } from "./state.js";
 import { alertPrefs, setAlertPref } from "./alertprefs.js";
 import { alertSounds, playAlertSound } from "./sound.js";
 
@@ -400,7 +400,7 @@ function indicatorsTab() {
     const inputs = def.inputs.map((input) => inputControl(item, input)).join("");
     const plots = def.plots.filter((plot) => !plot.colorSeries).map((plot) =>
       swatch(escapeHtml(item.style[plot.key].color), `data-ind="${item.id}" data-plot="${plot.key}" title="${escapeHtml(plot.label)}"`) +
-      (plot.color2 ? swatch(escapeHtml(item.style[plot.key].color2), `data-ind="${item.id}" data-plot="${plot.key}" data-second="1" title="${plot.label} (falling)"`) : "")).join("");
+      (plot.color2 ? swatch(escapeHtml(item.style[plot.key].color2), `data-ind="${item.id}" data-plot="${plot.key}" data-second="1" title="${escapeHtml(plot.label)} (falling)"`) : "")).join("");
     const lined = def.plots.find((plot) => plot.type !== "histogram");
     const width = lined
       ? `<select data-ind="${item.id}" data-width="1" title="Line width">${[1, 2, 3, 4].map((n) =>
@@ -413,13 +413,70 @@ function indicatorsTab() {
       `<button class="cs-x" data-remove="${item.id}" title="Remove">×</button>` +
       timeframeChips(item) + `</div>`;
   }).join("") || `<div class="cs-note">No indicators. Add one below.</div>`;
-  const button = (attr, def, where) =>
-    `<button ${attr}><b>${escapeHtml(def.name)}</b><em>${where === "price" ? "on price" : "own pane"}</em></button>`;
-  const add = Object.entries(INDICATORS).filter(([, def]) =>
-    !def.chartOnly || state.mode === "chart").map(([type, def]) => button(`data-add="${type}"`, def, def.pane)).join("");
-  const library = LIBRARY.map((item) => button(`data-library="${item.key}"`, item, item.pane)).join("");
-  return heading("On the chart") + `<div class="cs-list">${active}</div>` + heading("Add an indicator") + `<div class="cs-add">${add}</div>` +
-    heading("Library") + `<div class="cs-add">${library}</div>`;
+  // Every choice is a tile with a star; `key` is what favourites remember.
+  const tile = (key, attr, name, where, extra = "") => {
+    const fav = isFavourite(key);
+    return `<div class="cs-pick" data-find="${escapeHtml(name.toLowerCase())}"><button ${attr}><b>${escapeHtml(name)}</b><em>${where}</em></button>` +
+      `<button class="cs-star ${fav ? "on" : ""}" data-fav="${key}" title="${fav ? "Remove from favorites" : "Add to favorites"}">${fav ? "★" : "☆"}</button>${extra}</div>`;
+  };
+  const place = (pane) => (pane === "price" ? "on price" : "own pane");
+  const builtIn = Object.entries(INDICATORS).filter(([, def]) => !def.chartOnly || state.mode === "chart")
+    .map(([type, def]) => [`add:${type}`, tile(`add:${type}`, `data-add="${type}"`, def.name, place(def.pane))]);
+  const library = LIBRARY.map((item) => [`library:${item.key}`, tile(`library:${item.key}`, `data-library="${item.key}"`, item.name, place(item.pane))]);
+  const mine = stored.filter((item) => !item.in_trash).map((item) => [`script:${item.id}`,
+    tile(`script:${item.id}`, `data-stored="${item.id}"`, item.name, `v${item.head}${item.errors ? " · has errors" : ""}`,
+      `<button class="cs-edit" data-edit="${item.id}" title="Open in the editor">✎</button>`)]);
+  const favourites = [...builtIn, ...library, ...mine].filter(([key]) => isFavourite(key)).map(([, html]) => html).join("");
+  const section = (title, html) => (html ? heading(title) + `<div class="cs-add">${html}</div>` : "");
+  const tiles = (rows) => rows.map(([, html]) => html).join("");
+  return heading("On the chart") + `<div class="cs-list">${active}</div>` + heading("Add an indicator") +
+    `<input id="cs-ind-q" type="search" placeholder="Search indicators" autocomplete="off" value="${escapeHtml(pickQuery)}">` +
+    section("Favorites", favourites) +
+    heading("My scripts") + `<div class="cs-add">${tiles(mine)}<button class="cs-new" data-new-script="1"><b>New script</b><em>open the editor</em></button></div>` +
+    section("Built-in", tiles(builtIn)) + section("Library", tiles(library));
+}
+
+// The add list: a search over its tiles, and favourites. A stored script's star lives with the
+// script; the others' are a preference that follows the account.
+let stored = [];
+let pickQuery = "";
+store.follow(["indicatorFavs"]);
+
+function isFavourite(key) {
+  if (!key.startsWith("script:")) return store.get("indicatorFavs", []).includes(key);
+  return stored.some((item) => `script:${item.id}` === key && item.favourite);
+}
+
+async function toggleFavourite(key) {
+  if (key.startsWith("script:")) {
+    const id = Number(key.slice(7));
+    await api(`/api/scripts/${id}`, { method: "PATCH", body: JSON.stringify({ favourite: !isFavourite(key) }) });
+    stored = await listScripts();
+  } else {
+    const favs = store.get("indicatorFavs", []);
+    store.set("indicatorFavs", favs.includes(key) ? favs.filter((each) => each !== key) : [...favs, key]);
+  }
+  renderDialog();
+}
+
+function filterPicks() {
+  const body = $("cs-body");
+  for (const pick of body.querySelectorAll(".cs-pick")) pick.hidden = Boolean(pickQuery) && !pick.dataset.find.includes(pickQuery);
+  for (const list of body.querySelectorAll(".cs-add")) {
+    const none = Boolean(pickQuery) && ![...list.children].some((el) => !el.hidden && el.classList.contains("cs-pick"));
+    list.hidden = none;
+    if (list.previousElementSibling?.classList.contains("cs-h")) list.previousElementSibling.hidden = none;
+  }
+}
+
+// The picker's list of stored scripts, fetched when the dialog opens and after a change.
+export async function refreshStoredScripts() {
+  try {
+    stored = await listScripts();
+  } catch {
+    stored = [];
+  }
+  if (chartSettingsOpen() && tab === "indicators") renderDialog();
 }
 
 // Search every settings section at once (not the indicator list), keeping the rows that match.
@@ -465,6 +522,7 @@ function renderDialog() {
   }
   const focusRow = focusId && $("cs-body").querySelector(".cs-ind.focus");
   if (focusRow) { focusRow.scrollIntoView({ block: "nearest" }); focusId = null; }
+  filterPicks();
 }
 
 onLiveStatus(() => { if (!$("cs").hidden) renderDialog(); });
@@ -479,6 +537,7 @@ export function openChartSettings(which = tab, indicatorId = null) {
   $("cs").hidden = false;
   placeWindow();
   renderDialog();
+  if (which === "indicators") refreshStoredScripts();
 }
 
 // The window floats where it was last left (or top right to begin with), kept on screen.
@@ -588,10 +647,11 @@ export function bindChartSettings() {
   box.addEventListener("input", (event) => {
     const el = event.target;
     if (el.dataset.key) { keysDraft[el.dataset.key] = el.value; return; }
+    if (el.id === "cs-ind-q") { pickQuery = el.value.trim().toLowerCase(); filterPicks(); return; }
     // Numbers apply as you type, so a value isn't lost if the page reloads before the field blurs.
     if (el.classList.contains("swatch") || el.type === "range" || (el.type === "number" && (el.dataset.path || el.dataset.pct))) onInput(event);
   });
-  box.addEventListener("change", onInput);
+  box.addEventListener("change", (event) => { if (event.target.id !== "cs-ind-q") onInput(event); });
   $("cs-search").addEventListener("input", (event) => { query = event.target.value.trim().toLowerCase(); renderDialog(); });
   box.addEventListener("click", (event) => {
     const button = event.target.closest("button");
@@ -624,6 +684,20 @@ export function bindChartSettings() {
     }
     else if (button.dataset.library) {
       addLibrary(button.dataset.library).then((item) => { focusId = item.id; renderDialog(); });
+    }
+    else if (button.dataset.stored) {
+      addStored(Number(button.dataset.stored)).then((item) => { focusId = item.id; renderDialog(); });
+    }
+    else if (button.dataset.edit) {
+      closeChartSettings();
+      actions.openScript(Number(button.dataset.edit));
+    }
+    else if (button.dataset.newScript) {
+      closeChartSettings();
+      actions.newScript();
+    }
+    else if (button.dataset.fav) {
+      toggleFavourite(button.dataset.fav).catch((error) => toast(error.message));
     }
     else if (button.dataset.add) {
       const item = newIndicator(button.dataset.add);
@@ -662,8 +736,10 @@ export function addIndicator(type) {
 
 // A library script: fetched and compiled first, so the entry starts with the script's own
 // defaults. Returns the new entry.
-export async function addLibrary(key) {
-  const ref = { library: key };
+export const addLibrary = (key) => addScript({ library: key });
+export const addStored = (id) => addScript({ script: id, version: null });
+
+async function addScript(ref) {
   await loadScript({ type: "script", ...ref });
   const item = newScriptIndicator(ref, defOf({ type: "script", ...ref }));
   changeSettings((s) => s.indicators.push(item), "series");
